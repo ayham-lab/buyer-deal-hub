@@ -4,10 +4,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 
 const items = [
-  { to: "/buyers", label: "Buyer CRM", icon: Users },
+  { to: "/kpis", label: "KPI Dashboard", icon: BarChart3 },
   { to: "/finder", label: "Buyer Finder", icon: Search },
   { to: "/pipeline", label: "Deal Pipeline", icon: LayoutGrid },
-  { to: "/kpis", label: "KPI Dashboard", icon: BarChart3 },
+  { to: "/buyers", label: "Buyer Rolodex", icon: Users },
 ];
 
 export function Sidebar() {
