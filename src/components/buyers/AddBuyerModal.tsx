@@ -148,7 +148,7 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
           <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => set("phone", e.target.value)} /></div>
           <div className="col-span-2"><Label>Company Name</Label><Input value={form.company_name} onChange={(e) => set("company_name", e.target.value)} /></div>
 
-          <div className="col-span-2"><Label>Markets (comma-separated)</Label><Input value={form.markets} onChange={(e) => set("markets", e.target.value)} placeholder="Atlanta, Dallas" /></div>
+          <MarketsInput value={form.markets} onChange={(v) => set("markets", v)} />
 
           <MultiChips label="Property Types" options={PROPERTY_TYPES} value={form.property_types} onChange={(v) => set("property_types", v)}
             allowOther otherValue={form.other_property_type} onOtherChange={(v) => set("other_property_type", v)} />
