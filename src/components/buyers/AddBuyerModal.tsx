@@ -128,14 +128,6 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
       }
     }
 
-    if (form.add_to_archive) {
-      await supabase.from("buyer_archive").insert({
-        name, email: payload.email, phone: payload.phone,
-        markets: payload.markets, property_types: payload.property_types,
-        price_min: payload.price_min, price_max: payload.price_max,
-        source: payload.source, added_by_user_id: user.id,
-      });
-    }
     toast.success("Buyer added");
     setBusy(false);
     onClose();
