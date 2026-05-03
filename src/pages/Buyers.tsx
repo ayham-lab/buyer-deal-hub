@@ -57,6 +57,7 @@ export default function Buyers() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [showAdd, setShowAdd] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [active, setActive] = useState<Buyer | null>(null);
 
   async function load() {
