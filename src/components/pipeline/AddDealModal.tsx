@@ -75,7 +75,7 @@ export function AddDealModal({ open, onClose, onCreated }: { open: boolean; onCl
 
     toast.success("Deal created with checklist");
     setBusy(false); onClose(); onCreated();
-    setForm({ property_address: "", status: "lead", asking_price: "", contract_price: "", minimum_sale_price: "", arv: "", ip_expiry_date: "", closing_date: "", lead_source: "", jv_partner_name: "", title_company_id: "" });
+    setForm({ property_address: "", status: "lead", asking_price: "", contract_price: "", minimum_sale_price: "", arv: "", ip_expiry_date: "", closing_date: "", lead_source: "", jv_partner_name: "", title_company_id: "", owner_id: user.id });
   }
 
   return (
@@ -124,6 +124,19 @@ export function AddDealModal({ open, onClose, onCreated }: { open: boolean; onCl
             {titleCos.length === 0 && (
               <p className="text-xs text-muted-foreground mt-1">Add title companies in the Title Companies rolodex first.</p>
             )}
+          </div>
+          <div className="col-span-2">
+            <Label>Deal Owner (Dispo Manager)</Label>
+            <Select value={form.owner_id || (user?.id ?? "")} onValueChange={(v) => set("owner_id", v)}>
+              <SelectTrigger><SelectValue placeholder="Select owner" /></SelectTrigger>
+              <SelectContent>
+                {owners.map((o) => (
+                  <SelectItem key={o.user_id} value={o.user_id}>
+                    {o.name || o.email || o.user_id.slice(0, 8)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="col-span-2 flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
