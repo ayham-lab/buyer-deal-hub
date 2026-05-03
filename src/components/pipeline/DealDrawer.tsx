@@ -87,6 +87,7 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
         <Tabs defaultValue="overview" className="mt-6">
           <TabsList className="bg-secondary">
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="files">Files</TabsTrigger>
             <TabsTrigger value="checklist">Checklist ({checklist.filter((c) => !c.is_completed).length})</TabsTrigger>
             <TabsTrigger value="tasks">Tasks</TabsTrigger>
             <TabsTrigger value="notes">Notes</TabsTrigger>
