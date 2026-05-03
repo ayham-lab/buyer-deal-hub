@@ -1,4 +1,4 @@
-import { Search, HelpCircle, Bell, ChevronDown, LogOut, Building2, ShieldCheck } from "lucide-react";
+import { Search, HelpCircle, Bell, ChevronDown, LogOut, Building2, ShieldCheck, UserCog } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
@@ -74,6 +74,11 @@ export function TopBar() {
             <div className="text-xs text-muted-foreground truncate">{profile?.email}</div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link to="/profile" className="cursor-pointer">
+              <UserCog className="h-4 w-4 mr-2" /> Profile & Account
+            </Link>
+          </DropdownMenuItem>
           {isAdmin && (
             <DropdownMenuItem asChild>
               <Link to="/admin" className="cursor-pointer">
