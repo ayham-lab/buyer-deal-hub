@@ -1,0 +1,146 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  try {
+    const { address, source = "archive", propertyType, priceHint } = await req.json();
+    if (!address || typeof address !== "string") {
+      return json({ error: "address is required" }, 400);
+    }
+
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) return json({ error: "LOVABLE_API_KEY not configured" }, 500);
+
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: userData } = await userClient.auth.getUser();
+    const userId = userData?.user?.id;
+
+    const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+
+    // Pool of candidate buyers
+    let candidates: any[] = [];
+    if (source === "mine" && userId) {
+      const { data } = await admin
+        .from("buyers")
+        .select("id, name, email, phone, markets, property_types, price_min, price_max, source, company_name, buyer_status")
+        .eq("user_id", userId)
+        .eq("is_archived", false)
+        .limit(300);
+      candidates = data || [];
+    } else {
+      const { data } = await admin
+        .from("buyer_archive")
+        .select("id, name, email, phone, markets, property_types, price_min, price_max, source")
+        .limit(500);
+      candidates = data || [];
+    }
+
+    if (candidates.length === 0) {
+      return json({ matches: [], reasoning: "No buyers available in the selected source." });
+    }
+
+    // Compact for prompt
+    const compact = candidates.map((b) => ({
+      id: b.id,
+      name: b.name,
+      markets: b.markets || [],
+      property_types: b.property_types || [],
+      price_min: b.price_min,
+      price_max: b.price_max,
+      source: b.source,
+    }));
+
+    const sys = `You are a real-estate acquisitions assistant. Given a property address and a list of cash buyers (with target markets, property types, and price ranges), return the top 5 best-matching buyers ranked by fit. Consider: city/state/market overlap, property type alignment, and price range alignment with typical values for that area. Be concise.`;
+
+    const userPrompt = `Property address: ${address}
+${propertyType ? `Property type: ${propertyType}\n` : ""}${priceHint ? `Estimated price: ${priceHint}\n` : ""}
+Candidate buyers (JSON):
+${JSON.stringify(compact)}
+
+Return the top 5 matches with a 1-sentence reason each and a fit score 0-100.`;
+
+    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          { role: "system", content: sys },
+          { role: "user", content: userPrompt },
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "return_matches",
+              description: "Return ranked buyer matches",
+              parameters: {
+                type: "object",
+                properties: {
+                  matches: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        buyer_id: { type: "string" },
+                        score: { type: "number" },
+                        reason: { type: "string" },
+                      },
+                      required: ["buyer_id", "score", "reason"],
+                    },
+                  },
+                },
+                required: ["matches"],
+              },
+            },
+          },
+        ],
+        tool_choice: { type: "function", function: { name: "return_matches" } },
+      }),
+    });
+
+    if (!aiResp.ok) {
+      if (aiResp.status === 429) return json({ error: "Rate limit exceeded, try again shortly." }, 429);
+      if (aiResp.status === 402) return json({ error: "AI credits exhausted. Add funds in Settings → Workspace → Usage." }, 402);
+      const t = await aiResp.text();
+      console.error("AI error", aiResp.status, t);
+      return json({ error: "AI gateway error" }, 500);
+    }
+
+    const aiJson = await aiResp.json();
+    const toolCall = aiJson.choices?.[0]?.message?.tool_calls?.[0];
+    const args = toolCall ? JSON.parse(toolCall.function.arguments) : { matches: [] };
+
+    const byId = new Map(candidates.map((c) => [c.id, c]));
+    const matches = (args.matches || [])
+      .map((m: any) => ({ ...byId.get(m.buyer_id), score: m.score, reason: m.reason }))
+      .filter((m: any) => m.id);
+
+    return json({ matches });
+  } catch (e) {
+    console.error(e);
+    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+  }
+});
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
