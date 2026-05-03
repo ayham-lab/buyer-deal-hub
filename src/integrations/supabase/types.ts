@@ -253,6 +253,7 @@ export type Database = {
           property_address: string
           state: string | null
           status: Database["public"]["Enums"]["deal_status"]
+          title_company_id: string | null
           updated_at: string
           user_id: string
         }
@@ -280,6 +281,7 @@ export type Database = {
           property_address: string
           state?: string | null
           status?: Database["public"]["Enums"]["deal_status"]
+          title_company_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -307,6 +309,7 @@ export type Database = {
           property_address?: string
           state?: string | null
           status?: Database["public"]["Enums"]["deal_status"]
+          title_company_id?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -323,6 +326,13 @@ export type Database = {
             columns: ["jv_partner_id"]
             isOneToOne: false
             referencedRelation: "jv_partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_title_company_id_fkey"
+            columns: ["title_company_id"]
+            isOneToOne: false
+            referencedRelation: "title_companies"
             referencedColumns: ["id"]
           },
         ]

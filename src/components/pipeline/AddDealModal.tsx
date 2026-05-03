@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,12 +21,20 @@ const DEFAULT_CHECKLIST = [
 export function AddDealModal({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
   const { user } = useAuth();
   const [busy, setBusy] = useState(false);
+  const [titleCos, setTitleCos] = useState<{ id: string; name: string }[]>([]);
   const [form, setForm] = useState({
     property_address: "", status: "lead",
     asking_price: "", contract_price: "", minimum_sale_price: "",
     arv: "",
     ip_expiry_date: "", closing_date: "", lead_source: "", jv_partner_name: "",
+    title_company_id: "",
   });
+
+  useEffect(() => {
+    if (!open || !user) return;
+    supabase.from("title_companies").select("id,name").eq("user_id", user.id).order("name")
+      .then(({ data }) => setTitleCos((data as any) || []));
+  }, [open, user]);
 
   function set<K extends keyof typeof form>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
 
@@ -51,6 +59,7 @@ export function AddDealModal({ open, onClose, onCreated }: { open: boolean; onCl
       closing_date: form.closing_date || null,
       lead_source: form.lead_source || null,
       jv_partner_name: form.jv_partner_name || null,
+      title_company_id: form.title_company_id || null,
     } as any).select().single();
 
     if (error) { toast.error(error.message); setBusy(false); return; }
@@ -61,7 +70,7 @@ export function AddDealModal({ open, onClose, onCreated }: { open: boolean; onCl
 
     toast.success("Deal created with checklist");
     setBusy(false); onClose(); onCreated();
-    setForm({ property_address: "", status: "lead", asking_price: "", contract_price: "", minimum_sale_price: "", arv: "", ip_expiry_date: "", closing_date: "", lead_source: "", jv_partner_name: "" });
+    setForm({ property_address: "", status: "lead", asking_price: "", contract_price: "", minimum_sale_price: "", arv: "", ip_expiry_date: "", closing_date: "", lead_source: "", jv_partner_name: "", title_company_id: "" });
   }
 
   return (
@@ -98,6 +107,19 @@ export function AddDealModal({ open, onClose, onCreated }: { open: boolean; onCl
           <div><Label>JV Partner</Label><Input value={form.jv_partner_name} onChange={(e) => set("jv_partner_name", e.target.value)} placeholder="Partner name" /></div>
           <div><Label>IP Expiry</Label><Input type="date" value={form.ip_expiry_date} onChange={(e) => set("ip_expiry_date", e.target.value)} /></div>
           <div><Label>Closing Date</Label><Input type="date" value={form.closing_date} onChange={(e) => set("closing_date", e.target.value)} /></div>
+          <div className="col-span-2">
+            <Label>Title Company</Label>
+            <Select value={form.title_company_id || "none"} onValueChange={(v) => set("title_company_id", v === "none" ? "" : v)}>
+              <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {titleCos.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {titleCos.length === 0 && (
+              <p className="text-xs text-muted-foreground mt-1">Add title companies in the Title Companies rolodex first.</p>
+            )}
+          </div>
           <div className="col-span-2 flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
             <Button type="submit" disabled={busy} className="bg-primary hover:bg-primary-hover">Create Deal</Button>
