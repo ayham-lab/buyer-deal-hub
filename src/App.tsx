@@ -30,6 +30,7 @@ const App = () => (
             <Route path="/pipeline" element={<Pipeline />} />
             <Route path="/kpis" element={<KPIs />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
