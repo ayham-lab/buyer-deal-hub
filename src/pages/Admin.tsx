@@ -295,6 +295,8 @@ function DealsTab({ deals, users, onOpenUser }: any) {
             <SelectItem value="under_contract">Under contract</SelectItem>
             <SelectItem value="closed">Closed</SelectItem>
             <SelectItem value="dead">Dead</SelectItem>
+            <SelectItem value="title_issues">Title Issues</SelectItem>
+            <SelectItem value="seller_issue">Seller Issue / Memorandum</SelectItem>
           </SelectContent>
         </Select>
         <Select value={stateFilter} onValueChange={setStateFilter}>
