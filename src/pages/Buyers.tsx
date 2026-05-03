@@ -20,13 +20,35 @@ export interface Buyer {
   property_types: string[];
   price_min: number | null;
   price_max: number | null;
-  tags: string[];
   source: string | null;
   last_contact_at: string | null;
   deal_count: number;
   criteria_notes: string | null;
   created_at: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  company_name?: string | null;
+  buyer_status?: "not_vetted" | "vetted" | "repeat" | "recurring";
+  buyer_types?: string[];
+  buyer_frequency?: string[];
+  other_property_type?: string | null;
+  proof_of_funds_files?: string[];
+  previous_deals?: string | null;
+  experience?: string | null;
 }
+
+const STATUS_LABEL: Record<string, string> = {
+  not_vetted: "Not Vetted",
+  vetted: "Vetted",
+  repeat: "Repeat Buyer",
+  recurring: "Recurring Buyer",
+};
+const STATUS_COLOR: Record<string, string> = {
+  not_vetted: "bg-muted text-muted-foreground",
+  vetted: "bg-green-100 text-green-700 border-green-200",
+  repeat: "bg-blue-100 text-blue-700 border-blue-200",
+  recurring: "bg-purple-100 text-purple-700 border-purple-200",
+};
 
 export default function Buyers() {
   const { user } = useAuth();
@@ -55,7 +77,7 @@ export default function Buyers() {
     const q = search.toLowerCase();
     return !q || b.name.toLowerCase().includes(q) ||
       b.markets.some((m) => m.toLowerCase().includes(q)) ||
-      b.tags.some((t) => t.toLowerCase().includes(q));
+      (b.company_name || "").toLowerCase().includes(q);
   });
 
   return (
@@ -74,7 +96,7 @@ export default function Buyers() {
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name, market, tag…"
+              placeholder="Search by name, market, company…"
               className="pl-9"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -103,10 +125,11 @@ export default function Buyers() {
               <thead>
                 <tr>
                   <th>Name</th>
+                  <th>Company</th>
+                  <th>Status</th>
                   <th>Markets</th>
                   <th>Price Range</th>
                   <th>Property Types</th>
-                  <th>Tags</th>
                   <th>Last Contact</th>
                   <th>Deals</th>
                   <th>Source</th>
@@ -116,6 +139,12 @@ export default function Buyers() {
                 {filtered.map((b) => (
                   <tr key={b.id} onClick={() => setActive(b)} className="cursor-pointer">
                     <td className="font-medium">{b.name}</td>
+                    <td className="text-muted-foreground">{b.company_name || "—"}</td>
+                    <td>
+                      <Badge variant="outline" className={`text-[10px] rounded ${STATUS_COLOR[b.buyer_status || "not_vetted"]}`}>
+                        {STATUS_LABEL[b.buyer_status || "not_vetted"]}
+                      </Badge>
+                    </td>
                     <td className="text-muted-foreground">{b.markets.join(", ") || "—"}</td>
                     <td className="text-muted-foreground">
                       {b.price_min || b.price_max
@@ -123,13 +152,6 @@ export default function Buyers() {
                         : "—"}
                     </td>
                     <td className="text-muted-foreground">{b.property_types.join(", ") || "—"}</td>
-                    <td>
-                      <div className="flex gap-1 flex-wrap">
-                        {b.tags.slice(0, 3).map((t) => (
-                          <Badge key={t} variant="outline" className="text-[10px] rounded">{t}</Badge>
-                        ))}
-                      </div>
-                    </td>
                     <td className="text-muted-foreground">
                       {b.last_contact_at ? format(new Date(b.last_contact_at), "MMM d") : "—"}
                     </td>
