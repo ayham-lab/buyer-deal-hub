@@ -15,7 +15,7 @@ export function KanbanBoard({ deals, onStatusChange, onSelect }: {
   }
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-4">
         {STATUS_COLS.map((col) => (
           <Column key={col.id} id={col.id} label={col.label} deals={deals.filter((d) => d.status === col.id)} onSelect={onSelect} />
         ))}
