@@ -10,10 +10,11 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { address, propertyType, priceHint } = await req.json();
+    const { address, street, city, state, zip, propertyType, priceHint } = await req.json();
     if (!address || typeof address !== "string") {
       return json({ error: "address is required" }, 400);
     }
+    const ctx = { street, city, state, zip };
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
