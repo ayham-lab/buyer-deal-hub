@@ -249,6 +249,30 @@ export default function KPIs() {
           </div>
         </div>
 
+          <div className="bg-card border border-border rounded-lg p-5 lg:col-span-2">
+            <h3 className="text-sm font-semibold mb-4">Performance by Dispo Manager</h3>
+            {byOwner.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No deals yet.</p>
+            ) : (
+              <table className="data-table w-full">
+                <thead>
+                  <tr><th>Owner</th><th>Deals</th><th>Closed</th><th>Revenue</th></tr>
+                </thead>
+                <tbody>
+                  {byOwner.map((o) => (
+                    <tr key={o.name}>
+                      <td className="font-medium">{o.name}</td>
+                      <td>{o.deals}</td>
+                      <td>{o.closed}</td>
+                      <td className="text-primary font-semibold">${o.revenue.toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Stat label="Top Lead Source" value={leadSourceData.sort((a, b) => b.value - a.value)[0]?.name || "—"} />
           <Stat label="Total Deals" value={String(deals.length)} />
