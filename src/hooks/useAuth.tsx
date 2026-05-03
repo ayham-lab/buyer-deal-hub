@@ -1,4 +1,4 @@
-import { useEffect, useState, createContext, useContext, ReactNode } from "react";
+import { useEffect, useState, createContext, useContext, ReactNode, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
 
@@ -18,11 +18,13 @@ interface AuthCtx {
   isAdmin: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
+  refreshRoles: () => Promise<void>;
 }
 
 const Ctx = createContext<AuthCtx>({
   user: null, session: null, profile: null, isAdmin: false, loading: true,
   signOut: async () => {},
+  refreshRoles: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -31,14 +33,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const userIdRef = useRef<string | null>(null);
+
+  const loadProfile = useCallback(async (uid: string) => {
+    const [{ data: p }, { data: roles }] = await Promise.all([
+      supabase.from("profiles").select("*").eq("user_id", uid).maybeSingle(),
+      supabase.from("user_roles").select("role").eq("user_id", uid),
+    ]);
+    setProfile(p as any);
+    setIsAdmin(!!roles?.some((r: any) => r.role === "admin"));
+  }, []);
 
   useEffect(() => {
-    // Listener FIRST
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
+      userIdRef.current = s?.user?.id ?? null;
       if (s?.user) {
-        // defer to avoid deadlock
         setTimeout(() => loadProfile(s.user.id), 0);
       } else {
         setProfile(null);
@@ -49,28 +60,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
       setUser(s?.user ?? null);
+      userIdRef.current = s?.user?.id ?? null;
       if (s?.user) loadProfile(s.user.id);
       setLoading(false);
     });
 
-    return () => sub.subscription.unsubscribe();
-  }, []);
+    // Refresh roles when tab regains focus (catches role grants made in another session)
+    const onFocus = () => {
+      if (userIdRef.current) loadProfile(userIdRef.current);
+    };
+    window.addEventListener("focus", onFocus);
 
-  async function loadProfile(uid: string) {
-    const [{ data: p }, { data: roles }] = await Promise.all([
-      supabase.from("profiles").select("*").eq("user_id", uid).maybeSingle(),
-      supabase.from("user_roles").select("role").eq("user_id", uid),
-    ]);
-    setProfile(p as any);
-    setIsAdmin(!!roles?.some((r: any) => r.role === "admin"));
-  }
+    return () => {
+      sub.subscription.unsubscribe();
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [loadProfile]);
 
   async function signOut() {
     await supabase.auth.signOut();
   }
 
+  async function refreshRoles() {
+    if (userIdRef.current) await loadProfile(userIdRef.current);
+  }
+
   return (
-    <Ctx.Provider value={{ user, session, profile, isAdmin, loading, signOut }}>
+    <Ctx.Provider value={{ user, session, profile, isAdmin, loading, signOut, refreshRoles }}>
       {children}
     </Ctx.Provider>
   );

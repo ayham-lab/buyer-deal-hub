@@ -1,6 +1,7 @@
-import { Search, HelpCircle, Bell, ChevronDown, LogOut, Building2 } from "lucide-react";
+import { Search, HelpCircle, Bell, ChevronDown, LogOut, Building2, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
+import { Link } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function TopBar() {
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, isAdmin } = useAuth();
   const initial = (profile?.name || profile?.email || "?").slice(0, 1).toUpperCase();
   const locationLabel = profile?.ghl_location_id
     ? `Loc ${profile.ghl_location_id.slice(0, 8)}`
@@ -38,6 +39,15 @@ export function TopBar() {
       <div className="flex-1" />
 
       {/* Right actions */}
+      {isAdmin && (
+        <Link
+          to="/admin"
+          className="hidden md:inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-primary/10 text-primary hover:bg-primary/20 text-xs font-semibold uppercase tracking-wider transition-colors"
+        >
+          <ShieldCheck className="h-3.5 w-3.5" />
+          Admin
+        </Link>
+      )}
       <button className="h-9 w-9 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted">
         <HelpCircle className="h-4 w-4" />
       </button>
