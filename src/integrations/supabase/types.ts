@@ -500,6 +500,60 @@ export type Database = {
           },
         ]
       }
+      title_companies: {
+        Row: {
+          address: string | null
+          charges_file_fee: boolean
+          contact_name: string | null
+          created_at: string
+          deal_types: string[]
+          email: string | null
+          file_fee_amount: number | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          service_cities: string[]
+          service_states: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          charges_file_fee?: boolean
+          contact_name?: string | null
+          created_at?: string
+          deal_types?: string[]
+          email?: string | null
+          file_fee_amount?: number | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          service_cities?: string[]
+          service_states?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          charges_file_fee?: boolean
+          contact_name?: string | null
+          created_at?: string
+          deal_types?: string[]
+          email?: string | null
+          file_fee_amount?: number | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          service_cities?: string[]
+          service_states?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
