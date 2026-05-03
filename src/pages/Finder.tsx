@@ -4,6 +4,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const PROPERTY_TYPES = ["SFH", "MFH 2-4", "MFH 5+", "Commercial", "Land", "Mobile"];
 import { MapPin, Sparkles, Search, Loader2, Users, Archive, Globe } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -109,8 +112,15 @@ export default function Finder() {
               onChange={(e) => setStateCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, ""))} />
             <Input className="md:col-span-2" placeholder="Zip" maxLength={5} inputMode="numeric"
               value={zip} onChange={(e) => setZip(e.target.value.replace(/\D/g, ""))} />
-            <Input className="md:col-span-6" placeholder="Property type (optional)"
-              value={propertyType} onChange={(e) => setPropertyType(e.target.value)} />
+            <div className="md:col-span-6">
+              <Select value={propertyType || "any"} onValueChange={(v) => setPropertyType(v === "any" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="Property type (optional)" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Any property type</SelectItem>
+                  {PROPERTY_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
             <Input className="md:col-span-6" placeholder="Est. price (optional)"
               value={priceHint} onChange={(e) => setPriceHint(e.target.value)} />
           </div>
