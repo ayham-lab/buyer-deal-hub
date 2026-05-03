@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,7 +67,7 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
     source: "",
     criteria_notes: "",
     previous_deals: "", experience: "",
-    add_to_archive: false,
+    
   };
   const [form, setForm] = useState(initial);
   const [pofFiles, setPofFiles] = useState<File[]>([]);
@@ -128,14 +128,6 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
       }
     }
 
-    if (form.add_to_archive) {
-      await supabase.from("buyer_archive").insert({
-        name, email: payload.email, phone: payload.phone,
-        markets: payload.markets, property_types: payload.property_types,
-        price_min: payload.price_min, price_max: payload.price_max,
-        source: payload.source, added_by_user_id: user.id,
-      });
-    }
     toast.success("Buyer added");
     setBusy(false);
     onClose();
@@ -206,10 +198,6 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
           <div className="col-span-2"><Label>Previous Deals</Label><Textarea placeholder="Describe past closed deals" value={form.previous_deals} onChange={(e) => set("previous_deals", e.target.value)} /></div>
           <div className="col-span-2"><Label>Experience</Label><Textarea placeholder="Years investing, focus areas, etc." value={form.experience} onChange={(e) => set("experience", e.target.value)} /></div>
 
-          <div className="col-span-2 flex items-center gap-2">
-            <Checkbox id="archive" checked={form.add_to_archive} onCheckedChange={(v) => set("add_to_archive", !!v)} />
-            <Label htmlFor="archive" className="cursor-pointer">Also add to system-wide buyer archive</Label>
-          </div>
           <div className="col-span-2 flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
             <Button type="submit" disabled={busy} className="bg-primary hover:bg-primary-hover">Add Buyer</Button>
