@@ -10,10 +10,11 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { address, propertyType, priceHint } = await req.json();
+    const { address, street, city, state, zip, propertyType, priceHint } = await req.json();
     if (!address || typeof address !== "string") {
       return json({ error: "address is required" }, 400);
     }
+    const ctx = { street, city, state, zip };
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -49,8 +50,8 @@ Deno.serve(async (req) => {
     const archive = archiveResp.data || [];
 
     const [rolodexMatches, archiveMatches] = await Promise.all([
-      rankWithAI(rolodex, address, propertyType, priceHint, LOVABLE_API_KEY),
-      rankWithAI(archive, address, propertyType, priceHint, LOVABLE_API_KEY),
+      rankWithAI(rolodex, address, ctx, propertyType, priceHint, LOVABLE_API_KEY),
+      rankWithAI(archive, address, ctx, propertyType, priceHint, LOVABLE_API_KEY),
     ]);
 
     // Public data buyers: not connected yet — return empty group with a flag
@@ -69,6 +70,7 @@ Deno.serve(async (req) => {
 async function rankWithAI(
   candidates: any[],
   address: string,
+  ctx: { street?: string; city?: string; state?: string; zip?: string },
   propertyType: string | undefined,
   priceHint: string | undefined,
   apiKey: string,
@@ -85,9 +87,14 @@ async function rankWithAI(
     source: b.source,
   }));
 
-  const sys = `You are a real-estate acquisitions assistant. Given a property address and a list of cash buyers (with target markets, property types, and price ranges), return the top 5 best-matching buyers ranked by fit. Markets may be formatted as "State:TX", "City:Chicago, IL", "County:Dallas, TX", or "Zip:75001". Consider city/state/market overlap, property type alignment, and price range alignment. Be concise.`;
+  const sys = `You are a real-estate acquisitions assistant. Given a property's structured address and a list of cash buyers (with target markets, property types, and price ranges), return the top 5 best-matching buyers ranked by fit. Markets may be formatted as "State:TX", "City:Chicago, IL", "County:Dallas, TX", or "Zip:75001". Match strictly on the property's State, City, and Zip — do not match a county to a city of the same name. Also weigh property type and price range alignment. Be concise.`;
 
-  const userPrompt = `Property address: ${address}
+  const userPrompt = `Property:
+- Full address: ${address}
+- Street: ${ctx.street || ""}
+- City: ${ctx.city || ""}
+- State: ${ctx.state || ""}
+- Zip: ${ctx.zip || ""}
 ${propertyType ? `Property type: ${propertyType}\n` : ""}${priceHint ? `Estimated price: ${priceHint}\n` : ""}
 Candidate buyers (JSON):
 ${JSON.stringify(compact)}
