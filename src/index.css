@@ -4,61 +4,63 @@
 @tailwind components;
 @tailwind utilities;
 
-/* AcquiredCRM Dispo Tool — Dark theme only. All colors HSL. */
+/* AcquiredCRM Dispo Tool — GHL-style light content + dark sidebar. All colors HSL. */
 
 @layer base {
   :root {
-    /* Backgrounds */
-    --background: 0 0% 5%;          /* #0D0D0D */
-    --foreground: 0 0% 100%;        /* #FFFFFF */
+    /* Content area — light (GHL feel) */
+    --background: 220 20% 97%;          /* #F5F6F8 page bg */
+    --foreground: 220 18% 14%;          /* #1F2330 */
 
-    --card: 0 0% 8%;                /* #141414 */
-    --card-foreground: 0 0% 100%;
+    --card: 0 0% 100%;                  /* #FFFFFF */
+    --card-foreground: 220 18% 14%;
 
-    --popover: 0 0% 8%;
-    --popover-foreground: 0 0% 100%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 18% 14%;
 
-    --sidebar-bg: 0 0% 7%;          /* #111111 */
-
-    /* Brand */
-    --primary: 0 100% 40%;          /* #CC0000 */
+    /* Brand — red kept */
+    --primary: 0 100% 40%;              /* #CC0000 */
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 0 100% 55%;    /* #FF1A1A */
+    --primary-hover: 0 100% 45%;
 
-    --secondary: 0 0% 10%;          /* #1A1A1A */
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 220 16% 95%;           /* #EEF0F4 */
+    --secondary-foreground: 220 18% 14%;
 
-    --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 67%;   /* #AAAAAA */
+    --muted: 220 16% 95%;
+    --muted-foreground: 220 9% 46%;     /* #6B7280 */
 
-    --accent: 0 0% 10%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 220 16% 95%;
+    --accent-foreground: 220 18% 14%;
 
-    --destructive: 0 100% 40%;
+    --destructive: 0 84% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 70% 45%;
-    --warning: 32 95% 55%;
+    --success: 142 71% 38%;
+    --warning: 32 95% 50%;
+    --info: 217 91% 55%;
 
-    --border: 0 0% 16%;             /* #2A2A2A */
-    --input: 0 0% 7%;
+    --border: 220 13% 89%;              /* #DEE1E6 */
+    --input: 220 13% 89%;
     --ring: 0 100% 40%;
 
     --radius: 0.5rem;
 
-    /* Sidebar tokens (for shadcn sidebar) */
-    --sidebar-background: 0 0% 7%;
-    --sidebar-foreground: 0 0% 67%;
-    --sidebar-primary: 0 100% 40%;
+    /* Sidebar — dark GHL navy */
+    --sidebar-background: 222 28% 11%;        /* #131826 */
+    --sidebar-foreground: 220 12% 70%;        /* #A6ACBA */
+    --sidebar-primary: 0 100% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent: 222 22% 16%;            /* hover */
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 0 0% 16%;
-    --sidebar-ring: 0 100% 40%;
+    --sidebar-border: 222 20% 18%;
+    --sidebar-ring: 0 100% 45%;
+
+    /* Topbar */
+    --topbar-bg: 0 0% 100%;
+    --topbar-border: 220 13% 89%;
   }
 
-  /* Force dark always */
-  html { color-scheme: dark; }
+  html { color-scheme: light; }
 }
 
 @layer base {
@@ -72,30 +74,28 @@
   }
 
   ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-track { background: hsl(var(--background)); }
-  ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 4px; }
-  ::-webkit-scrollbar-thumb:hover { background: hsl(0 0% 25%); }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: hsl(220 13% 82%); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(220 9% 65%); }
 }
 
 @layer components {
   .stat-card {
-    @apply relative overflow-hidden rounded-lg bg-card border border-border p-5;
-  }
-  .stat-card::before {
-    content: '';
-    @apply absolute top-0 left-0 w-12 h-1 bg-primary;
+    @apply relative overflow-hidden rounded-xl bg-card border border-border p-5 shadow-sm transition-shadow hover:shadow-md;
   }
   .empty-state {
-    @apply rounded-lg border-2 border-dashed border-primary/40 bg-card/40 p-10 flex flex-col items-center justify-center text-center gap-3;
+    @apply rounded-xl border-2 border-dashed border-border bg-card p-10 flex flex-col items-center justify-center text-center gap-3;
   }
   .data-table thead th {
-    @apply text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-background border-b-2 border-primary px-4 py-3 text-left;
+    @apply text-[11px] font-semibold uppercase tracking-wider text-muted-foreground bg-muted/60 border-b border-border px-4 py-3 text-left;
   }
   .data-table tbody tr {
-    @apply border-b border-border transition-colors;
+    @apply border-b border-border bg-card transition-colors;
   }
-  .data-table tbody tr:nth-child(odd) { background: hsl(var(--sidebar-bg)); }
-  .data-table tbody tr:nth-child(even) { background: hsl(var(--card)); }
-  .data-table tbody tr:hover { background: hsl(0 0% 12%); }
+  .data-table tbody tr:hover { background: hsl(var(--muted) / 0.6); }
   .data-table td { @apply px-4 py-3 text-sm; }
+
+  .ghl-card {
+    @apply bg-card border border-border rounded-xl shadow-sm;
+  }
 }

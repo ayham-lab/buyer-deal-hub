@@ -39,9 +39,9 @@ export default function Finder() {
   return (
     <AppLayout>
       <PageHeader title="Buyer Finder" subtitle="Search the system archive or use AI to find buyers" />
-      <div className="p-8">
+      <div className="p-6 lg:p-8">
         <Tabs defaultValue="archive">
-          <TabsList className="bg-secondary">
+          <TabsList>
             <TabsTrigger value="archive"><Search className="h-4 w-4 mr-1" />Archive Search</TabsTrigger>
             <TabsTrigger value="ai"><Sparkles className="h-4 w-4 mr-1" />AI Finder</TabsTrigger>
           </TabsList>
@@ -49,7 +49,7 @@ export default function Finder() {
           <TabsContent value="archive" className="mt-6 space-y-4">
             <div className="flex gap-2 max-w-xl">
               <Input placeholder="Market, name, or source…" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && searchArchive()} />
-              <Button onClick={searchArchive} disabled={loading} className="bg-primary hover:bg-primary-hover">Search</Button>
+              <Button onClick={searchArchive} disabled={loading} className="bg-primary hover:bg-primary-hover text-primary-foreground">Search</Button>
             </div>
             {results.length === 0 ? (
               <div className="empty-state">
@@ -58,7 +58,7 @@ export default function Finder() {
                 <p className="text-sm text-muted-foreground">Find buyers other wholesalers have shared.</p>
               </div>
             ) : (
-              <div className="rounded-lg border border-border overflow-hidden">
+              <div className="rounded-xl border border-border overflow-hidden bg-card shadow-sm">
                 <table className="data-table w-full">
                   <thead><tr><th>Name</th><th>Markets</th><th>Contact</th><th>Source</th><th></th></tr></thead>
                   <tbody>
@@ -68,7 +68,7 @@ export default function Finder() {
                         <td className="text-muted-foreground">{b.markets?.join(", ") || "—"}</td>
                         <td className="text-muted-foreground">{b.email || b.phone || "—"}</td>
                         <td className="text-muted-foreground">{b.source || "—"}</td>
-                        <td><Button size="sm" onClick={() => addToMine(b)} className="bg-primary hover:bg-primary-hover">Add</Button></td>
+                        <td><Button size="sm" onClick={() => addToMine(b)} className="bg-primary hover:bg-primary-hover text-primary-foreground">Add</Button></td>
                       </tr>
                     ))}
                   </tbody>

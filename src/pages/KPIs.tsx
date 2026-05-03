@@ -103,10 +103,10 @@ export default function KPIs() {
             <h3 className="text-sm font-semibold mb-4">Monthly Revenue</h3>
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={monthly}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2A2A2A" />
-                <XAxis dataKey="month" stroke="#666" />
-                <YAxis stroke="#666" />
-                <Tooltip contentStyle={{ background: "#141414", border: "1px solid #2A2A2A" }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
                 <Legend />
                 <Bar dataKey="created" fill="#CC0000" name="Created" />
                 <Bar dataKey="closed" fill="#FF6B6B" name="Closed" />
@@ -120,7 +120,7 @@ export default function KPIs() {
                 <Pie data={leadSourceData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={90}>
                   {leadSourceData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
-                <Tooltip contentStyle={{ background: "#141414", border: "1px solid #2A2A2A" }} />
+                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -129,10 +129,10 @@ export default function KPIs() {
             <h3 className="text-sm font-semibold mb-4">Average Assignment Fee by Lead Source</h3>
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={avgFeeBySource}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2A2A2A" />
-                <XAxis dataKey="name" stroke="#666" />
-                <YAxis stroke="#666" />
-                <Tooltip contentStyle={{ background: "#141414", border: "1px solid #2A2A2A" }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
                 <Bar dataKey="avg" fill="#CC0000" />
               </BarChart>
             </ResponsiveContainer>

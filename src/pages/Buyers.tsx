@@ -61,10 +61,10 @@ export default function Buyers() {
   return (
     <AppLayout>
       <PageHeader
-        title="Buyer CRM"
+        title="Buyer Rolodex"
         subtitle="Your private buyer database"
         actions={
-          <Button onClick={() => setShowAdd(true)} className="bg-primary hover:bg-primary-hover">
+          <Button onClick={() => setShowAdd(true)} className="bg-primary hover:bg-primary-hover text-primary-foreground">
             <Plus className="h-4 w-4 mr-1" /> Add Buyer
           </Button>
         }
@@ -84,7 +84,7 @@ export default function Buyers() {
 
         {loading ? (
           <div className="space-y-2">
-            {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full bg-secondary" />)}
+            {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
           </div>
         ) : filtered.length === 0 ? (
           <div className="empty-state">
@@ -98,7 +98,7 @@ export default function Buyers() {
             </Button>
           </div>
         ) : (
-          <div className="rounded-lg border border-border overflow-hidden">
+          <div className="rounded-xl border border-border overflow-hidden bg-card shadow-sm">
             <table className="data-table w-full">
               <thead>
                 <tr>
