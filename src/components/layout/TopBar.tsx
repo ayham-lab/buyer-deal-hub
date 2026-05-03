@@ -1,6 +1,7 @@
-import { Search, HelpCircle, Bell, ChevronDown, LogOut, Building2 } from "lucide-react";
+import { Search, HelpCircle, Bell, ChevronDown, LogOut, Building2, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
+import { Link } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function TopBar() {
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, isAdmin } = useAuth();
   const initial = (profile?.name || profile?.email || "?").slice(0, 1).toUpperCase();
   const locationLabel = profile?.ghl_location_id
     ? `Loc ${profile.ghl_location_id.slice(0, 8)}`
