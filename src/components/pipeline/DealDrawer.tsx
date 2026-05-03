@@ -19,20 +19,22 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
   const [deal, setDeal] = useState<any>(null);
   const [checklist, setChecklist] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
+  const [titleCos, setTitleCos] = useState<{ id: string; name: string }[]>([]);
   const [newTask, setNewTask] = useState("");
   const [newCheck, setNewCheck] = useState("");
 
   useEffect(() => {
     if (!dealId) { setDeal(null); return; }
     (async () => {
-      const [{ data: d }, { data: c }, { data: t }] = await Promise.all([
+      const [{ data: d }, { data: c }, { data: t }, { data: tc }] = await Promise.all([
         supabase.from("deals").select("*").eq("id", dealId).single(),
         supabase.from("deal_checklist").select("*").eq("deal_id", dealId).order("sort_order"),
         supabase.from("tasks").select("*").eq("deal_id", dealId).order("created_at", { ascending: false }),
+        user ? supabase.from("title_companies").select("id,name").eq("user_id", user.id).order("name") : Promise.resolve({ data: [] as any }),
       ]);
-      setDeal(d); setChecklist(c || []); setTasks(t || []);
+      setDeal(d); setChecklist(c || []); setTasks(t || []); setTitleCos((tc as any) || []);
     })();
-  }, [dealId]);
+  }, [dealId, user]);
 
   if (!dealId || !deal) return null;
 
@@ -104,6 +106,19 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
               <Field label="IP Expiry" type="date" value={deal.ip_expiry_date ?? ""} onSave={(v) => saveField("ip_expiry_date", v || null)} />
               <Field label="Closing" type="date" value={deal.closing_date ?? ""} onSave={(v) => saveField("closing_date", v || null)} />
               <Field label="Lead Source" value={deal.lead_source ?? ""} onSave={(v) => saveField("lead_source", v)} />
+            </div>
+            <div>
+              <label className="text-[11px] uppercase tracking-wider text-muted-foreground">Title Company</label>
+              <Select
+                value={deal.title_company_id || "none"}
+                onValueChange={(v) => saveField("title_company_id", v === "none" ? null : v)}
+              >
+                <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {titleCos.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex items-center gap-2 pt-2">
               <Checkbox checked={deal.emd_received} onCheckedChange={(v) => saveField("emd_received", !!v)} />
