@@ -42,7 +42,7 @@ export function TopBar() {
       {isAdmin && (
         <Link
           to="/admin"
-          className="hidden md:inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-primary/10 text-primary hover:bg-primary/20 text-xs font-semibold uppercase tracking-wider transition-colors"
+          className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-primary/10 text-primary hover:bg-primary/20 text-xs font-semibold uppercase tracking-wider transition-colors"
         >
           <ShieldCheck className="h-3.5 w-3.5" />
           Admin
@@ -59,18 +59,28 @@ export function TopBar() {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-md hover:bg-muted">
-            <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
+            <div className={`h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold ${isAdmin ? "ring-2 ring-primary/40" : ""}`}>
               {initial}
             </div>
             <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuContent align="end" className="w-60">
           <DropdownMenuLabel className="font-normal">
-            <div className="text-sm font-semibold truncate">{profile?.name || "User"}</div>
+            <div className="flex items-center gap-2">
+              <div className="text-sm font-semibold truncate">{profile?.name || profile?.email || "User"}</div>
+              {isAdmin && <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary/15 text-primary">Admin</span>}
+            </div>
             <div className="text-xs text-muted-foreground truncate">{profile?.email}</div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
+          {isAdmin && (
+            <DropdownMenuItem asChild>
+              <Link to="/admin" className="cursor-pointer">
+                <ShieldCheck className="h-4 w-4 mr-2 text-primary" /> Admin Console
+              </Link>
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
             <LogOut className="h-4 w-4 mr-2" /> Sign out
           </DropdownMenuItem>
