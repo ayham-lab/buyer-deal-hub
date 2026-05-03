@@ -80,6 +80,8 @@ export function AddDealModal({ open, onClose, onCreated }: { open: boolean; onCl
                 <SelectItem value="under_contract">Under Contract</SelectItem>
                 <SelectItem value="closed">Closed</SelectItem>
                 <SelectItem value="dead">Dead</SelectItem>
+                <SelectItem value="title_issues">Title Issues</SelectItem>
+                <SelectItem value="seller_issue">Seller Issue / Memorandum</SelectItem>
               </SelectContent>
             </Select>
           </div>
