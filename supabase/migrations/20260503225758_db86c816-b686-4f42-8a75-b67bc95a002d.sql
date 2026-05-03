@@ -1,0 +1,1 @@
+ALTER TYPE public.deal_status ADD VALUE IF NOT EXISTS 'could_not_sell';

@@ -546,6 +546,7 @@ export type Database = {
         | "dead"
         | "title_issues"
         | "seller_issue"
+        | "could_not_sell"
       subscription_status: "active" | "trialing" | "cancelled" | "past_due"
       task_priority: "low" | "medium" | "high"
     }
@@ -685,6 +686,7 @@ export const Constants = {
         "dead",
         "title_issues",
         "seller_issue",
+        "could_not_sell",
       ],
       subscription_status: ["active", "trialing", "cancelled", "past_due"],
       task_priority: ["low", "medium", "high"],

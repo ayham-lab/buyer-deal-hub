@@ -9,7 +9,7 @@ export function ipBadge(ip: string | null) {
   return { label: `${days}d IP`, cls: "bg-success/20 text-success border border-success/40" };
 }
 
-export const STATUS_COLS: { id: "lead" | "active" | "under_contract" | "closed" | "dead" | "title_issues" | "seller_issue"; label: string }[] = [
+export const STATUS_COLS: { id: "lead" | "active" | "under_contract" | "closed" | "dead" | "title_issues" | "seller_issue" | "could_not_sell"; label: string }[] = [
   { id: "lead", label: "Lead" },
   { id: "active", label: "Active" },
   { id: "under_contract", label: "Under Contract" },
@@ -17,4 +17,5 @@ export const STATUS_COLS: { id: "lead" | "active" | "under_contract" | "closed" 
   { id: "dead", label: "Dead" },
   { id: "title_issues", label: "Title Issues" },
   { id: "seller_issue", label: "Seller Issue / Memorandum" },
+  { id: "could_not_sell", label: "Could Not Sell" },
 ];

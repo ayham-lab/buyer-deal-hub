@@ -11,7 +11,7 @@ import { AddDealModal } from "@/components/pipeline/AddDealModal";
 import { DealDrawer } from "@/components/pipeline/DealDrawer";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export type DealStatus = "lead" | "active" | "under_contract" | "closed" | "dead" | "title_issues" | "seller_issue";
+export type DealStatus = "lead" | "active" | "under_contract" | "closed" | "dead" | "title_issues" | "seller_issue" | "could_not_sell";
 
 export interface Deal {
   id: string;
