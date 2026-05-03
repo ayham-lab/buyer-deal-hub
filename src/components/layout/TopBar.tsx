@@ -39,6 +39,15 @@ export function TopBar() {
       <div className="flex-1" />
 
       {/* Right actions */}
+      {isAdmin && (
+        <Link
+          to="/admin"
+          className="hidden md:inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-primary/10 text-primary hover:bg-primary/20 text-xs font-semibold uppercase tracking-wider transition-colors"
+        >
+          <ShieldCheck className="h-3.5 w-3.5" />
+          Admin
+        </Link>
+      )}
       <button className="h-9 w-9 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted">
         <HelpCircle className="h-4 w-4" />
       </button>
