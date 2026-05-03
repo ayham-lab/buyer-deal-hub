@@ -238,6 +238,7 @@ export type Database = {
           city: string | null
           closed_at: string | null
           closing_date: string | null
+          contract_price: number | null
           created_at: string
           emd_amount: number | null
           emd_received: boolean
@@ -245,7 +246,9 @@ export type Database = {
           id: string
           ip_expiry_date: string | null
           jv_partner_id: string | null
+          jv_partner_name: string | null
           lead_source: string | null
+          minimum_sale_price: number | null
           notes: string | null
           property_address: string
           state: string | null
@@ -262,6 +265,7 @@ export type Database = {
           city?: string | null
           closed_at?: string | null
           closing_date?: string | null
+          contract_price?: number | null
           created_at?: string
           emd_amount?: number | null
           emd_received?: boolean
@@ -269,7 +273,9 @@ export type Database = {
           id?: string
           ip_expiry_date?: string | null
           jv_partner_id?: string | null
+          jv_partner_name?: string | null
           lead_source?: string | null
+          minimum_sale_price?: number | null
           notes?: string | null
           property_address: string
           state?: string | null
@@ -286,6 +292,7 @@ export type Database = {
           city?: string | null
           closed_at?: string | null
           closing_date?: string | null
+          contract_price?: number | null
           created_at?: string
           emd_amount?: number | null
           emd_received?: boolean
@@ -293,7 +300,9 @@ export type Database = {
           id?: string
           ip_expiry_date?: string | null
           jv_partner_id?: string | null
+          jv_partner_name?: string | null
           lead_source?: string | null
+          minimum_sale_price?: number | null
           notes?: string | null
           property_address?: string
           state?: string | null
