@@ -22,18 +22,22 @@ export function AddDealModal({ open, onClose, onCreated }: { open: boolean; onCl
   const { user } = useAuth();
   const [busy, setBusy] = useState(false);
   const [titleCos, setTitleCos] = useState<{ id: string; name: string }[]>([]);
+  const [owners, setOwners] = useState<{ user_id: string; name: string | null; email: string | null }[]>([]);
   const [form, setForm] = useState({
     property_address: "", status: "lead",
     asking_price: "", contract_price: "", minimum_sale_price: "",
     arv: "",
     ip_expiry_date: "", closing_date: "", lead_source: "", jv_partner_name: "",
-    title_company_id: "",
+    title_company_id: "", owner_id: "",
   });
 
   useEffect(() => {
     if (!open || !user) return;
     supabase.from("title_companies").select("id,name").eq("user_id", user.id).order("name")
       .then(({ data }) => setTitleCos((data as any) || []));
+    supabase.from("profiles").select("user_id,name,email").order("name")
+      .then(({ data }) => setOwners((data as any) || []));
+    setForm((f) => ({ ...f, owner_id: f.owner_id || user.id }));
   }, [open, user]);
 
   function set<K extends keyof typeof form>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
@@ -60,6 +64,7 @@ export function AddDealModal({ open, onClose, onCreated }: { open: boolean; onCl
       lead_source: form.lead_source || null,
       jv_partner_name: form.jv_partner_name || null,
       title_company_id: form.title_company_id || null,
+      owner_id: form.owner_id || user.id,
     } as any).select().single();
 
     if (error) { toast.error(error.message); setBusy(false); return; }
@@ -70,7 +75,7 @@ export function AddDealModal({ open, onClose, onCreated }: { open: boolean; onCl
 
     toast.success("Deal created with checklist");
     setBusy(false); onClose(); onCreated();
-    setForm({ property_address: "", status: "lead", asking_price: "", contract_price: "", minimum_sale_price: "", arv: "", ip_expiry_date: "", closing_date: "", lead_source: "", jv_partner_name: "", title_company_id: "" });
+    setForm({ property_address: "", status: "lead", asking_price: "", contract_price: "", minimum_sale_price: "", arv: "", ip_expiry_date: "", closing_date: "", lead_source: "", jv_partner_name: "", title_company_id: "", owner_id: user.id });
   }
 
   return (
@@ -119,6 +124,19 @@ export function AddDealModal({ open, onClose, onCreated }: { open: boolean; onCl
             {titleCos.length === 0 && (
               <p className="text-xs text-muted-foreground mt-1">Add title companies in the Title Companies rolodex first.</p>
             )}
+          </div>
+          <div className="col-span-2">
+            <Label>Deal Owner (Dispo Manager)</Label>
+            <Select value={form.owner_id || (user?.id ?? "")} onValueChange={(v) => set("owner_id", v)}>
+              <SelectTrigger><SelectValue placeholder="Select owner" /></SelectTrigger>
+              <SelectContent>
+                {owners.map((o) => (
+                  <SelectItem key={o.user_id} value={o.user_id}>
+                    {o.name || o.email || o.user_id.slice(0, 8)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="col-span-2 flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>

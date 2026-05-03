@@ -19,6 +19,8 @@ export default function KPIs() {
   const { user } = useAuth();
   const [deals, setDeals] = useState<any[]>([]);
   const [buyers, setBuyers] = useState<any[]>([]);
+  const [owners, setOwners] = useState<{ user_id: string; name: string | null; email: string | null }[]>([]);
+  const [ownerFilter, setOwnerFilter] = useState("all");
   const [range, setRange] = useState("month");
   const now = new Date();
   const [customYear, setCustomYear] = useState(now.getFullYear());
@@ -30,7 +32,8 @@ export default function KPIs() {
     Promise.all([
       supabase.from("deals").select("*").eq("user_id", user.id),
       supabase.from("buyers").select("id, created_at").eq("user_id", user.id),
-    ]).then(([d, b]) => { setDeals(d.data || []); setBuyers(b.data || []); });
+      supabase.from("profiles").select("user_id,name,email").order("name"),
+    ]).then(([d, b, o]) => { setDeals(d.data || []); setBuyers(b.data || []); setOwners((o.data as any) || []); });
   }, [user]);
 
   const { from, to } = useMemo(() => {
@@ -55,12 +58,13 @@ export default function KPIs() {
     }
   }, [range, fromMonth, toMonth, customYear]);
 
-  const filtered = deals.filter((d) => {
+  const ownerScoped = ownerFilter === "all" ? deals : deals.filter((d) => d.owner_id === ownerFilter);
+  const filtered = ownerScoped.filter((d) => {
     const c = new Date(d.created_at);
     return c >= from && c <= to;
   });
   const closed = filtered.filter((d) => d.status === "closed");
-  const active = deals.filter((d) => ["active", "under_contract"].includes(d.status));
+  const active = ownerScoped.filter((d) => ["active", "under_contract"].includes(d.status));
   const revenueCreated = filtered.reduce((s, d) => s + (Number(d.assignment_fee) || 0), 0);
   const revenueClosed = closed.reduce((s, d) => s + (Number(d.assignment_fee) || 0), 0);
   const conversion = filtered.length ? Math.round((filtered.filter((d) => d.status === "under_contract" || d.status === "closed").length / filtered.length) * 100) : 0;
@@ -97,12 +101,41 @@ export default function KPIs() {
     return Object.entries(m).map(([name, { sum, count }]) => ({ name, avg: Math.round(sum / count) }));
   }, [deals]);
 
+  // By owner (dispo manager)
+  const ownerName = (id: string | null) => {
+    if (!id) return "Unassigned";
+    const o = owners.find((x) => x.user_id === id);
+    return o?.name || o?.email || id.slice(0, 8);
+  };
+  const byOwner = useMemo(() => {
+    const m: Record<string, { name: string; deals: number; closed: number; revenue: number }> = {};
+    ownerScoped.forEach((d) => {
+      const key = d.owner_id || "unassigned";
+      m[key] = m[key] || { name: ownerName(d.owner_id), deals: 0, closed: 0, revenue: 0 };
+      m[key].deals += 1;
+      if (d.status === "closed") {
+        m[key].closed += 1;
+        m[key].revenue += Number(d.assignment_fee) || 0;
+      }
+    });
+    return Object.values(m).sort((a, b) => b.revenue - a.revenue);
+  }, [ownerScoped, owners]);
+
   return (
     <AppLayout>
       <PageHeader
         title="KPI Dashboard"
         actions={
           <div className="flex items-center gap-2">
+            <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+              <SelectTrigger className="w-48"><SelectValue placeholder="All Owners" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Owners</SelectItem>
+                {owners.map((o) => (
+                  <SelectItem key={o.user_id} value={o.user_id}>{o.name || o.email || o.user_id.slice(0, 8)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={range} onValueChange={setRange}>
               <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -213,6 +246,29 @@ export default function KPIs() {
                 <Bar dataKey="avg" fill="#CC0000" />
               </BarChart>
             </ResponsiveContainer>
+          </div>
+
+          <div className="bg-card border border-border rounded-lg p-5 lg:col-span-2">
+            <h3 className="text-sm font-semibold mb-4">Performance by Dispo Manager</h3>
+            {byOwner.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No deals yet.</p>
+            ) : (
+              <table className="data-table w-full">
+                <thead>
+                  <tr><th>Owner</th><th>Deals</th><th>Closed</th><th>Revenue</th></tr>
+                </thead>
+                <tbody>
+                  {byOwner.map((o) => (
+                    <tr key={o.name}>
+                      <td className="font-medium">{o.name}</td>
+                      <td>{o.deals}</td>
+                      <td>{o.closed}</td>
+                      <td className="text-primary font-semibold">${o.revenue.toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 
