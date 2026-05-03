@@ -4,8 +4,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Users as UsersIcon } from "lucide-react";
+import { Plus, Search, Users as UsersIcon, Upload } from "lucide-react";
 import { AddBuyerModal } from "@/components/buyers/AddBuyerModal";
+import { ImportBuyersModal } from "@/components/buyers/ImportBuyersModal";
 import { BuyerDrawer } from "@/components/buyers/BuyerDrawer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +57,7 @@ export default function Buyers() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [showAdd, setShowAdd] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [active, setActive] = useState<Buyer | null>(null);
 
   async function load() {
@@ -86,9 +88,14 @@ export default function Buyers() {
         title="Buyer Rolodex"
         subtitle="Your private buyer database"
         actions={
-          <Button onClick={() => setShowAdd(true)} className="bg-primary hover:bg-primary-hover text-primary-foreground">
-            <Plus className="h-4 w-4 mr-1" /> Add Buyer
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowImport(true)}>
+              <Upload className="h-4 w-4 mr-1" /> Import CSV
+            </Button>
+            <Button onClick={() => setShowAdd(true)} className="bg-primary hover:bg-primary-hover text-primary-foreground">
+              <Plus className="h-4 w-4 mr-1" /> Add Buyer
+            </Button>
+          </div>
         }
       />
       <div className="p-8 space-y-4">
@@ -166,6 +173,7 @@ export default function Buyers() {
       </div>
 
       <AddBuyerModal open={showAdd} onClose={() => setShowAdd(false)} onCreated={load} />
+      <ImportBuyersModal open={showImport} onClose={() => setShowImport(false)} onImported={load} />
       <BuyerDrawer buyer={active} onClose={() => setActive(null)} onUpdated={load} />
     </AppLayout>
   );
