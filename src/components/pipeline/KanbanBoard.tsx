@@ -27,10 +27,10 @@ export function KanbanBoard({ deals, onStatusChange, onSelect }: {
 function Column({ id, label, deals, onSelect }: { id: string; label: string; deals: Deal[]; onSelect: (id: string) => void }) {
   const { setNodeRef, isOver } = useDroppable({ id });
   return (
-    <div className="bg-card/60 border border-border rounded-lg p-3 min-h-[400px]">
+    <div className="bg-muted/50 border border-border rounded-xl p-3 min-h-[400px]">
       <div className="flex items-center justify-between mb-3 px-1">
-        <h3 className="text-xs uppercase tracking-wider font-semibold">{label}</h3>
-        <span className="text-xs text-muted-foreground bg-secondary rounded px-2 py-0.5">{deals.length}</span>
+        <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">{label}</h3>
+        <span className="text-[11px] text-muted-foreground bg-card border border-border rounded-full px-2 py-0.5">{deals.length}</span>
       </div>
       <div ref={setNodeRef} className={cn("space-y-2 min-h-[300px] rounded transition-colors", isOver && "bg-primary/5 ring-1 ring-primary/30")}>
         {deals.map((d) => <Card key={d.id} deal={d} onSelect={onSelect} />)}
@@ -51,7 +51,7 @@ function Card({ deal, onSelect }: { deal: Deal; onSelect: (id: string) => void }
       {...attributes}
       onClick={() => !isDragging && onSelect(deal.id)}
       className={cn(
-        "bg-card border border-border rounded-lg p-3 cursor-grab active:cursor-grabbing hover:border-primary/40 transition-colors",
+        "bg-card border border-border rounded-lg p-3 cursor-grab active:cursor-grabbing hover:border-primary/40 hover:shadow-sm transition-all shadow-sm",
         isDragging && "opacity-50"
       )}
     >
