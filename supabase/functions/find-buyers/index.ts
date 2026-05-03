@@ -10,7 +10,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { address, source = "archive", propertyType, priceHint } = await req.json();
+    const { address, propertyType, priceHint } = await req.json();
     if (!address || typeof address !== "string") {
       return json({ error: "address is required" }, 400);
     }
@@ -29,114 +29,121 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
-    // Pool of candidate buyers
-    let candidates: any[] = [];
-    if (source === "mine" && userId) {
-      const { data } = await admin
-        .from("buyers")
-        .select("id, name, email, phone, markets, property_types, price_min, price_max, source, company_name, buyer_status")
-        .eq("user_id", userId)
-        .eq("is_archived", false)
-        .limit(300);
-      candidates = data || [];
-    } else {
-      const { data } = await admin
+    // Pull two pools in parallel
+    const [rolodexResp, archiveResp] = await Promise.all([
+      userId
+        ? admin
+            .from("buyers")
+            .select("id, name, email, phone, markets, property_types, price_min, price_max, source, company_name")
+            .eq("user_id", userId)
+            .eq("is_archived", false)
+            .limit(300)
+        : Promise.resolve({ data: [] as any[] }),
+      admin
         .from("buyer_archive")
         .select("id, name, email, phone, markets, property_types, price_min, price_max, source")
-        .limit(500);
-      candidates = data || [];
-    }
+        .limit(500),
+    ]);
 
-    if (candidates.length === 0) {
-      return json({ matches: [], reasoning: "No buyers available in the selected source." });
-    }
+    const rolodex = rolodexResp.data || [];
+    const archive = archiveResp.data || [];
 
-    // Compact for prompt
-    const compact = candidates.map((b) => ({
-      id: b.id,
-      name: b.name,
-      markets: b.markets || [],
-      property_types: b.property_types || [],
-      price_min: b.price_min,
-      price_max: b.price_max,
-      source: b.source,
-    }));
+    const [rolodexMatches, archiveMatches] = await Promise.all([
+      rankWithAI(rolodex, address, propertyType, priceHint, LOVABLE_API_KEY),
+      rankWithAI(archive, address, propertyType, priceHint, LOVABLE_API_KEY),
+    ]);
 
-    const sys = `You are a real-estate acquisitions assistant. Given a property address and a list of cash buyers (with target markets, property types, and price ranges), return the top 5 best-matching buyers ranked by fit. Consider: city/state/market overlap, property type alignment, and price range alignment with typical values for that area. Be concise.`;
+    // Public data buyers: not connected yet — return empty group with a flag
+    return json({
+      rolodex: rolodexMatches,
+      archive: archiveMatches,
+      public: [],
+      public_available: false,
+    });
+  } catch (e) {
+    console.error(e);
+    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+  }
+});
 
-    const userPrompt = `Property address: ${address}
+async function rankWithAI(
+  candidates: any[],
+  address: string,
+  propertyType: string | undefined,
+  priceHint: string | undefined,
+  apiKey: string,
+): Promise<any[]> {
+  if (!candidates || candidates.length === 0) return [];
+
+  const compact = candidates.map((b) => ({
+    id: b.id,
+    name: b.name,
+    markets: b.markets || [],
+    property_types: b.property_types || [],
+    price_min: b.price_min,
+    price_max: b.price_max,
+    source: b.source,
+  }));
+
+  const sys = `You are a real-estate acquisitions assistant. Given a property address and a list of cash buyers (with target markets, property types, and price ranges), return the top 5 best-matching buyers ranked by fit. Markets may be formatted as "State:TX", "City:Chicago, IL", "County:Dallas, TX", or "Zip:75001". Consider city/state/market overlap, property type alignment, and price range alignment. Be concise.`;
+
+  const userPrompt = `Property address: ${address}
 ${propertyType ? `Property type: ${propertyType}\n` : ""}${priceHint ? `Estimated price: ${priceHint}\n` : ""}
 Candidate buyers (JSON):
 ${JSON.stringify(compact)}
 
 Return the top 5 matches with a 1-sentence reason each and a fit score 0-100.`;
 
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: sys },
-          { role: "user", content: userPrompt },
-        ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "return_matches",
-              description: "Return ranked buyer matches",
-              parameters: {
-                type: "object",
-                properties: {
-                  matches: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        buyer_id: { type: "string" },
-                        score: { type: "number" },
-                        reason: { type: "string" },
-                      },
-                      required: ["buyer_id", "score", "reason"],
-                    },
+  const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "google/gemini-3-flash-preview",
+      messages: [
+        { role: "system", content: sys },
+        { role: "user", content: userPrompt },
+      ],
+      tools: [{
+        type: "function",
+        function: {
+          name: "return_matches",
+          description: "Return ranked buyer matches",
+          parameters: {
+            type: "object",
+            properties: {
+              matches: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    buyer_id: { type: "string" },
+                    score: { type: "number" },
+                    reason: { type: "string" },
                   },
+                  required: ["buyer_id", "score", "reason"],
                 },
-                required: ["matches"],
               },
             },
+            required: ["matches"],
           },
-        ],
-        tool_choice: { type: "function", function: { name: "return_matches" } },
-      }),
-    });
+        },
+      }],
+      tool_choice: { type: "function", function: { name: "return_matches" } },
+    }),
+  });
 
-    if (!aiResp.ok) {
-      if (aiResp.status === 429) return json({ error: "Rate limit exceeded, try again shortly." }, 429);
-      if (aiResp.status === 402) return json({ error: "AI credits exhausted. Add funds in Settings → Workspace → Usage." }, 402);
-      const t = await aiResp.text();
-      console.error("AI error", aiResp.status, t);
-      return json({ error: "AI gateway error" }, 500);
-    }
-
-    const aiJson = await aiResp.json();
-    const toolCall = aiJson.choices?.[0]?.message?.tool_calls?.[0];
-    const args = toolCall ? JSON.parse(toolCall.function.arguments) : { matches: [] };
-
-    const byId = new Map(candidates.map((c) => [c.id, c]));
-    const matches = (args.matches || [])
-      .map((m: any) => ({ ...byId.get(m.buyer_id), score: m.score, reason: m.reason }))
-      .filter((m: any) => m.id);
-
-    return json({ matches });
-  } catch (e) {
-    console.error(e);
-    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+  if (!aiResp.ok) {
+    console.error("AI error", aiResp.status, await aiResp.text());
+    return [];
   }
-});
+  const aiJson = await aiResp.json();
+  const toolCall = aiJson.choices?.[0]?.message?.tool_calls?.[0];
+  const args = toolCall ? JSON.parse(toolCall.function.arguments) : { matches: [] };
+  const byId = new Map(candidates.map((c) => [c.id, c]));
+  return (args.matches || [])
+    .map((m: any) => ({ ...byId.get(m.buyer_id), score: m.score, reason: m.reason }))
+    .filter((m: any) => m.id);
+}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
