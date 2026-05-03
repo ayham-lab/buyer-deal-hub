@@ -31,7 +31,10 @@ type Results = {
 
 export default function Finder() {
   const { user } = useAuth();
-  const [address, setAddress] = useState("");
+  const [street, setStreet] = useState("");
+  const [city, setCity] = useState("");
+  const [stateCode, setStateCode] = useState("");
+  const [zip, setZip] = useState("");
   const [propertyType, setPropertyType] = useState("");
   const [priceHint, setPriceHint] = useState("");
   const [loading, setLoading] = useState(false);
