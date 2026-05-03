@@ -14,16 +14,443 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      buyer_archive: {
+        Row: {
+          added_by_user_id: string | null
+          created_at: string
+          email: string | null
+          id: string
+          is_shared: boolean
+          markets: string[] | null
+          name: string
+          phone: string | null
+          price_max: number | null
+          price_min: number | null
+          property_types: string[] | null
+          source: string | null
+        }
+        Insert: {
+          added_by_user_id?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_shared?: boolean
+          markets?: string[] | null
+          name: string
+          phone?: string | null
+          price_max?: number | null
+          price_min?: number | null
+          property_types?: string[] | null
+          source?: string | null
+        }
+        Update: {
+          added_by_user_id?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_shared?: boolean
+          markets?: string[] | null
+          name?: string
+          phone?: string | null
+          price_max?: number | null
+          price_min?: number | null
+          property_types?: string[] | null
+          source?: string | null
+        }
+        Relationships: []
+      }
+      buyers: {
+        Row: {
+          created_at: string
+          criteria_notes: string | null
+          deal_count: number
+          email: string | null
+          id: string
+          is_archived: boolean
+          last_contact_at: string | null
+          markets: string[] | null
+          name: string
+          phone: string | null
+          price_max: number | null
+          price_min: number | null
+          property_types: string[] | null
+          source: string | null
+          tags: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          criteria_notes?: string | null
+          deal_count?: number
+          email?: string | null
+          id?: string
+          is_archived?: boolean
+          last_contact_at?: string | null
+          markets?: string[] | null
+          name: string
+          phone?: string | null
+          price_max?: number | null
+          price_min?: number | null
+          property_types?: string[] | null
+          source?: string | null
+          tags?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          criteria_notes?: string | null
+          deal_count?: number
+          email?: string | null
+          id?: string
+          is_archived?: boolean
+          last_contact_at?: string | null
+          markets?: string[] | null
+          name?: string
+          phone?: string | null
+          price_max?: number | null
+          price_min?: number | null
+          property_types?: string[] | null
+          source?: string | null
+          tags?: string[] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      deal_checklist: {
+        Row: {
+          created_at: string
+          deal_id: string
+          due_date: string | null
+          id: string
+          is_completed: boolean
+          item_text: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          deal_id: string
+          due_date?: string | null
+          id?: string
+          is_completed?: boolean
+          item_text: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          deal_id?: string
+          due_date?: string | null
+          id?: string
+          is_completed?: boolean
+          item_text?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_checklist_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deals: {
+        Row: {
+          arv: number | null
+          asking_price: number | null
+          assignment_fee: number | null
+          buyer_id: string | null
+          city: string | null
+          closing_date: string | null
+          created_at: string
+          emd_amount: number | null
+          emd_received: boolean
+          id: string
+          ip_expiry_date: string | null
+          jv_partner_id: string | null
+          lead_source: string | null
+          notes: string | null
+          property_address: string
+          state: string | null
+          status: Database["public"]["Enums"]["deal_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          arv?: number | null
+          asking_price?: number | null
+          assignment_fee?: number | null
+          buyer_id?: string | null
+          city?: string | null
+          closing_date?: string | null
+          created_at?: string
+          emd_amount?: number | null
+          emd_received?: boolean
+          id?: string
+          ip_expiry_date?: string | null
+          jv_partner_id?: string | null
+          lead_source?: string | null
+          notes?: string | null
+          property_address: string
+          state?: string | null
+          status?: Database["public"]["Enums"]["deal_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          arv?: number | null
+          asking_price?: number | null
+          assignment_fee?: number | null
+          buyer_id?: string | null
+          city?: string | null
+          closing_date?: string | null
+          created_at?: string
+          emd_amount?: number | null
+          emd_received?: boolean
+          id?: string
+          ip_expiry_date?: string | null
+          jv_partner_id?: string | null
+          lead_source?: string | null
+          notes?: string | null
+          property_address?: string
+          state?: string | null
+          status?: Database["public"]["Enums"]["deal_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deals_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "buyers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_jv_partner_id_fkey"
+            columns: ["jv_partner_id"]
+            isOneToOne: false
+            referencedRelation: "jv_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jv_partners: {
+        Row: {
+          company: string | null
+          created_at: string
+          deal_count: number
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          total_assigned_fees: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          deal_count?: number
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          total_assigned_fees?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          deal_count?: number
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          total_assigned_fees?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      kpi_snapshots: {
+        Row: {
+          avg_assignment_fee: number
+          contract_conversion_rate: number
+          created_at: string
+          deals_closed: number
+          deals_opened: number
+          id: string
+          month: number
+          revenue_closed: number
+          revenue_created: number
+          top_lead_source: string | null
+          user_id: string
+          year: number
+        }
+        Insert: {
+          avg_assignment_fee?: number
+          contract_conversion_rate?: number
+          created_at?: string
+          deals_closed?: number
+          deals_opened?: number
+          id?: string
+          month: number
+          revenue_closed?: number
+          revenue_created?: number
+          top_lead_source?: string | null
+          user_id: string
+          year: number
+        }
+        Update: {
+          avg_assignment_fee?: number
+          contract_conversion_rate?: number
+          created_at?: string
+          deals_closed?: number
+          deals_opened?: number
+          id?: string
+          month?: number
+          revenue_closed?: number
+          revenue_created?: number
+          top_lead_source?: string | null
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          ghl_location_id: string | null
+          ghl_user_id: string | null
+          id: string
+          last_active_at: string | null
+          name: string | null
+          subscription_status: Database["public"]["Enums"]["subscription_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          ghl_location_id?: string | null
+          ghl_user_id?: string | null
+          id?: string
+          last_active_at?: string | null
+          name?: string | null
+          subscription_status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          ghl_location_id?: string | null
+          ghl_user_id?: string | null
+          id?: string
+          last_active_at?: string | null
+          name?: string | null
+          subscription_status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          assignee_id: string | null
+          created_at: string
+          deal_id: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          is_completed: boolean
+          priority: Database["public"]["Enums"]["task_priority"]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          created_at?: string
+          deal_id?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_completed?: boolean
+          priority?: Database["public"]["Enums"]["task_priority"]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assignee_id?: string | null
+          created_at?: string
+          deal_id?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_completed?: boolean
+          priority?: Database["public"]["Enums"]["task_priority"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      deal_status: "lead" | "active" | "under_contract" | "closed" | "dead"
+      subscription_status: "active" | "trialing" | "cancelled" | "past_due"
+      task_priority: "low" | "medium" | "high"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +577,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      deal_status: ["lead", "active", "under_contract", "closed", "dead"],
+      subscription_status: ["active", "trialing", "cancelled", "past_due"],
+      task_priority: ["low", "medium", "high"],
+    },
   },
 } as const
