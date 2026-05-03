@@ -62,7 +62,7 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl bg-card border-border">
+      <DialogContent className="max-w-2xl bg-card border-border max-h-[85vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Add Buyer</DialogTitle></DialogHeader>
         <form onSubmit={submit} className="grid grid-cols-2 gap-4">
           <div className="col-span-2"><Label>Name *</Label><Input required value={form.name} onChange={(e) => set("name", e.target.value)} /></div>
