@@ -66,9 +66,9 @@ export function BuyerDrawer({ buyer, onClose, onUpdated }: { buyer: Buyer | null
           </div>
 
           <div>
-            <h4 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Tags</h4>
+            <h4 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Buyer Type</h4>
             <div className="flex gap-1 flex-wrap">
-              {buyer.tags.length ? buyer.tags.map((t) => <Badge key={t} className="bg-primary/20 text-primary border-primary/30">{t}</Badge>) : <span className="text-sm text-muted-foreground">—</span>}
+              {buyer.buyer_types?.length ? buyer.buyer_types.map((t) => <Badge key={t} variant="outline">{t}</Badge>) : <span className="text-sm text-muted-foreground">—</span>}
             </div>
           </div>
 
