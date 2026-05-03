@@ -20,6 +20,10 @@ export default function KPIs() {
   const [deals, setDeals] = useState<any[]>([]);
   const [buyers, setBuyers] = useState<any[]>([]);
   const [range, setRange] = useState("month");
+  const now = new Date();
+  const [customYear, setCustomYear] = useState(now.getFullYear());
+  const [fromMonth, setFromMonth] = useState(now.getMonth());
+  const [toMonth, setToMonth] = useState(now.getMonth());
 
   useEffect(() => {
     if (!user) return;
