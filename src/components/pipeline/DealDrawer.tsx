@@ -9,6 +9,9 @@ import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
+import { DealFiles } from "./DealFiles";
+import { DealBuyerMatch } from "./DealBuyerMatch";
+import { format } from "date-fns";
 
 export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | null; onClose: () => void; onUpdated: () => void }) {
   const { user } = useAuth();
