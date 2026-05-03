@@ -11,6 +11,7 @@ import Pipeline from "./pages/Pipeline";
 import KPIs from "./pages/KPIs";
 import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
+import TitleCompanies from "./pages/TitleCompanies";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/kpis" element={<KPIs />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/title-companies" element={<TitleCompanies />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
