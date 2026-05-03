@@ -59,20 +59,27 @@ export function Sidebar() {
           );
         })}
         {isAdmin && (
-          <NavLink
-            to="/admin"
-            title={collapsed ? "Admin" : undefined}
-            className={cn(
-              "relative flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-medium transition-colors",
-              pathname.startsWith("/admin")
-                ? "bg-sidebar-accent text-white"
-                : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-white"
+          <div className="pt-3 mt-3 border-t border-sidebar-border">
+            {!collapsed && (
+              <div className="px-3 pb-1 text-[10px] uppercase tracking-wider text-sidebar-foreground/60 font-semibold">
+                Admin
+              </div>
             )}
-          >
-            {pathname.startsWith("/admin") && <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] bg-primary rounded-r" />}
-            <ShieldCheck className="h-[18px] w-[18px] shrink-0" />
-            {!collapsed && "Admin"}
-          </NavLink>
+            <NavLink
+              to="/admin"
+              title={collapsed ? "Admin Console" : undefined}
+              className={cn(
+                "relative flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-medium transition-colors",
+                pathname.startsWith("/admin")
+                  ? "bg-primary/15 text-primary"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-white"
+              )}
+            >
+              {pathname.startsWith("/admin") && <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] bg-primary rounded-r" />}
+              <ShieldCheck className="h-[18px] w-[18px] shrink-0" />
+              {!collapsed && <span className="truncate">Admin Console</span>}
+            </NavLink>
+          </div>
         )}
       </nav>
 
