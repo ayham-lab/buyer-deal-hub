@@ -2,10 +2,9 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MapPin, Sparkles, Search, Loader2 } from "lucide-react";
+import { MapPin, Sparkles, Search, Loader2, Users, Archive, Globe } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
@@ -23,31 +22,37 @@ type Match = {
   reason: string;
 };
 
+type Results = {
+  rolodex: Match[];
+  archive: Match[];
+  public: Match[];
+  public_available: boolean;
+};
+
 export default function Finder() {
   const { user } = useAuth();
   const [address, setAddress] = useState("");
   const [propertyType, setPropertyType] = useState("");
   const [priceHint, setPriceHint] = useState("");
-  const [source, setSource] = useState<"archive" | "mine" | "skiptraced">("archive");
   const [loading, setLoading] = useState(false);
-  const [matches, setMatches] = useState<Match[]>([]);
+  const [results, setResults] = useState<Results | null>(null);
 
-  async function findMatches(useSource: "archive" | "mine" | "skiptraced") {
+  async function findMatches() {
     if (!address.trim()) {
       toast.error("Enter a property address");
       return;
     }
-    setSource(useSource);
     setLoading(true);
-    setMatches([]);
+    setResults(null);
     try {
       const { data, error } = await supabase.functions.invoke("find-buyers", {
-        body: { address, source: useSource, propertyType, priceHint },
+        body: { address, propertyType, priceHint },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      setMatches(data?.matches || []);
-      if (!data?.matches?.length) toast.info("No matches found.");
+      setResults(data as Results);
+      const total = (data?.rolodex?.length || 0) + (data?.archive?.length || 0) + (data?.public?.length || 0);
+      if (!total) toast.info("No matches found.");
     } catch (e: any) {
       toast.error(e.message || "Failed to find buyers");
     } finally {
@@ -76,103 +81,96 @@ export default function Finder() {
     <AppLayout>
       <PageHeader
         title="Buyer Finder"
-        subtitle="Enter a property address — we'll match the best buyers from the archive or your own list using AI"
+        subtitle="Enter a property address — we'll match the best buyers across all your sources"
       />
       <div className="p-6 lg:p-8 space-y-6">
         <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
           <div className="grid gap-3 md:grid-cols-[1fr,200px,200px]">
             <div className="relative">
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                className="pl-9"
-                placeholder="123 Main St, Atlanta, GA"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-              />
+              <Input className="pl-9" placeholder="123 Main St, Atlanta, GA"
+                value={address} onChange={(e) => setAddress(e.target.value)} />
             </div>
-            <Input
-              placeholder="Property type (optional)"
-              value={propertyType}
-              onChange={(e) => setPropertyType(e.target.value)}
-            />
-            <Input
-              placeholder="Est. price (optional)"
-              value={priceHint}
-              onChange={(e) => setPriceHint(e.target.value)}
-            />
+            <Input placeholder="Property type (optional)" value={propertyType} onChange={(e) => setPropertyType(e.target.value)} />
+            <Input placeholder="Est. price (optional)" value={priceHint} onChange={(e) => setPriceHint(e.target.value)} />
           </div>
-          <div className="flex flex-wrap gap-2 mt-4">
-            <Button
-              onClick={() => findMatches("archive")}
-              disabled={loading}
-              className="bg-primary hover:bg-primary-hover text-primary-foreground"
-            >
-              {loading && source === "archive" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-              Match from Archive
-            </Button>
-            <Button
-              onClick={() => findMatches("mine")}
-              disabled={loading}
-              variant="outline"
-            >
-              {loading && source === "mine" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              AI Match from My Buyers
-            </Button>
-            <Button
-              onClick={() => findMatches("skiptraced")}
-              disabled={loading}
-              variant="outline"
-            >
-              {loading && source === "skiptraced" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-              Search With Local Skiptraced Buyers
+          <div className="mt-4">
+            <Button onClick={findMatches} disabled={loading}
+              className="bg-primary hover:bg-primary-hover text-primary-foreground">
+              {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
+              Match with Buyers
             </Button>
           </div>
         </div>
 
-        {matches.length === 0 ? (
+        {!results ? (
           <div className="empty-state">
             <Sparkles className="h-10 w-10 text-primary" />
             <h3 className="text-lg font-semibold">Find the perfect buyer</h3>
             <p className="text-sm text-muted-foreground">
-              Enter a property address above and we'll rank the best buyer matches.
+              Enter a property address above and we'll rank buyer matches from your Rolodex, the Buyer Archive, and public data.
             </p>
           </div>
         ) : (
-          <div className="grid gap-3">
-            {matches.map((b, i) => (
-              <div key={b.id} className="bg-card border border-border rounded-xl p-4 shadow-sm flex items-start gap-4">
-                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-primary font-bold">{i + 1}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h4 className="font-semibold">{b.name}</h4>
-                    <Badge variant="secondary">Score {Math.round(b.score)}</Badge>
-                    {b.markets?.slice(0, 3).map((m) => (
-                      <Badge key={m} variant="outline">{m}</Badge>
-                    ))}
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">{b.reason}</p>
-                  <div className="text-xs text-muted-foreground mt-2 flex gap-3 flex-wrap">
-                    {b.email && <span>{b.email}</span>}
-                    {b.phone && <span>{b.phone}</span>}
-                    {(b.price_min || b.price_max) && (
-                      <span>
-                        ${b.price_min?.toLocaleString() || "0"} – ${b.price_max?.toLocaleString() || "∞"}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                {source === "archive" && (
-                  <Button size="sm" onClick={() => addToMine(b)} className="bg-primary hover:bg-primary-hover text-primary-foreground">
-                    Add
-                  </Button>
-                )}
-              </div>
-            ))}
+          <div className="grid gap-6 lg:grid-cols-3">
+            <ResultGroup title="My Buyer Rolodex" icon={<Users className="h-4 w-4" />} matches={results.rolodex} canAdd={false} onAdd={addToMine} />
+            <ResultGroup title="Buyer Archive" icon={<Archive className="h-4 w-4" />} matches={results.archive} canAdd onAdd={addToMine} />
+            <ResultGroup
+              title="Public Data Buyers"
+              icon={<Globe className="h-4 w-4" />}
+              matches={results.public}
+              canAdd
+              onAdd={addToMine}
+              emptyHint={!results.public_available ? "Public data source not connected yet." : undefined}
+            />
           </div>
         )}
       </div>
     </AppLayout>
+  );
+}
+
+function ResultGroup({
+  title, icon, matches, canAdd, onAdd, emptyHint,
+}: {
+  title: string; icon: React.ReactNode; matches: Match[]; canAdd: boolean;
+  onAdd: (m: Match) => void; emptyHint?: string;
+}) {
+  return (
+    <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="text-primary">{icon}</div>
+        <h3 className="font-semibold text-sm">{title}</h3>
+        <Badge variant="secondary" className="ml-auto text-[10px]">{matches.length}</Badge>
+      </div>
+      {matches.length === 0 ? (
+        <p className="text-xs text-muted-foreground py-6 text-center">
+          {emptyHint || "No matches in this source."}
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {matches.map((b, i) => (
+            <div key={b.id} className="border border-border rounded-lg p-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground w-4">#{i + 1}</span>
+                <span className="font-medium text-sm flex-1 truncate">{b.name}</span>
+                <Badge variant="outline" className="text-[10px]">{Math.round(b.score)}</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">{b.reason}</p>
+              <div className="flex flex-wrap gap-1 mt-2">
+                {b.markets?.slice(0, 2).map((m) => (
+                  <Badge key={m} variant="outline" className="text-[10px]">{m}</Badge>
+                ))}
+              </div>
+              {canAdd && (
+                <Button size="sm" variant="outline" onClick={() => onAdd(b)} className="mt-2 h-7 text-xs w-full">
+                  Add to Rolodex
+                </Button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
