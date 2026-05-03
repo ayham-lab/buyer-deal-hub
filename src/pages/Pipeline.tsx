@@ -58,19 +58,19 @@ export default function Pipeline() {
         title="Deal Pipeline"
         subtitle={`${deals.length} deals`}
         actions={
-          <Button onClick={() => setShowAdd(true)} className="bg-primary hover:bg-primary-hover">
+          <Button onClick={() => setShowAdd(true)} className="bg-primary hover:bg-primary-hover text-primary-foreground">
             <Plus className="h-4 w-4 mr-1" /> Add Deal
           </Button>
         }
       />
-      <div className="p-8">
+      <div className="p-6 lg:p-8">
         <Tabs defaultValue="kanban">
-          <TabsList className="bg-secondary">
+          <TabsList>
             <TabsTrigger value="kanban"><LayoutGrid className="h-4 w-4 mr-1" />Kanban</TabsTrigger>
             <TabsTrigger value="list"><List className="h-4 w-4 mr-1" />List</TabsTrigger>
           </TabsList>
           <TabsContent value="kanban" className="mt-6">
-            {loading ? <Skeleton className="h-96 w-full bg-secondary" /> :
+            {loading ? <Skeleton className="h-96 w-full" /> :
               <KanbanBoard deals={deals} onStatusChange={updateStatus} onSelect={setActiveId} />}
           </TabsContent>
           <TabsContent value="list" className="mt-6">
