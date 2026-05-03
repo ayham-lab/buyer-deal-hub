@@ -1,4 +1,7 @@
-import { corsHeaders } from "@supabase/supabase-js/cors";
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 // GHL SSO decryption: GHL encrypts the SSO payload using AES-256-CBC with the
 // GHL_APP_SSO_KEY shared secret. The token format is "iv:ciphertext" hex-encoded
