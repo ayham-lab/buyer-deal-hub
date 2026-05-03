@@ -1,4 +1,4 @@
-import { Search, HelpCircle, Bell, ChevronDown, LogOut, Building2, ShieldCheck } from "lucide-react";
+import { Search, HelpCircle, Bell, ChevronDown, LogOut, Building2, ShieldCheck, UserCog } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
