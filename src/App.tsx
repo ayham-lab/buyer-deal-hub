@@ -10,6 +10,7 @@ import Finder from "./pages/Finder";
 import Pipeline from "./pages/Pipeline";
 import KPIs from "./pages/KPIs";
 import Admin from "./pages/Admin";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
