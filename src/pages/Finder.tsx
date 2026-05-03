@@ -97,14 +97,22 @@ export default function Finder() {
       />
       <div className="p-6 lg:p-8 space-y-6">
         <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-          <div className="grid gap-3 md:grid-cols-[1fr,200px,200px]">
-            <div className="relative">
+          <div className="grid gap-3 md:grid-cols-12">
+            <div className="relative md:col-span-5">
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input className="pl-9" placeholder="123 Main St, Atlanta, GA"
-                value={address} onChange={(e) => setAddress(e.target.value)} />
+              <Input className="pl-9" placeholder="Street address *"
+                value={street} onChange={(e) => setStreet(e.target.value)} />
             </div>
-            <Input placeholder="Property type (optional)" value={propertyType} onChange={(e) => setPropertyType(e.target.value)} />
-            <Input placeholder="Est. price (optional)" value={priceHint} onChange={(e) => setPriceHint(e.target.value)} />
+            <Input className="md:col-span-3" placeholder="City *" value={city} onChange={(e) => setCity(e.target.value)} />
+            <Input className="md:col-span-2" placeholder="State *" maxLength={2}
+              value={stateCode}
+              onChange={(e) => setStateCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, ""))} />
+            <Input className="md:col-span-2" placeholder="Zip" maxLength={5} inputMode="numeric"
+              value={zip} onChange={(e) => setZip(e.target.value.replace(/\D/g, ""))} />
+            <Input className="md:col-span-6" placeholder="Property type (optional)"
+              value={propertyType} onChange={(e) => setPropertyType(e.target.value)} />
+            <Input className="md:col-span-6" placeholder="Est. price (optional)"
+              value={priceHint} onChange={(e) => setPriceHint(e.target.value)} />
           </div>
           <div className="mt-4">
             <Button onClick={findMatches} disabled={loading}
