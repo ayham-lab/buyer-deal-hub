@@ -198,10 +198,6 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
           <div className="col-span-2"><Label>Previous Deals</Label><Textarea placeholder="Describe past closed deals" value={form.previous_deals} onChange={(e) => set("previous_deals", e.target.value)} /></div>
           <div className="col-span-2"><Label>Experience</Label><Textarea placeholder="Years investing, focus areas, etc." value={form.experience} onChange={(e) => set("experience", e.target.value)} /></div>
 
-          <div className="col-span-2 flex items-center gap-2">
-            <Checkbox id="archive" checked={form.add_to_archive} onCheckedChange={(v) => set("add_to_archive", !!v)} />
-            <Label htmlFor="archive" className="cursor-pointer">Also add to system-wide buyer archive</Label>
-          </div>
           <div className="col-span-2 flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
             <Button type="submit" disabled={busy} className="bg-primary hover:bg-primary-hover">Add Buyer</Button>
