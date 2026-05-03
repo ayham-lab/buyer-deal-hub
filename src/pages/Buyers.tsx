@@ -173,6 +173,7 @@ export default function Buyers() {
       </div>
 
       <AddBuyerModal open={showAdd} onClose={() => setShowAdd(false)} onCreated={load} />
+      <ImportBuyersModal open={showImport} onClose={() => setShowImport(false)} onImported={load} />
       <BuyerDrawer buyer={active} onClose={() => setActive(null)} onUpdated={load} />
     </AppLayout>
   );
