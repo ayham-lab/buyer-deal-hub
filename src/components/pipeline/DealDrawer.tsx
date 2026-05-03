@@ -108,9 +108,26 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
               <Checkbox checked={deal.emd_received} onCheckedChange={(v) => saveField("emd_received", !!v)} />
               <span className="text-sm">EMD Received</span>
             </div>
+
+            <DealBuyerMatch dealId={dealId} buyerId={deal.buyer_id} onChange={(id) => setDeal({ ...deal, buyer_id: id })} />
+
+            <div className="rounded-lg border border-border p-3 bg-muted/30">
+              <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Timeline</div>
+              <ul className="space-y-1.5 text-sm">
+                <TimelineRow label="Entered system" value={deal.created_at} />
+                <TimelineRow label="EMD received" value={deal.emd_received_at} />
+                <TimelineRow label="Assigned" value={deal.assigned_at} />
+                <TimelineRow label="Closed" value={deal.closed_at} />
+              </ul>
+            </div>
+
             <Button onClick={deleteDeal} variant="outline" className="text-destructive border-destructive/30 mt-4">
               <Trash2 className="h-4 w-4 mr-1" /> Delete Deal
             </Button>
+          </TabsContent>
+
+          <TabsContent value="files" className="mt-4">
+            <DealFiles dealId={dealId} />
           </TabsContent>
 
           <TabsContent value="checklist" className="space-y-2 mt-4">
