@@ -50,8 +50,8 @@ Deno.serve(async (req) => {
     const archive = archiveResp.data || [];
 
     const [rolodexMatches, archiveMatches] = await Promise.all([
-      rankWithAI(rolodex, address, propertyType, priceHint, LOVABLE_API_KEY),
-      rankWithAI(archive, address, propertyType, priceHint, LOVABLE_API_KEY),
+      rankWithAI(rolodex, address, ctx, propertyType, priceHint, LOVABLE_API_KEY),
+      rankWithAI(archive, address, ctx, propertyType, priceHint, LOVABLE_API_KEY),
     ]);
 
     // Public data buyers: not connected yet — return empty group with a flag
