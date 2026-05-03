@@ -61,59 +61,86 @@ export type Database = {
       }
       buyers: {
         Row: {
+          buyer_frequency: string[]
+          buyer_status: Database["public"]["Enums"]["buyer_status"]
+          buyer_types: string[]
+          company_name: string | null
           created_at: string
           criteria_notes: string | null
           deal_count: number
           email: string | null
+          experience: string | null
+          first_name: string | null
           id: string
           is_archived: boolean
           last_contact_at: string | null
+          last_name: string | null
           markets: string[] | null
           name: string
+          other_property_type: string | null
           phone: string | null
+          previous_deals: string | null
           price_max: number | null
           price_min: number | null
+          proof_of_funds_files: string[]
           property_types: string[] | null
           source: string | null
-          tags: string[] | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          buyer_frequency?: string[]
+          buyer_status?: Database["public"]["Enums"]["buyer_status"]
+          buyer_types?: string[]
+          company_name?: string | null
           created_at?: string
           criteria_notes?: string | null
           deal_count?: number
           email?: string | null
+          experience?: string | null
+          first_name?: string | null
           id?: string
           is_archived?: boolean
           last_contact_at?: string | null
+          last_name?: string | null
           markets?: string[] | null
           name: string
+          other_property_type?: string | null
           phone?: string | null
+          previous_deals?: string | null
           price_max?: number | null
           price_min?: number | null
+          proof_of_funds_files?: string[]
           property_types?: string[] | null
           source?: string | null
-          tags?: string[] | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          buyer_frequency?: string[]
+          buyer_status?: Database["public"]["Enums"]["buyer_status"]
+          buyer_types?: string[]
+          company_name?: string | null
           created_at?: string
           criteria_notes?: string | null
           deal_count?: number
           email?: string | null
+          experience?: string | null
+          first_name?: string | null
           id?: string
           is_archived?: boolean
           last_contact_at?: string | null
+          last_name?: string | null
           markets?: string[] | null
           name?: string
+          other_property_type?: string | null
           phone?: string | null
+          previous_deals?: string | null
           price_max?: number | null
           price_min?: number | null
+          proof_of_funds_files?: string[]
           property_types?: string[] | null
           source?: string | null
-          tags?: string[] | null
           updated_at?: string
           user_id?: string
         }
@@ -448,6 +475,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      buyer_status: "not_vetted" | "vetted" | "repeat" | "recurring"
       deal_status: "lead" | "active" | "under_contract" | "closed" | "dead"
       subscription_status: "active" | "trialing" | "cancelled" | "past_due"
       task_priority: "low" | "medium" | "high"
@@ -579,6 +607,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      buyer_status: ["not_vetted", "vetted", "repeat", "recurring"],
       deal_status: ["lead", "active", "under_contract", "closed", "dead"],
       subscription_status: ["active", "trialing", "cancelled", "past_due"],
       task_priority: ["low", "medium", "high"],
