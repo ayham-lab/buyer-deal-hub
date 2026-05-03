@@ -74,6 +74,11 @@ export function TopBar() {
             <div className="text-xs text-muted-foreground truncate">{profile?.email}</div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link to="/profile" className="cursor-pointer">
+              <UserCog className="h-4 w-4 mr-2" /> Profile & Account
+            </Link>
+          </DropdownMenuItem>
           {isAdmin && (
             <DropdownMenuItem asChild>
               <Link to="/admin" className="cursor-pointer">
