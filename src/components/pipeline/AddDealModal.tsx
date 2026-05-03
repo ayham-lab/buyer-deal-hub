@@ -22,18 +22,22 @@ export function AddDealModal({ open, onClose, onCreated }: { open: boolean; onCl
   const { user } = useAuth();
   const [busy, setBusy] = useState(false);
   const [titleCos, setTitleCos] = useState<{ id: string; name: string }[]>([]);
+  const [owners, setOwners] = useState<{ user_id: string; name: string | null; email: string | null }[]>([]);
   const [form, setForm] = useState({
     property_address: "", status: "lead",
     asking_price: "", contract_price: "", minimum_sale_price: "",
     arv: "",
     ip_expiry_date: "", closing_date: "", lead_source: "", jv_partner_name: "",
-    title_company_id: "",
+    title_company_id: "", owner_id: "",
   });
 
   useEffect(() => {
     if (!open || !user) return;
     supabase.from("title_companies").select("id,name").eq("user_id", user.id).order("name")
       .then(({ data }) => setTitleCos((data as any) || []));
+    supabase.from("profiles").select("user_id,name,email").order("name")
+      .then(({ data }) => setOwners((data as any) || []));
+    setForm((f) => ({ ...f, owner_id: f.owner_id || user.id }));
   }, [open, user]);
 
   function set<K extends keyof typeof form>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
@@ -60,6 +64,7 @@ export function AddDealModal({ open, onClose, onCreated }: { open: boolean; onCl
       lead_source: form.lead_source || null,
       jv_partner_name: form.jv_partner_name || null,
       title_company_id: form.title_company_id || null,
+      owner_id: form.owner_id || user.id,
     } as any).select().single();
 
     if (error) { toast.error(error.message); setBusy(false); return; }
