@@ -5,7 +5,13 @@ import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { TrendingUp, DollarSign, Briefcase, Target } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { format, startOfMonth, subDays, subMonths, startOfYear } from "date-fns";
+import { format, startOfMonth, endOfMonth, subDays, subMonths, startOfYear } from "date-fns";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 const COLORS = ["#CC0000", "#FF1A1A", "#FF6B6B", "#FFA07A", "#FFD93D", "#6BCB77"];
 
@@ -14,6 +20,10 @@ export default function KPIs() {
   const [deals, setDeals] = useState<any[]>([]);
   const [buyers, setBuyers] = useState<any[]>([]);
   const [range, setRange] = useState("month");
+  const now = new Date();
+  const [customYear, setCustomYear] = useState(now.getFullYear());
+  const [fromMonth, setFromMonth] = useState(now.getMonth());
+  const [toMonth, setToMonth] = useState(now.getMonth());
 
   useEffect(() => {
     if (!user) return;
@@ -23,18 +33,32 @@ export default function KPIs() {
     ]).then(([d, b]) => { setDeals(d.data || []); setBuyers(b.data || []); });
   }, [user]);
 
-  const cutoff = useMemo(() => {
-    const now = new Date();
+  const { from, to } = useMemo(() => {
+    const n = new Date();
     switch (range) {
-      case "month": return startOfMonth(now);
-      case "last": return startOfMonth(subMonths(now, 1));
-      case "90": return subDays(now, 90);
-      case "year": return startOfYear(now);
-      default: return new Date(0);
+      case "month": return { from: startOfMonth(n), to: n };
+      case "last": {
+        const lm = subMonths(n, 1);
+        return { from: startOfMonth(lm), to: endOfMonth(lm) };
+      }
+      case "90": return { from: subDays(n, 90), to: n };
+      case "year": return { from: startOfYear(n), to: n };
+      case "custom": {
+        const lo = Math.min(fromMonth, toMonth);
+        const hi = Math.max(fromMonth, toMonth);
+        return {
+          from: startOfMonth(new Date(customYear, lo, 1)),
+          to: endOfMonth(new Date(customYear, hi, 1)),
+        };
+      }
+      default: return { from: new Date(0), to: n };
     }
-  }, [range]);
+  }, [range, fromMonth, toMonth, customYear]);
 
-  const filtered = deals.filter((d) => new Date(d.created_at) >= cutoff);
+  const filtered = deals.filter((d) => {
+    const c = new Date(d.created_at);
+    return c >= from && c <= to;
+  });
   const closed = filtered.filter((d) => d.status === "closed");
   const active = deals.filter((d) => ["active", "under_contract"].includes(d.status));
   const revenueCreated = filtered.reduce((s, d) => s + (Number(d.assignment_fee) || 0), 0);
@@ -78,16 +102,69 @@ export default function KPIs() {
       <PageHeader
         title="KPI Dashboard"
         actions={
-          <Select value={range} onValueChange={setRange}>
-            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="month">This Month</SelectItem>
-              <SelectItem value="last">Last Month</SelectItem>
-              <SelectItem value="90">Last 90 Days</SelectItem>
-              <SelectItem value="year">This Year</SelectItem>
-              <SelectItem value="all">All Time</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <Select value={range} onValueChange={setRange}>
+              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="month">This Month</SelectItem>
+                <SelectItem value="last">Last Month</SelectItem>
+                <SelectItem value="90">Last 90 Days</SelectItem>
+                <SelectItem value="year">This Year</SelectItem>
+                <SelectItem value="all">All Time</SelectItem>
+                <SelectItem value="custom">Custom Range</SelectItem>
+              </SelectContent>
+            </Select>
+            {range === "custom" && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("justify-start text-left font-normal")}>
+                    <CalendarIcon className="h-4 w-4 mr-2" />
+                    {MONTHS[Math.min(fromMonth, toMonth)]} – {MONTHS[Math.max(fromMonth, toMonth)]} {customYear}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72 p-4 space-y-3" align="end">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Year</span>
+                    <Select value={String(customYear)} onValueChange={(v) => setCustomYear(Number(v))}>
+                      <SelectTrigger className="w-24 h-8"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 6 }).map((_, i) => {
+                          const y = now.getFullYear() - i;
+                          return <SelectItem key={y} value={String(y)}>{y}</SelectItem>;
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-1">From</div>
+                    <div className="grid grid-cols-4 gap-1">
+                      {MONTHS.map((m, i) => (
+                        <button key={m} onClick={() => setFromMonth(i)}
+                          className={cn("text-xs py-1.5 rounded border transition",
+                            i === fromMonth ? "bg-primary text-primary-foreground border-primary"
+                              : "border-border text-muted-foreground hover:border-primary/40")}>
+                          {m}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-1">To</div>
+                    <div className="grid grid-cols-4 gap-1">
+                      {MONTHS.map((m, i) => (
+                        <button key={m} onClick={() => setToMonth(i)}
+                          className={cn("text-xs py-1.5 rounded border transition",
+                            i === toMonth ? "bg-primary text-primary-foreground border-primary"
+                              : "border-border text-muted-foreground hover:border-primary/40")}>
+                          {m}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
         }
       />
       <div className="p-8 space-y-6">
