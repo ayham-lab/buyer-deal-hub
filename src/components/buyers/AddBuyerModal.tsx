@@ -59,7 +59,7 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
   const [busy, setBusy] = useState(false);
   const initial = {
     first_name: "", last_name: "", email: "", phone: "", company_name: "",
-    markets: "",
+    markets: [] as string[],
     property_types: [] as string[], other_property_type: "",
     buyer_status: "not_vetted",
     buyer_types: [] as string[],
