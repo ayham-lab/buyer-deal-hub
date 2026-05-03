@@ -106,7 +106,7 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
       email: form.email || null,
       phone: form.phone || null,
       company_name: form.company_name || null,
-      markets: form.markets.split(",").map((s) => s.trim()).filter(Boolean),
+      markets: form.markets,
       property_types: form.property_types,
       other_property_type: form.other_property_type || null,
       buyer_status: form.buyer_status as any,
