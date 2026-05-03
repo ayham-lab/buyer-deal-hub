@@ -33,18 +33,32 @@ export default function KPIs() {
     ]).then(([d, b]) => { setDeals(d.data || []); setBuyers(b.data || []); });
   }, [user]);
 
-  const cutoff = useMemo(() => {
-    const now = new Date();
+  const { from, to } = useMemo(() => {
+    const n = new Date();
     switch (range) {
-      case "month": return startOfMonth(now);
-      case "last": return startOfMonth(subMonths(now, 1));
-      case "90": return subDays(now, 90);
-      case "year": return startOfYear(now);
-      default: return new Date(0);
+      case "month": return { from: startOfMonth(n), to: n };
+      case "last": {
+        const lm = subMonths(n, 1);
+        return { from: startOfMonth(lm), to: endOfMonth(lm) };
+      }
+      case "90": return { from: subDays(n, 90), to: n };
+      case "year": return { from: startOfYear(n), to: n };
+      case "custom": {
+        const lo = Math.min(fromMonth, toMonth);
+        const hi = Math.max(fromMonth, toMonth);
+        return {
+          from: startOfMonth(new Date(customYear, lo, 1)),
+          to: endOfMonth(new Date(customYear, hi, 1)),
+        };
+      }
+      default: return { from: new Date(0), to: n };
     }
-  }, [range]);
+  }, [range, fromMonth, toMonth, customYear]);
 
-  const filtered = deals.filter((d) => new Date(d.created_at) >= cutoff);
+  const filtered = deals.filter((d) => {
+    const c = new Date(d.created_at);
+    return c >= from && c <= to;
+  });
   const closed = filtered.filter((d) => d.status === "closed");
   const active = deals.filter((d) => ["active", "under_contract"].includes(d.status));
   const revenueCreated = filtered.reduce((s, d) => s + (Number(d.assignment_fee) || 0), 0);
