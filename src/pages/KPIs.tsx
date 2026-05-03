@@ -102,16 +102,69 @@ export default function KPIs() {
       <PageHeader
         title="KPI Dashboard"
         actions={
-          <Select value={range} onValueChange={setRange}>
-            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="month">This Month</SelectItem>
-              <SelectItem value="last">Last Month</SelectItem>
-              <SelectItem value="90">Last 90 Days</SelectItem>
-              <SelectItem value="year">This Year</SelectItem>
-              <SelectItem value="all">All Time</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <Select value={range} onValueChange={setRange}>
+              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="month">This Month</SelectItem>
+                <SelectItem value="last">Last Month</SelectItem>
+                <SelectItem value="90">Last 90 Days</SelectItem>
+                <SelectItem value="year">This Year</SelectItem>
+                <SelectItem value="all">All Time</SelectItem>
+                <SelectItem value="custom">Custom Range</SelectItem>
+              </SelectContent>
+            </Select>
+            {range === "custom" && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("justify-start text-left font-normal")}>
+                    <CalendarIcon className="h-4 w-4 mr-2" />
+                    {MONTHS[Math.min(fromMonth, toMonth)]} – {MONTHS[Math.max(fromMonth, toMonth)]} {customYear}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72 p-4 space-y-3" align="end">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Year</span>
+                    <Select value={String(customYear)} onValueChange={(v) => setCustomYear(Number(v))}>
+                      <SelectTrigger className="w-24 h-8"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 6 }).map((_, i) => {
+                          const y = now.getFullYear() - i;
+                          return <SelectItem key={y} value={String(y)}>{y}</SelectItem>;
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-1">From</div>
+                    <div className="grid grid-cols-4 gap-1">
+                      {MONTHS.map((m, i) => (
+                        <button key={m} onClick={() => setFromMonth(i)}
+                          className={cn("text-xs py-1.5 rounded border transition",
+                            i === fromMonth ? "bg-primary text-primary-foreground border-primary"
+                              : "border-border text-muted-foreground hover:border-primary/40")}>
+                          {m}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-1">To</div>
+                    <div className="grid grid-cols-4 gap-1">
+                      {MONTHS.map((m, i) => (
+                        <button key={m} onClick={() => setToMonth(i)}
+                          className={cn("text-xs py-1.5 rounded border transition",
+                            i === toMonth ? "bg-primary text-primary-foreground border-primary"
+                              : "border-border text-muted-foreground hover:border-primary/40")}>
+                          {m}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
         }
       />
       <div className="p-8 space-y-6">
