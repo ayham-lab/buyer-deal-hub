@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { X, Upload } from "lucide-react";
+import { MarketsInput } from "./MarketsInput";
 
 const PROPERTY_TYPES = ["SFH", "MFH 2-4", "MFH 5+", "Commercial", "Land", "Mobile"];
 const BUYER_TYPES = ["Flipper", "Landlord", "Developer", "Section 8", "Hedge Fund", "Airbnb / Rooming House", "Padsplit", "Mobile Homes"];
@@ -58,7 +59,7 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
   const [busy, setBusy] = useState(false);
   const initial = {
     first_name: "", last_name: "", email: "", phone: "", company_name: "",
-    markets: "",
+    markets: [] as string[],
     property_types: [] as string[], other_property_type: "",
     buyer_status: "not_vetted",
     buyer_types: [] as string[],
@@ -105,7 +106,7 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
       email: form.email || null,
       phone: form.phone || null,
       company_name: form.company_name || null,
-      markets: form.markets.split(",").map((s) => s.trim()).filter(Boolean),
+      markets: form.markets,
       property_types: form.property_types,
       other_property_type: form.other_property_type || null,
       buyer_status: form.buyer_status as any,
@@ -147,7 +148,7 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
           <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => set("phone", e.target.value)} /></div>
           <div className="col-span-2"><Label>Company Name</Label><Input value={form.company_name} onChange={(e) => set("company_name", e.target.value)} /></div>
 
-          <div className="col-span-2"><Label>Markets (comma-separated)</Label><Input value={form.markets} onChange={(e) => set("markets", e.target.value)} placeholder="Atlanta, Dallas" /></div>
+          <MarketsInput value={form.markets} onChange={(v) => set("markets", v)} />
 
           <MultiChips label="Property Types" options={PROPERTY_TYPES} value={form.property_types} onChange={(v) => set("property_types", v)}
             allowOther otherValue={form.other_property_type} onOtherChange={(v) => set("other_property_type", v)} />
