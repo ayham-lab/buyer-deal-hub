@@ -19,6 +19,8 @@ export default function KPIs() {
   const { user } = useAuth();
   const [deals, setDeals] = useState<any[]>([]);
   const [buyers, setBuyers] = useState<any[]>([]);
+  const [owners, setOwners] = useState<{ user_id: string; name: string | null; email: string | null }[]>([]);
+  const [ownerFilter, setOwnerFilter] = useState("all");
   const [range, setRange] = useState("month");
   const now = new Date();
   const [customYear, setCustomYear] = useState(now.getFullYear());
@@ -30,7 +32,8 @@ export default function KPIs() {
     Promise.all([
       supabase.from("deals").select("*").eq("user_id", user.id),
       supabase.from("buyers").select("id, created_at").eq("user_id", user.id),
-    ]).then(([d, b]) => { setDeals(d.data || []); setBuyers(b.data || []); });
+      supabase.from("profiles").select("user_id,name,email").order("name"),
+    ]).then(([d, b, o]) => { setDeals(d.data || []); setBuyers(b.data || []); setOwners((o.data as any) || []); });
   }, [user]);
 
   const { from, to } = useMemo(() => {
