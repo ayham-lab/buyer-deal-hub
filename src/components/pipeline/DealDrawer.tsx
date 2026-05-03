@@ -20,19 +20,21 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
   const [checklist, setChecklist] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [titleCos, setTitleCos] = useState<{ id: string; name: string }[]>([]);
+  const [owners, setOwners] = useState<{ user_id: string; name: string | null; email: string | null }[]>([]);
   const [newTask, setNewTask] = useState("");
   const [newCheck, setNewCheck] = useState("");
 
   useEffect(() => {
     if (!dealId) { setDeal(null); return; }
     (async () => {
-      const [{ data: d }, { data: c }, { data: t }, { data: tc }] = await Promise.all([
+      const [{ data: d }, { data: c }, { data: t }, { data: tc }, { data: ow }] = await Promise.all([
         supabase.from("deals").select("*").eq("id", dealId).single(),
         supabase.from("deal_checklist").select("*").eq("deal_id", dealId).order("sort_order"),
         supabase.from("tasks").select("*").eq("deal_id", dealId).order("created_at", { ascending: false }),
         user ? supabase.from("title_companies").select("id,name").eq("user_id", user.id).order("name") : Promise.resolve({ data: [] as any }),
+        supabase.from("profiles").select("user_id,name,email").order("name"),
       ]);
-      setDeal(d); setChecklist(c || []); setTasks(t || []); setTitleCos((tc as any) || []);
+      setDeal(d); setChecklist(c || []); setTasks(t || []); setTitleCos((tc as any) || []); setOwners((ow as any) || []);
     })();
   }, [dealId, user]);
 
@@ -117,6 +119,21 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
                   {titleCos.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-[11px] uppercase tracking-wider text-muted-foreground">Deal Owner (Dispo Manager)</label>
+              <Select
+                value={deal.owner_id || "none"}
+                onValueChange={(v) => saveField("owner_id", v === "none" ? null : v)}
+              >
+                <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Unassigned</SelectItem>
+                  {owners.map((o) => (
+                    <SelectItem key={o.user_id} value={o.user_id}>{o.name || o.email || o.user_id.slice(0, 8)}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
