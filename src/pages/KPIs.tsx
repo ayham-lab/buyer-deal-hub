@@ -247,7 +247,6 @@ export default function KPIs() {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
 
           <div className="bg-card border border-border rounded-lg p-5 lg:col-span-2">
             <h3 className="text-sm font-semibold mb-4">Performance by Dispo Manager</h3>
