@@ -184,17 +184,64 @@ export type Database = {
           },
         ]
       }
+      deal_files: {
+        Row: {
+          category: string
+          created_at: string
+          deal_id: string
+          file_name: string
+          file_path: string
+          id: string
+          mime_type: string | null
+          size_bytes: number | null
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          deal_id: string
+          file_name: string
+          file_path: string
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          deal_id?: string
+          file_name?: string
+          file_path?: string
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_files_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deals: {
         Row: {
           arv: number | null
           asking_price: number | null
+          assigned_at: string | null
           assignment_fee: number | null
           buyer_id: string | null
           city: string | null
+          closed_at: string | null
           closing_date: string | null
           created_at: string
           emd_amount: number | null
           emd_received: boolean
+          emd_received_at: string | null
           id: string
           ip_expiry_date: string | null
           jv_partner_id: string | null
@@ -209,13 +256,16 @@ export type Database = {
         Insert: {
           arv?: number | null
           asking_price?: number | null
+          assigned_at?: string | null
           assignment_fee?: number | null
           buyer_id?: string | null
           city?: string | null
+          closed_at?: string | null
           closing_date?: string | null
           created_at?: string
           emd_amount?: number | null
           emd_received?: boolean
+          emd_received_at?: string | null
           id?: string
           ip_expiry_date?: string | null
           jv_partner_id?: string | null
@@ -230,13 +280,16 @@ export type Database = {
         Update: {
           arv?: number | null
           asking_price?: number | null
+          assigned_at?: string | null
           assignment_fee?: number | null
           buyer_id?: string | null
           city?: string | null
+          closed_at?: string | null
           closing_date?: string | null
           created_at?: string
           emd_amount?: number | null
           emd_received?: boolean
+          emd_received_at?: string | null
           id?: string
           ip_expiry_date?: string | null
           jv_partner_id?: string | null

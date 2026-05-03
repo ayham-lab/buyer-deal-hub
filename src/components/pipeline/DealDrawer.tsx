@@ -9,6 +9,9 @@ import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
+import { DealFiles } from "./DealFiles";
+import { DealBuyerMatch } from "./DealBuyerMatch";
+import { format } from "date-fns";
 
 export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | null; onClose: () => void; onUpdated: () => void }) {
   const { user } = useAuth();
@@ -84,6 +87,7 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
         <Tabs defaultValue="overview" className="mt-6">
           <TabsList className="bg-secondary">
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="files">Files</TabsTrigger>
             <TabsTrigger value="checklist">Checklist ({checklist.filter((c) => !c.is_completed).length})</TabsTrigger>
             <TabsTrigger value="tasks">Tasks</TabsTrigger>
             <TabsTrigger value="notes">Notes</TabsTrigger>
@@ -104,9 +108,26 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
               <Checkbox checked={deal.emd_received} onCheckedChange={(v) => saveField("emd_received", !!v)} />
               <span className="text-sm">EMD Received</span>
             </div>
+
+            <DealBuyerMatch dealId={dealId} buyerId={deal.buyer_id} onChange={(id) => setDeal({ ...deal, buyer_id: id })} />
+
+            <div className="rounded-lg border border-border p-3 bg-muted/30">
+              <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Timeline</div>
+              <ul className="space-y-1.5 text-sm">
+                <TimelineRow label="Entered system" value={deal.created_at} />
+                <TimelineRow label="EMD received" value={deal.emd_received_at} />
+                <TimelineRow label="Assigned" value={deal.assigned_at} />
+                <TimelineRow label="Closed" value={deal.closed_at} />
+              </ul>
+            </div>
+
             <Button onClick={deleteDeal} variant="outline" className="text-destructive border-destructive/30 mt-4">
               <Trash2 className="h-4 w-4 mr-1" /> Delete Deal
             </Button>
+          </TabsContent>
+
+          <TabsContent value="files" className="mt-4">
+            <DealFiles dealId={dealId} />
           </TabsContent>
 
           <TabsContent value="checklist" className="space-y-2 mt-4">
@@ -161,5 +182,16 @@ function Field({ label, value, onSave, type = "text" }: { label: string; value: 
       <label className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</label>
       <Input type={type} value={v} onChange={(e) => setV(e.target.value)} onBlur={() => v !== String(value ?? "") && onSave(v)} />
     </div>
+  );
+}
+
+function TimelineRow({ label, value }: { label: string; value: string | null }) {
+  return (
+    <li className="flex items-center justify-between">
+      <span className="text-muted-foreground">{label}</span>
+      <span className={value ? "" : "text-muted-foreground/60"}>
+        {value ? format(new Date(value), "MMM d, yyyy · h:mm a") : "—"}
+      </span>
+    </li>
   );
 }
