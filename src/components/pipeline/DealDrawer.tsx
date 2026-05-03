@@ -184,3 +184,14 @@ function Field({ label, value, onSave, type = "text" }: { label: string; value: 
     </div>
   );
 }
+
+function TimelineRow({ label, value }: { label: string; value: string | null }) {
+  return (
+    <li className="flex items-center justify-between">
+      <span className="text-muted-foreground">{label}</span>
+      <span className={value ? "" : "text-muted-foreground/60"}>
+        {value ? format(new Date(value), "MMM d, yyyy · h:mm a") : "—"}
+      </span>
+    </li>
+  );
+}
