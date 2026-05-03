@@ -67,7 +67,7 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
     source: "",
     criteria_notes: "",
     previous_deals: "", experience: "",
-    add_to_archive: false,
+    
   };
   const [form, setForm] = useState(initial);
   const [pofFiles, setPofFiles] = useState<File[]>([]);
