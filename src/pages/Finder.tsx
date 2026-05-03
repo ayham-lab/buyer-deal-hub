@@ -28,11 +28,11 @@ export default function Finder() {
   const [address, setAddress] = useState("");
   const [propertyType, setPropertyType] = useState("");
   const [priceHint, setPriceHint] = useState("");
-  const [source, setSource] = useState<"archive" | "mine">("archive");
+  const [source, setSource] = useState<"archive" | "mine" | "skiptraced">("archive");
   const [loading, setLoading] = useState(false);
   const [matches, setMatches] = useState<Match[]>([]);
 
-  async function findMatches(useSource: "archive" | "mine") {
+  async function findMatches(useSource: "archive" | "mine" | "skiptraced") {
     if (!address.trim()) {
       toast.error("Enter a property address");
       return;
@@ -117,6 +117,14 @@ export default function Finder() {
             >
               {loading && source === "mine" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
               AI Match from My Buyers
+            </Button>
+            <Button
+              onClick={() => findMatches("skiptraced")}
+              disabled={loading}
+              variant="outline"
+            >
+              {loading && source === "skiptraced" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              Search With Local Skiptraced Buyers
             </Button>
           </div>
         </div>
