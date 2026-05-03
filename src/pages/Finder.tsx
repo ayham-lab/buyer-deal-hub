@@ -41,15 +41,24 @@ export default function Finder() {
   const [results, setResults] = useState<Results | null>(null);
 
   async function findMatches() {
-    if (!address.trim()) {
-      toast.error("Enter a property address");
+    if (!street.trim() || !city.trim() || !stateCode.trim()) {
+      toast.error("Street, City, and State are required");
       return;
     }
+    const address = `${street.trim()}, ${city.trim()}, ${stateCode.trim().toUpperCase()}${zip.trim() ? " " + zip.trim() : ""}`;
     setLoading(true);
     setResults(null);
     try {
       const { data, error } = await supabase.functions.invoke("find-buyers", {
-        body: { address, propertyType, priceHint },
+        body: {
+          address,
+          street: street.trim(),
+          city: city.trim(),
+          state: stateCode.trim().toUpperCase(),
+          zip: zip.trim(),
+          propertyType,
+          priceHint,
+        },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
