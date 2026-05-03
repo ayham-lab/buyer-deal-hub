@@ -538,7 +538,14 @@ export type Database = {
     Enums: {
       app_role: "admin" | "user"
       buyer_status: "not_vetted" | "vetted" | "repeat" | "recurring"
-      deal_status: "lead" | "active" | "under_contract" | "closed" | "dead"
+      deal_status:
+        | "lead"
+        | "active"
+        | "under_contract"
+        | "closed"
+        | "dead"
+        | "title_issues"
+        | "seller_issue"
       subscription_status: "active" | "trialing" | "cancelled" | "past_due"
       task_priority: "low" | "medium" | "high"
     }
@@ -670,7 +677,15 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "user"],
       buyer_status: ["not_vetted", "vetted", "repeat", "recurring"],
-      deal_status: ["lead", "active", "under_contract", "closed", "dead"],
+      deal_status: [
+        "lead",
+        "active",
+        "under_contract",
+        "closed",
+        "dead",
+        "title_issues",
+        "seller_issue",
+      ],
       subscription_status: ["active", "trialing", "cancelled", "past_due"],
       task_priority: ["low", "medium", "high"],
     },
