@@ -96,6 +96,8 @@ export default function KPIs() {
       m[s].sum += Number(d.assignment_fee) || 0; m[s].count += 1;
     });
     return Object.entries(m).map(([name, { sum, count }]) => ({ name, avg: Math.round(sum / count) }));
+  }, [deals]);
+
   // By owner (dispo manager)
   const ownerName = (id: string | null) => {
     if (!id) return "Unassigned";
