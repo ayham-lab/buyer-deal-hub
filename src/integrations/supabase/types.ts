@@ -250,6 +250,7 @@ export type Database = {
           lead_source: string | null
           minimum_sale_price: number | null
           notes: string | null
+          owner_id: string | null
           property_address: string
           state: string | null
           status: Database["public"]["Enums"]["deal_status"]
@@ -278,6 +279,7 @@ export type Database = {
           lead_source?: string | null
           minimum_sale_price?: number | null
           notes?: string | null
+          owner_id?: string | null
           property_address: string
           state?: string | null
           status?: Database["public"]["Enums"]["deal_status"]
@@ -306,6 +308,7 @@ export type Database = {
           lead_source?: string | null
           minimum_sale_price?: number | null
           notes?: string | null
+          owner_id?: string | null
           property_address?: string
           state?: string | null
           status?: Database["public"]["Enums"]["deal_status"]
