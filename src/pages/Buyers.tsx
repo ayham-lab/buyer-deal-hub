@@ -88,9 +88,14 @@ export default function Buyers() {
         title="Buyer Rolodex"
         subtitle="Your private buyer database"
         actions={
-          <Button onClick={() => setShowAdd(true)} className="bg-primary hover:bg-primary-hover text-primary-foreground">
-            <Plus className="h-4 w-4 mr-1" /> Add Buyer
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowImport(true)}>
+              <Upload className="h-4 w-4 mr-1" /> Import CSV
+            </Button>
+            <Button onClick={() => setShowAdd(true)} className="bg-primary hover:bg-primary-hover text-primary-foreground">
+              <Plus className="h-4 w-4 mr-1" /> Add Buyer
+            </Button>
+          </div>
         }
       />
       <div className="p-8 space-y-4">
