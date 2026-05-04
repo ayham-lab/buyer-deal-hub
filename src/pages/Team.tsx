@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { TeamMemberModal, TEAM_ROLES } from "@/components/team/TeamMemberModal";
 
 export default function Team() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [members, setMembers] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
@@ -18,13 +18,35 @@ export default function Team() {
 
   async function load() {
     if (!user) return;
-    const { data } = await supabase.from("team_members").select("*").eq("user_id", user.id).order("name");
-    setMembers(data || []);
+    let { data } = await supabase.from("team_members").select("*").eq("user_id", user.id).order("name");
+    let list = data || [];
+
+    // Ensure the account owner appears as a team member (auto-create once)
+    const ownerEmail = profile?.email || user.email;
+    const ownerExists = list.some((m) => (m.email || "").toLowerCase() === (ownerEmail || "").toLowerCase());
+    if (!ownerExists && ownerEmail) {
+      const { data: inserted } = await supabase
+        .from("team_members")
+        .insert({
+          user_id: user.id,
+          name: profile?.name || ownerEmail,
+          email: ownerEmail,
+          role: "dispo_manager",
+          notes: "Account owner",
+        })
+        .select()
+        .single();
+      if (inserted) list = [...list, inserted].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    }
+    setMembers(list);
   }
-  useEffect(() => { load(); }, [user]);
+  useEffect(() => { load(); }, [user, profile]);
 
   const roleLabel = (r: string) => TEAM_ROLES.find((x) => x.value === r)?.label || r;
+  const ownerEmail = (profile?.email || user?.email || "").toLowerCase();
+  const isOwner = (m: any) => (m.email || "").toLowerCase() === ownerEmail;
   const filtered = members.filter((m) => !search || m.name?.toLowerCase().includes(search.toLowerCase()) || m.email?.toLowerCase().includes(search.toLowerCase()));
+
 
   return (
     <AppLayout>
