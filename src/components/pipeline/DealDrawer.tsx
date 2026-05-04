@@ -12,6 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { DealFiles } from "./DealFiles";
 import { DealBuyerMatch } from "./DealBuyerMatch";
+import { DealAssignees } from "./DealAssignees";
 import { format } from "date-fns";
 
 export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | null; onClose: () => void; onUpdated: () => void }) {
@@ -169,6 +170,8 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
               <Checkbox checked={deal.emd_received} onCheckedChange={(v) => saveField("emd_received", !!v)} />
               <span className="text-sm">EMD Received</span>
             </div>
+
+            <DealAssignees dealId={dealId} />
 
             <DealBuyerMatch dealId={dealId} buyerId={deal.buyer_id} onChange={(id) => setDeal({ ...deal, buyer_id: id })} />
 

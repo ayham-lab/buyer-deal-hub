@@ -146,6 +146,36 @@ export type Database = {
         }
         Relationships: []
       }
+      deal_assignees: {
+        Row: {
+          commission_split: number | null
+          created_at: string
+          deal_id: string
+          id: string
+          notes: string | null
+          role: string
+          team_member_id: string
+        }
+        Insert: {
+          commission_split?: number | null
+          created_at?: string
+          deal_id: string
+          id?: string
+          notes?: string | null
+          role?: string
+          team_member_id: string
+        }
+        Update: {
+          commission_split?: number | null
+          created_at?: string
+          deal_id?: string
+          id?: string
+          notes?: string | null
+          role?: string
+          team_member_id?: string
+        }
+        Relationships: []
+      }
       deal_checklist: {
         Row: {
           created_at: string
