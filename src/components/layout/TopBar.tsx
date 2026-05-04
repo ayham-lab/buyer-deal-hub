@@ -1,6 +1,6 @@
-import { Search, HelpCircle, Bell, ChevronDown, LogOut, Building2, ShieldCheck, UserCog } from "lucide-react";
+import { HelpCircle, ChevronDown, LogOut, Building2, ShieldCheck, UserCog } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { Input } from "@/components/ui/input";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Link } from "react-router-dom";
 import {
   DropdownMenu,
