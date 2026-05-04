@@ -234,6 +234,10 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
               placeholder="Deal notes…"
             />
           </TabsContent>
+
+          <TabsContent value="activity" className="mt-4">
+            <DealActivity dealId={dealId} />
+          </TabsContent>
         </Tabs>
       </SheetContent>
     </Sheet>
