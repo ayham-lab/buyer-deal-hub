@@ -14,27 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      _oauth_bootstrap: {
-        Row: {
-          client_id: string | null
-          client_secret: string | null
-          created_at: string | null
-          id: number
-        }
-        Insert: {
-          client_id?: string | null
-          client_secret?: string | null
-          created_at?: string | null
-          id?: number
-        }
-        Update: {
-          client_id?: string | null
-          client_secret?: string | null
-          created_at?: string | null
-          id?: number
-        }
-        Relationships: []
-      }
       buyer_archive: {
         Row: {
           added_by_user_id: string | null
