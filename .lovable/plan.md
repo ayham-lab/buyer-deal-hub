@@ -1,128 +1,138 @@
+# Plan: GHL Marketplace OAuth + Multi-Account Support + Production Hardening
 
-# Build Plan: Protected Routes, Dashboard, Notifications, Activity Log, Tasks
+## Context recap
 
-## 1. Protected Routes
+- This app will be installed inside GHL as a marketplace app (iframe / external auth).
+- One Dispo CRM workspace can be connected to **up to 10 GHL locations (sub-accounts)**. All users on a connected GHL location should be able to see the CRM data for that workspace.
+- GHL is the OAuth **client**; this app is the OAuth **provider**. Lifetime: as long as user is logged into GHL they can access.
+- After OAuth: also do Security Scan + RLS audit, Settings page, CSV export, Error boundaries.
 
-Wrap every authenticated page in `<AppLayout>` (which already enforces auth + admin). Currently `App.tsx` renders pages directly with no guard.
+---
 
-- Update `src/App.tsx`: wrap `Buyers`, `Finder`, `Pipeline`, `KPIs`, `Profile`, `TitleCompanies`, `Team` in `<AppLayout>`, and `Admin` in `<AppLayout requireAdmin>`.
-- Audit each page file — if any currently renders its own `<AppLayout>` internally, remove the duplicate so layout isn't doubled.
-- `/login` stays public. Add a new public `/reset-password` page (see #6).
+## Part 1 — GHL OAuth Provider
 
-## 2. Dashboard / Home at `/`
+### 1a. Database (migration)
 
-Replace the redirect with a real landing page.
+Three new tables, all RLS-locked to service-role only (edge functions use service key):
 
-- New `src/pages/Dashboard.tsx` with these widgets (data from existing `deals`, `buyers`, `tasks` tables):
-  - **This week's closings** — deals where `closing_date` between today and +7d.
-  - **EMD due / overdue** — deals with status `under_contract` and `emd_received = false`.
-  - **IP expiring soon** — deals with `ip_expiry_date` within next 7 days.
-  - **New leads (7d)** — count of deals created in last 7 days.
-  - **Revenue MTD** — sum of `assignment_fee` where `closed_at` in current month.
-  - **Open tasks** — count of `tasks` where `is_completed = false` and assigned to me.
-  - Recent activity feed (top 10 events from new `deal_activity` table — see #4).
-- Route `/` to `Dashboard` (remove the `Navigate` to `/buyers`).
+- `oauth_clients` — pre-seeded with one row for GHL
+  - `id` uuid pk, `client_id` text unique, `client_secret_hash` text, `name` text, `redirect_uris` text[], `scopes` text[], `created_at`
+- `oauth_authorization_codes`
+  - `code` text pk, `client_id` text, `user_id` uuid, `redirect_uri` text, `scope` text, `expires_at` timestamptz, `used` bool default false
+- `oauth_access_tokens`
+  - `access_token` text pk, `refresh_token` text unique, `client_id` text, `user_id` uuid, `scope` text, `expires_at`, `created_at`
 
-## 3. Tasks / Reminders UI
+Plus a **link table for multi-location**:
+- `ghl_location_links`
+  - `id` uuid pk, `workspace_owner_user_id` uuid (the CRM account that owns the data), `ghl_location_id` text unique, `linked_by_user_id` uuid, `linked_at`
+  - Index on `ghl_location_id`. RLS: workspace owner + admin can read; insert via edge function.
 
-Schema already exists (`tasks` table). Add full UI.
+The migration will also **generate the GHL client_id + a 48-char client_secret**, store the bcrypt/sha256 hash, and `RAISE NOTICE` the plaintext secret once so it appears in the migration output. (Plaintext is never stored.)
 
-- New `src/pages/Tasks.tsx` listing tasks with filters: All / Mine / Today / Overdue / Completed.
-- New `src/components/tasks/TaskModal.tsx` — create/edit (title, description, due_date, priority, assignee from `team_members`, optional `deal_id`).
-- Inline checkbox to mark complete; reorder by due date + priority.
-- Add **Tasks tab inside `DealDrawer`** showing tasks linked to that deal + quick-add.
-- Add `/tasks` to sidebar nav and to `App.tsx`.
-- Dashboard "Open tasks" widget links here.
+### 1b. Edge functions
 
-## 4. Activity Log / Audit Trail per Deal
+Three new functions (all `verify_jwt = false`, validate in code):
 
-New table + automatic logging via DB trigger, surfaced in the deal drawer.
+1. **`oauth-authorize`** (GET)
+   - Params: `client_id`, `redirect_uri`, `response_type=code`, `scope`, `state`
+   - Validates `client_id` + `redirect_uri` against `oauth_clients.redirect_uris`
+   - Redirects browser to `/oauth/consent?client_id=…&redirect_uri=…&scope=…&state=…`
 
-**Schema migration:**
-```
-create table public.deal_activity (
-  id uuid primary key default gen_random_uuid(),
-  deal_id uuid not null,
-  user_id uuid,
-  event_type text not null,   -- status_change, assignee_added, file_uploaded, note_added, emd_received, field_updated
-  from_value text,
-  to_value text,
-  metadata jsonb default '{}',
-  created_at timestamptz not null default now()
-);
-alter table public.deal_activity enable row level security;
-```
-RLS: SELECT if the user owns the parent deal or is admin; INSERT for the deal owner (and via trigger as `security definer`).
+2. **`oauth-token`** (POST, form-encoded)
+   - Grant types: `authorization_code` and `refresh_token`
+   - Validates `client_id` + `client_secret` (compares hash)
+   - For `authorization_code`: looks up code, checks not-used + not-expired, marks used, issues access_token (1h) + refresh_token (90d)
+   - For `refresh_token`: rotates and issues new pair
+   - Returns `{ access_token, token_type: "Bearer", expires_in, refresh_token, scope }`
 
-**Trigger** on `deals` (AFTER UPDATE) writes rows for: `status` change, `emd_received` flip, `closing_date` change, `assignment_fee` change, `buyer_id` change, `title_company_id` change, role assignment changes (`owner_id`, `acquisitions_manager_id`, `va_id`).
-Trigger on `deal_assignees` (INSERT/DELETE) and `deal_files` (INSERT) for those events.
-Manual notes (event_type = `note_added`) inserted from the UI.
+3. **`oauth-userinfo`** (GET)
+   - Bearer access_token → returns `{ sub, email, name, ghl_locations: [...] }`
 
-**UI:** new tab "Activity" inside `src/components/pipeline/DealDrawer.tsx` rendering a chronological timeline. Add a "Add note" input at the top.
+### 1c. Frontend pages
 
-## 5. Notifications
+- **`src/pages/OAuthConsent.tsx`** at `/oauth/consent`
+  - If not logged in → redirect to `/login?next=<current-url>`
+  - Shows: "GoHighLevel wants to access your Dispo CRM" + scopes
+  - Approve → calls a small edge function `oauth-issue-code` (or inline endpoint) that creates an authorization code and redirects to GHL's `redirect_uri?code=…&state=…`
+  - Deny → redirect with `?error=access_denied`
 
-Replace the decorative bell in `TopBar` with a real dropdown backed by a new table.
+- **`src/pages/Login.tsx`** — honor `?next=` query param after successful login (instead of always going to `/buyers`).
 
-**Schema migration:**
-```
-create table public.notifications (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null,
-  type text not null,           -- ip_expiring, emd_overdue, task_due, deal_assigned, buyer_match
-  title text not null,
-  body text,
-  link_url text,                -- e.g. /pipeline?deal=...
-  is_read boolean not null default false,
-  created_at timestamptz not null default now()
-);
-```
-RLS: user can SELECT/UPDATE/DELETE their own.
+### 1d. Multi-location linking flow
 
-**Generation strategy:**
-- Edge function `generate-notifications` runs daily via `pg_cron`. For each user, scans their deals/tasks and inserts notifications for:
-  - IP expiring in ≤3 days
-  - EMD overdue (under_contract >7d, emd not received)
-  - Tasks due today / overdue
-- Realtime inserts (e.g. deal assignment, file upload by teammate) handled inline at the action site (`supabase.from('notifications').insert(...)`).
+When a GHL user installs the app on a sub-account and goes through OAuth:
+- The `oauth-userinfo` response (called by GHL) includes the `ghl_location_id` from the SSO payload
+- An edge function `link-ghl-location` (called from the consent page on approve) creates a row in `ghl_location_links` mapping that `ghl_location_id` → the current logged-in user's workspace
+- A user can link up to 10 locations. Settings page shows linked locations with "Disconnect" button.
 
-**UI:**
-- New `src/components/notifications/NotificationBell.tsx` with unread count badge, popover list, "mark all read", click navigates to `link_url`.
-- Subscribe to realtime channel `postgres_changes` on `notifications` filtered by `user_id`.
-- Wire into existing bell in `TopBar.tsx`.
+### 1e. What you'll need to do in GHL after I deploy
 
-## 6. Password Reset (small bonus required for protected-route correctness)
+1. I'll show you the generated **Client ID** and **Client Secret** (secret shown once — copy immediately).
+2. In the GHL marketplace app form paste:
+   - **Client ID**: `<generated>`
+   - **Client Secret**: `<generated>`
+   - **Authorization URL**: `https://ihvqhjrrahgyunmfvtrp.supabase.co/functions/v1/oauth-authorize`
+   - **Token URL**: `https://ihvqhjrrahgyunmfvtrp.supabase.co/functions/v1/oauth-token`
+   - **Scope**: `read write`
+   - **Redirect URL**: already set to the GHL callback you provided
+3. Save → install on a test sub-account → verify the consent screen appears → verify you land back in GHL.
 
-- Add "Forgot password?" link on `Login` calling `resetPasswordForEmail({ redirectTo: origin + '/reset-password' })`.
-- New public `src/pages/ResetPassword.tsx` that calls `supabase.auth.updateUser({ password })` when URL hash contains `type=recovery`.
-- Add route in `App.tsx`.
+---
 
-## Technical Summary
+## Part 2 — Security Scan + RLS Audit
 
-**New files**
-- `src/pages/Dashboard.tsx`, `src/pages/Tasks.tsx`, `src/pages/ResetPassword.tsx`
-- `src/components/tasks/TaskModal.tsx`, `src/components/tasks/TaskList.tsx`
-- `src/components/notifications/NotificationBell.tsx`
-- `src/components/pipeline/DealActivity.tsx`
-- `supabase/functions/generate-notifications/index.ts`
+- Run `security--run_security_scan` and `supabase--linter`
+- Fix anything critical (likely items: enable HIBP password check, review profiles RLS for cross-location reads once multi-location is in)
+- Update security memory with rationale for any ignored findings
 
-**Edited**
-- `src/App.tsx` — add layout wrappers, new routes, dashboard at `/`
-- `src/components/layout/TopBar.tsx` — mount `NotificationBell`
-- `src/components/layout/Sidebar.tsx` — add Dashboard + Tasks nav items
-- `src/components/pipeline/DealDrawer.tsx` — Activity + Tasks tabs
-- `src/pages/Login.tsx` — forgot password link
+---
 
-**DB migrations**
-- Create `deal_activity`, `notifications` tables + RLS
-- Trigger functions for deal change logging
-- `pg_cron` schedule for `generate-notifications`
+## Part 3 — Settings Page
 
-**Order of implementation**
-1. DB migrations (deal_activity, notifications, triggers)
-2. Protected routes + reset password
-3. Tasks page + modal + sidebar entry
-4. Deal Activity tab in drawer
-5. Notification bell + realtime
-6. Dashboard page (depends on the above)
-7. Edge function + cron schedule for notification generation
+New `src/pages/Settings.tsx` at `/settings` with tabs:
+- **Profile** — name, email (read-only), change password
+- **GHL Connections** — list of linked `ghl_location_links` with Disconnect button; "Connect another GHL account" instructions
+- **Notifications** — toggles for email/in-app notifications (stored in `profiles.notification_prefs` jsonb — added in migration)
+- **Danger zone** — sign out everywhere, delete account (calls edge function)
+
+Add Settings link to Sidebar + TopBar user menu.
+
+---
+
+## Part 4 — CSV Export
+
+Add a reusable `exportToCsv(rows, filename)` util in `src/lib/csv.ts`. Add "Export CSV" buttons to:
+- Buyers page (current filtered list)
+- Pipeline page (List view)
+- Tasks page
+
+No new dependencies — write a small CSV serializer with proper quote escaping.
+
+---
+
+## Part 5 — Error Boundaries
+
+- New `src/components/ErrorBoundary.tsx` (class component) with a friendly fallback UI ("Something went wrong" + Reload + Report)
+- Wrap `<Routes>` in `App.tsx` with a top-level boundary
+- Wrap each page route with a per-route boundary so one page crash doesn't blank the whole app
+
+---
+
+## Files
+
+**Create:** `supabase/functions/oauth-authorize/index.ts`, `supabase/functions/oauth-token/index.ts`, `supabase/functions/oauth-userinfo/index.ts`, `supabase/functions/link-ghl-location/index.ts`, `src/pages/OAuthConsent.tsx`, `src/pages/Settings.tsx`, `src/components/ErrorBoundary.tsx`, `src/lib/csv.ts`, plus migration
+
+**Edit:** `src/App.tsx` (routes + boundary), `src/pages/Login.tsx` (honor `?next=`), `src/components/layout/Sidebar.tsx` + `TopBar.tsx` (Settings link), `src/pages/Buyers.tsx`, `src/pages/Pipeline.tsx`, `src/pages/Tasks.tsx` (Export buttons)
+
+## Order of execution
+
+1. Migration (oauth tables + ghl_location_links + notification_prefs) — secret printed in output
+2. Edge functions (authorize, token, userinfo, link-ghl-location)
+3. OAuthConsent page + Login `?next=` support
+4. ErrorBoundary + wrap routes
+5. Settings page + sidebar link
+6. CSV export util + buttons
+7. Run security scan + linter, fix findings, update security memory
+8. Hand you the Client ID + Client Secret + URLs to paste into GHL
+
+Approve and I'll execute end-to-end.
