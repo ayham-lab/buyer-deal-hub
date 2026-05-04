@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Users, Search, LayoutGrid, BarChart3, ShieldCheck, ChevronsLeft, ChevronsRight, Building2 } from "lucide-react";
+import { Users, Search, LayoutGrid, BarChart3, ShieldCheck, ChevronsLeft, ChevronsRight, Building2, UsersRound } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -10,6 +10,7 @@ const items = [
   { to: "/pipeline", label: "Deal Pipeline", icon: LayoutGrid },
   { to: "/buyers", label: "Buyer Rolodex", icon: Users },
   { to: "/title-companies", label: "Title Companies", icon: Building2 },
+  { to: "/team", label: "Team", icon: UsersRound },
 ];
 
 export function Sidebar() {
