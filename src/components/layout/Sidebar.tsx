@@ -28,9 +28,7 @@ export function Sidebar() {
     >
       {/* Logo */}
       <div className="h-14 flex items-center gap-3 px-4 border-b border-sidebar-border">
-        <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center font-bold text-primary-foreground shrink-0">
-          D
-        </div>
+        <img src={logo} alt="Logo" className="h-8 w-8 rounded-md shrink-0 object-contain" />
         {!collapsed && (
           <div className="min-w-0">
             <div className="text-sm font-semibold leading-tight text-white truncate">Dispo Tool</div>
