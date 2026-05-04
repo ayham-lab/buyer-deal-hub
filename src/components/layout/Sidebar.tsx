@@ -1,15 +1,17 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Users, Search, LayoutGrid, BarChart3, ShieldCheck, ChevronsLeft, ChevronsRight, Building2, UsersRound } from "lucide-react";
+import { Users, Search, LayoutGrid, BarChart3, ShieldCheck, ChevronsLeft, ChevronsRight, Building2, UsersRound, Home, CheckSquare } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import logo from "@/assets/logo.png";
 
 const items = [
+  { to: "/", label: "Dashboard", icon: Home, exact: true },
   { to: "/kpis", label: "KPI Dashboard", icon: BarChart3 },
   { to: "/finder", label: "Buyer Finder", icon: Search },
   { to: "/pipeline", label: "Deal Pipeline", icon: LayoutGrid },
   { to: "/buyers", label: "Buyer Rolodex", icon: Users },
+  { to: "/tasks", label: "Tasks", icon: CheckSquare },
   { to: "/title-companies", label: "Title Companies", icon: Building2 },
   { to: "/team", label: "Team", icon: UsersRound },
 ];
@@ -40,7 +42,7 @@ export function Sidebar() {
       {/* Nav */}
       <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
         {items.map((it) => {
-          const active = pathname.startsWith(it.to);
+          const active = it.exact ? pathname === it.to : pathname.startsWith(it.to);
           return (
             <NavLink
               key={it.to}

@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { DealFiles } from "./DealFiles";
 import { DealBuyerMatch } from "./DealBuyerMatch";
 import { DealAssignees } from "./DealAssignees";
+import { DealActivity } from "./DealActivity";
 import { format } from "date-fns";
 
 export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | null; onClose: () => void; onUpdated: () => void }) {
@@ -99,6 +100,7 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
             <TabsTrigger value="checklist">Checklist ({checklist.filter((c) => !c.is_completed).length})</TabsTrigger>
             <TabsTrigger value="tasks">Tasks</TabsTrigger>
             <TabsTrigger value="notes">Notes</TabsTrigger>
+            <TabsTrigger value="activity">Activity</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4 mt-4">
@@ -231,6 +233,10 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
               rows={10}
               placeholder="Deal notes…"
             />
+          </TabsContent>
+
+          <TabsContent value="activity" className="mt-4">
+            <DealActivity dealId={dealId} />
           </TabsContent>
         </Tabs>
       </SheetContent>
