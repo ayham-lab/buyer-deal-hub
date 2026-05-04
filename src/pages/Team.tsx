@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
@@ -15,16 +15,17 @@ export default function Team() {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
+  const seedingRef = useRef(false);
 
   async function load() {
     if (!user) return;
     let { data } = await supabase.from("team_members").select("*").eq("user_id", user.id).order("name");
     let list = data || [];
 
-    // Ensure the account owner appears as a team member (auto-create once)
     const ownerEmail = profile?.email || user.email;
     const ownerExists = list.some((m) => (m.email || "").toLowerCase() === (ownerEmail || "").toLowerCase());
-    if (!ownerExists && ownerEmail) {
+    if (!ownerExists && ownerEmail && !seedingRef.current) {
+      seedingRef.current = true;
       const { data: inserted } = await supabase
         .from("team_members")
         .insert({
@@ -36,7 +37,9 @@ export default function Team() {
         })
         .select()
         .single();
-      if (inserted) list = [...list, inserted].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+      // Re-fetch to avoid duplicates from concurrent loads
+      const { data: refreshed } = await supabase.from("team_members").select("*").eq("user_id", user.id).order("name");
+      list = refreshed || (inserted ? [...list, inserted] : list);
     }
     setMembers(list);
   }
