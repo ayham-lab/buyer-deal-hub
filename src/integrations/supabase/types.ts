@@ -409,6 +409,33 @@ export type Database = {
           },
         ]
       }
+      ghl_location_links: {
+        Row: {
+          ghl_location_id: string
+          ghl_location_name: string | null
+          id: string
+          linked_at: string
+          linked_by_user_id: string
+          workspace_owner_user_id: string
+        }
+        Insert: {
+          ghl_location_id: string
+          ghl_location_name?: string | null
+          id?: string
+          linked_at?: string
+          linked_by_user_id: string
+          workspace_owner_user_id: string
+        }
+        Update: {
+          ghl_location_id?: string
+          ghl_location_name?: string | null
+          id?: string
+          linked_at?: string
+          linked_by_user_id?: string
+          workspace_owner_user_id?: string
+        }
+        Relationships: []
+      }
       jv_partners: {
         Row: {
           company: string | null
@@ -526,6 +553,105 @@ export type Database = {
         }
         Relationships: []
       }
+      oauth_access_tokens: {
+        Row: {
+          access_token: string
+          client_id: string
+          created_at: string
+          expires_at: string
+          ghl_location_id: string | null
+          refresh_token: string
+          scope: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          client_id: string
+          created_at?: string
+          expires_at: string
+          ghl_location_id?: string | null
+          refresh_token: string
+          scope?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          client_id?: string
+          created_at?: string
+          expires_at?: string
+          ghl_location_id?: string | null
+          refresh_token?: string
+          scope?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      oauth_authorization_codes: {
+        Row: {
+          client_id: string
+          code: string
+          created_at: string
+          expires_at: string
+          ghl_location_id: string | null
+          redirect_uri: string
+          scope: string
+          used: boolean
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          code: string
+          created_at?: string
+          expires_at: string
+          ghl_location_id?: string | null
+          redirect_uri: string
+          scope?: string
+          used?: boolean
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          code?: string
+          created_at?: string
+          expires_at?: string
+          ghl_location_id?: string | null
+          redirect_uri?: string
+          scope?: string
+          used?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
+      oauth_clients: {
+        Row: {
+          client_id: string
+          client_secret_hash: string
+          created_at: string
+          id: string
+          name: string
+          redirect_uris: string[]
+          scopes: string[]
+        }
+        Insert: {
+          client_id: string
+          client_secret_hash: string
+          created_at?: string
+          id?: string
+          name: string
+          redirect_uris?: string[]
+          scopes?: string[]
+        }
+        Update: {
+          client_id?: string
+          client_secret_hash?: string
+          created_at?: string
+          id?: string
+          name?: string
+          redirect_uris?: string[]
+          scopes?: string[]
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -535,6 +661,7 @@ export type Database = {
           id: string
           last_active_at: string | null
           name: string | null
+          notification_prefs: Json
           subscription_status: Database["public"]["Enums"]["subscription_status"]
           updated_at: string
           user_id: string
@@ -547,6 +674,7 @@ export type Database = {
           id?: string
           last_active_at?: string | null
           name?: string | null
+          notification_prefs?: Json
           subscription_status?: Database["public"]["Enums"]["subscription_status"]
           updated_at?: string
           user_id: string
@@ -559,6 +687,7 @@ export type Database = {
           id?: string
           last_active_at?: string | null
           name?: string | null
+          notification_prefs?: Json
           subscription_status?: Database["public"]["Enums"]["subscription_status"]
           updated_at?: string
           user_id?: string
