@@ -23,12 +23,14 @@ export function AddDealModal({ open, onClose, onCreated }: { open: boolean; onCl
   const [busy, setBusy] = useState(false);
   const [titleCos, setTitleCos] = useState<{ id: string; name: string }[]>([]);
   const [owners, setOwners] = useState<{ user_id: string; name: string | null; email: string | null }[]>([]);
+  const [team, setTeam] = useState<{ id: string; name: string; role: string }[]>([]);
   const [form, setForm] = useState({
     property_address: "", status: "lead",
     asking_price: "", contract_price: "", minimum_sale_price: "",
     arv: "",
     ip_expiry_date: "", closing_date: "", lead_source: "", jv_partner_name: "",
     title_company_id: "", owner_id: "",
+    acquisitions_manager_id: "", va_id: "",
   });
 
   useEffect(() => {
@@ -37,6 +39,8 @@ export function AddDealModal({ open, onClose, onCreated }: { open: boolean; onCl
       .then(({ data }) => setTitleCos((data as any) || []));
     supabase.from("profiles").select("user_id,name,email").order("name")
       .then(({ data }) => setOwners((data as any) || []));
+    supabase.from("team_members").select("id,name,role").eq("user_id", user.id).order("name")
+      .then(({ data }) => setTeam((data as any) || []));
     setForm((f) => ({ ...f, owner_id: f.owner_id || user.id }));
   }, [open, user]);
 
@@ -65,6 +69,8 @@ export function AddDealModal({ open, onClose, onCreated }: { open: boolean; onCl
       jv_partner_name: form.jv_partner_name || null,
       title_company_id: form.title_company_id || null,
       owner_id: form.owner_id || user.id,
+      acquisitions_manager_id: form.acquisitions_manager_id || null,
+      va_id: form.va_id || null,
     } as any).select().single();
 
     if (error) { toast.error(error.message); setBusy(false); return; }
@@ -75,7 +81,7 @@ export function AddDealModal({ open, onClose, onCreated }: { open: boolean; onCl
 
     toast.success("Deal created with checklist");
     setBusy(false); onClose(); onCreated();
-    setForm({ property_address: "", status: "lead", asking_price: "", contract_price: "", minimum_sale_price: "", arv: "", ip_expiry_date: "", closing_date: "", lead_source: "", jv_partner_name: "", title_company_id: "", owner_id: user.id });
+    setForm({ property_address: "", status: "lead", asking_price: "", contract_price: "", minimum_sale_price: "", arv: "", ip_expiry_date: "", closing_date: "", lead_source: "", jv_partner_name: "", title_company_id: "", owner_id: user.id, acquisitions_manager_id: "", va_id: "" });
   }
 
   return (
@@ -134,6 +140,30 @@ export function AddDealModal({ open, onClose, onCreated }: { open: boolean; onCl
                   <SelectItem key={o.user_id} value={o.user_id}>
                     {o.name || o.email || o.user_id.slice(0, 8)}
                   </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Acquisitions Manager</Label>
+            <Select value={form.acquisitions_manager_id || "none"} onValueChange={(v) => set("acquisitions_manager_id", v === "none" ? "" : v)}>
+              <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {team.filter((t) => t.role === "acquisitions_manager" || t.role === "other").map((t) => (
+                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>VA</Label>
+            <Select value={form.va_id || "none"} onValueChange={(v) => set("va_id", v === "none" ? "" : v)}>
+              <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {team.filter((t) => t.role === "va" || t.role === "other").map((t) => (
+                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

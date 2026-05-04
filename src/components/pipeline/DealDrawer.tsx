@@ -21,20 +21,22 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
   const [tasks, setTasks] = useState<any[]>([]);
   const [titleCos, setTitleCos] = useState<{ id: string; name: string }[]>([]);
   const [owners, setOwners] = useState<{ user_id: string; name: string | null; email: string | null }[]>([]);
+  const [team, setTeam] = useState<{ id: string; name: string; role: string }[]>([]);
   const [newTask, setNewTask] = useState("");
   const [newCheck, setNewCheck] = useState("");
 
   useEffect(() => {
     if (!dealId) { setDeal(null); return; }
     (async () => {
-      const [{ data: d }, { data: c }, { data: t }, { data: tc }, { data: ow }] = await Promise.all([
+      const [{ data: d }, { data: c }, { data: t }, { data: tc }, { data: ow }, { data: tm }] = await Promise.all([
         supabase.from("deals").select("*").eq("id", dealId).single(),
         supabase.from("deal_checklist").select("*").eq("deal_id", dealId).order("sort_order"),
         supabase.from("tasks").select("*").eq("deal_id", dealId).order("created_at", { ascending: false }),
         user ? supabase.from("title_companies").select("id,name").eq("user_id", user.id).order("name") : Promise.resolve({ data: [] as any }),
         supabase.from("profiles").select("user_id,name,email").order("name"),
+        user ? supabase.from("team_members").select("id,name,role").eq("user_id", user.id).order("name") : Promise.resolve({ data: [] as any }),
       ]);
-      setDeal(d); setChecklist(c || []); setTasks(t || []); setTitleCos((tc as any) || []); setOwners((ow as any) || []);
+      setDeal(d); setChecklist(c || []); setTasks(t || []); setTitleCos((tc as any) || []); setOwners((ow as any) || []); setTeam((tm as any) || []);
     })();
   }, [dealId, user]);
 
@@ -136,6 +138,32 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] uppercase tracking-wider text-muted-foreground">Acquisitions Manager</label>
+                <Select value={deal.acquisitions_manager_id || "none"} onValueChange={(v) => saveField("acquisitions_manager_id", v === "none" ? null : v)}>
+                  <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Unassigned</SelectItem>
+                    {team.filter((t) => t.role === "acquisitions_manager" || t.role === "other").map((t) => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-[11px] uppercase tracking-wider text-muted-foreground">VA</label>
+                <Select value={deal.va_id || "none"} onValueChange={(v) => saveField("va_id", v === "none" ? null : v)}>
+                  <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Unassigned</SelectItem>
+                    {team.filter((t) => t.role === "va" || t.role === "other").map((t) => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="flex items-center gap-2 pt-2">
               <Checkbox checked={deal.emd_received} onCheckedChange={(v) => saveField("emd_received", !!v)} />

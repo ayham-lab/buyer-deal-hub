@@ -230,6 +230,7 @@ export type Database = {
       }
       deals: {
         Row: {
+          acquisitions_manager_id: string | null
           arv: number | null
           asking_price: number | null
           assigned_at: string | null
@@ -257,8 +258,10 @@ export type Database = {
           title_company_id: string | null
           updated_at: string
           user_id: string
+          va_id: string | null
         }
         Insert: {
+          acquisitions_manager_id?: string | null
           arv?: number | null
           asking_price?: number | null
           assigned_at?: string | null
@@ -286,8 +289,10 @@ export type Database = {
           title_company_id?: string | null
           updated_at?: string
           user_id: string
+          va_id?: string | null
         }
         Update: {
+          acquisitions_manager_id?: string | null
           arv?: number | null
           asking_price?: number | null
           assigned_at?: string | null
@@ -315,6 +320,7 @@ export type Database = {
           title_company_id?: string | null
           updated_at?: string
           user_id?: string
+          va_id?: string | null
         }
         Relationships: [
           {
@@ -512,6 +518,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      team_members: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       title_companies: {
         Row: {
