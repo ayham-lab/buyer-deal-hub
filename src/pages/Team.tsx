@@ -74,7 +74,10 @@ export default function Team() {
             <TableBody>
               {filtered.map((m) => (
                 <TableRow key={m.id} className="cursor-pointer" onClick={() => { setEditing(m); setOpen(true); }}>
-                  <TableCell className="font-medium">{m.name}</TableCell>
+                  <TableCell className="font-medium">
+                    {m.name}
+                    {isOwner(m) && <Badge className="ml-2 bg-primary/15 text-primary border-0">You</Badge>}
+                  </TableCell>
                   <TableCell><Badge variant="secondary">{roleLabel(m.role)}</Badge></TableCell>
                   <TableCell className="text-muted-foreground">{m.email || "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{m.phone || "—"}</TableCell>
