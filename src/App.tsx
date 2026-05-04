@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import Login from "./pages/Login";
+import ResetPassword from "./pages/ResetPassword";
+import Dashboard from "./pages/Dashboard";
 import Buyers from "./pages/Buyers";
 import Finder from "./pages/Finder";
 import Pipeline from "./pages/Pipeline";
@@ -13,6 +15,7 @@ import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
 import TitleCompanies from "./pages/TitleCompanies";
 import Team from "./pages/Team";
+import Tasks from "./pages/Tasks";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -25,12 +28,14 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            <Route path="/" element={<Navigate to="/buyers" replace />} />
+            <Route path="/" element={<Dashboard />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/buyers" element={<Buyers />} />
             <Route path="/finder" element={<Finder />} />
             <Route path="/pipeline" element={<Pipeline />} />
             <Route path="/kpis" element={<KPIs />} />
+            <Route path="/tasks" element={<Tasks />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/title-companies" element={<TitleCompanies />} />
