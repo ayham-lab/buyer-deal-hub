@@ -171,6 +171,8 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
               <span className="text-sm">EMD Received</span>
             </div>
 
+            <DealAssignees dealId={dealId} />
+
             <DealBuyerMatch dealId={dealId} buyerId={deal.buyer_id} onChange={(id) => setDeal({ ...deal, buyer_id: id })} />
 
             <div className="rounded-lg border border-border p-3 bg-muted/30">
