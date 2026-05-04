@@ -60,9 +60,10 @@ export default function Login() {
           .eq("user_id", user.id)
           .then(() => sessionStorage.removeItem("ghl_sso"));
       }
-      nav("/buyers", { replace: true });
+      const next = params.get("next");
+      nav(next ? decodeURIComponent(next) : "/buyers", { replace: true });
     }
-  }, [user, authLoading, nav]);
+  }, [user, authLoading, nav, params]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
