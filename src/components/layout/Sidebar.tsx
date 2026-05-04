@@ -3,6 +3,7 @@ import { Users, Search, LayoutGrid, BarChart3, ShieldCheck, ChevronsLeft, Chevro
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import logo from "@/assets/logo.png";
 
 const items = [
   { to: "/kpis", label: "KPI Dashboard", icon: BarChart3 },
