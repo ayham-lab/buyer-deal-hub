@@ -1,78 +1,128 @@
-# Make Admin Page Fully Working
 
-## Problem
+# Build Plan: Protected Routes, Dashboard, Notifications, Activity Log, Tasks
 
-`admin@citiflip.com` has the admin role in the database, but:
-1. The sidebar Admin link only appears after roles load — and `useAuth` never re-fetches on token refresh, so a session that pre-dated the role grant won't see it without signing out.
-2. The Admin link is just a tiny entry mixed into the regular nav — easy to miss.
-3. The Admin page itself is light: no tabs, no search, no per-user drill-in, no role management, no date filters.
+## 1. Protected Routes
 
-## Plan
+Wrap every authenticated page in `<AppLayout>` (which already enforces auth + admin). Currently `App.tsx` renders pages directly with no guard.
 
-### 1. Make admin status reliable (`src/hooks/useAuth.tsx`)
-- Re-run `loadProfile` (which fetches roles) on `TOKEN_REFRESHED` and `USER_UPDATED` events, not just `SIGNED_IN`.
-- Also re-fetch when the tab regains focus, so a freshly granted role appears without sign-out.
-- Expose a `refreshRoles()` method on the context for manual refresh from the Admin page after promote/demote actions.
+- Update `src/App.tsx`: wrap `Buyers`, `Finder`, `Pipeline`, `KPIs`, `Profile`, `TitleCompanies`, `Team` in `<AppLayout>`, and `Admin` in `<AppLayout requireAdmin>`.
+- Audit each page file — if any currently renders its own `<AppLayout>` internally, remove the duplicate so layout isn't doubled.
+- `/login` stays public. Add a new public `/reset-password` page (see #6).
 
-### 2. Make Admin obvious in the UI
-- **Sidebar (`src/components/layout/Sidebar.tsx`)**: render a divider + small "ADMIN" label above the Admin link, swap to a filled Shield icon, and add a subtle accent color so it stands out from regular nav.
-- **Header (`src/components/layout/AppLayout.tsx`)**: when `isAdmin`, show a small "Admin" pill button in the top-right next to the user menu, visible from every page (works even when sidebar is collapsed).
+## 2. Dashboard / Home at `/`
 
-### 3. Rebuild `src/pages/Admin.tsx` as a real admin console
+Replace the redirect with a real landing page.
 
-Tabbed layout using existing shadcn `Tabs`:
+- New `src/pages/Dashboard.tsx` with these widgets (data from existing `deals`, `buyers`, `tasks` tables):
+  - **This week's closings** — deals where `closing_date` between today and +7d.
+  - **EMD due / overdue** — deals with status `under_contract` and `emd_received = false`.
+  - **IP expiring soon** — deals with `ip_expiry_date` within next 7 days.
+  - **New leads (7d)** — count of deals created in last 7 days.
+  - **Revenue MTD** — sum of `assignment_fee` where `closed_at` in current month.
+  - **Open tasks** — count of `tasks` where `is_completed = false` and assigned to me.
+  - Recent activity feed (top 10 events from new `deal_activity` table — see #4).
+- Route `/` to `Dashboard` (remove the `Navigate` to `/buyers`).
 
-```text
-┌──────────────────────────────────────────────────────────┐
-│ Admin Console                                            │
-│ [Overview] [Users] [Deals] [Buyers] [Archive] [Roles]    │
-├──────────────────────────────────────────────────────────┤
-│  <date range>   <state filter>   <status filter>         │
-│  ──────────────────────────────────────────────────────  │
-│  ...tab content...                                       │
-└──────────────────────────────────────────────────────────┘
+## 3. Tasks / Reminders UI
+
+Schema already exists (`tasks` table). Add full UI.
+
+- New `src/pages/Tasks.tsx` listing tasks with filters: All / Mine / Today / Overdue / Completed.
+- New `src/components/tasks/TaskModal.tsx` — create/edit (title, description, due_date, priority, assignee from `team_members`, optional `deal_id`).
+- Inline checkbox to mark complete; reorder by due date + priority.
+- Add **Tasks tab inside `DealDrawer`** showing tasks linked to that deal + quick-add.
+- Add `/tasks` to sidebar nav and to `App.tsx`.
+- Dashboard "Open tasks" widget links here.
+
+## 4. Activity Log / Audit Trail per Deal
+
+New table + automatic logging via DB trigger, surfaced in the deal drawer.
+
+**Schema migration:**
 ```
+create table public.deal_activity (
+  id uuid primary key default gen_random_uuid(),
+  deal_id uuid not null,
+  user_id uuid,
+  event_type text not null,   -- status_change, assignee_added, file_uploaded, note_added, emd_received, field_updated
+  from_value text,
+  to_value text,
+  metadata jsonb default '{}',
+  created_at timestamptz not null default now()
+);
+alter table public.deal_activity enable row level security;
+```
+RLS: SELECT if the user owns the parent deal or is admin; INSERT for the deal owner (and via trigger as `security definer`).
 
-**Overview tab**
-- Stat tiles: Total Users, Active Subs, Total Deals, Closed Deals, Revenue Tracked, Archive Buyers.
-- Mini-charts: deals per month (last 12), revenue per month, top 5 lead sources.
-- Deals-by-state grid (kept from current page).
+**Trigger** on `deals` (AFTER UPDATE) writes rows for: `status` change, `emd_received` flip, `closing_date` change, `assignment_fee` change, `buyer_id` change, `title_company_id` change, role assignment changes (`owner_id`, `acquisitions_manager_id`, `va_id`).
+Trigger on `deal_assignees` (INSERT/DELETE) and `deal_files` (INSERT) for those events.
+Manual notes (event_type = `note_added`) inserted from the UI.
 
-**Users tab**
-- Search by name/email, filter by subscription status.
-- Columns: Name, Email, GHL Location, Subscription, Deals, Buyers, Last Active, Actions.
-- Row click → opens a side drawer with: full profile, subscription controls, that user's deals list, that user's buyers, KPI snapshot for current month.
-- Bulk actions: set subscription Active / Cancelled / Trialing.
+**UI:** new tab "Activity" inside `src/components/pipeline/DealDrawer.tsx` rendering a chronological timeline. Add a "Add note" input at the top.
 
-**Deals tab**
-- Cross-tenant deals table with search (address), state filter, status filter, date range.
-- Columns: Owner, Address, Status, Asking, Assignment Fee, Created, Closed.
-- Click → opens read-only deal detail panel.
+## 5. Notifications
 
-**Buyers tab**
-- Cross-tenant buyers (using existing admin SELECT policy on `buyers`).
-- Search by name/email/market, filter by buyer status.
-- Counts per user.
+Replace the decorative bell in `TopBar` with a real dropdown backed by a new table.
 
-**Archive tab**
-- Full `buyer_archive` browser with search, market filter, source filter.
-- Inline delete (admin-only, allowed by existing RLS).
+**Schema migration:**
+```
+create table public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  type text not null,           -- ip_expiring, emd_overdue, task_due, deal_assigned, buyer_match
+  title text not null,
+  body text,
+  link_url text,                -- e.g. /pipeline?deal=...
+  is_read boolean not null default false,
+  created_at timestamptz not null default now()
+);
+```
+RLS: user can SELECT/UPDATE/DELETE their own.
 
-**Roles tab**
-- List all users with their roles.
-- Promote to admin / demote to user buttons (insert/delete in `user_roles`).
-- Confirmation dialog before demoting yourself (prevent lockout).
-- After change, calls `refreshRoles()` so the change reflects immediately.
+**Generation strategy:**
+- Edge function `generate-notifications` runs daily via `pg_cron`. For each user, scans their deals/tasks and inserts notifications for:
+  - IP expiring in ≤3 days
+  - EMD overdue (under_contract >7d, emd not received)
+  - Tasks due today / overdue
+- Realtime inserts (e.g. deal assignment, file upload by teammate) handled inline at the action site (`supabase.from('notifications').insert(...)`).
 
-### 4. Verification
-- Sign out and back in as `admin@citiflip.com`.
-- Confirm the Admin pill appears in the header and the sidebar shows the Admin section.
-- Open `/admin`, verify each tab loads data, search/filters work, and promoting a test user updates instantly.
+**UI:**
+- New `src/components/notifications/NotificationBell.tsx` with unread count badge, popover list, "mark all read", click navigates to `link_url`.
+- Subscribe to realtime channel `postgres_changes` on `notifications` filtered by `user_id`.
+- Wire into existing bell in `TopBar.tsx`.
 
-## Technical notes
+## 6. Password Reset (small bonus required for protected-route correctness)
 
-- All cross-tenant reads already work because existing RLS policies on `profiles`, `deals`, `buyers`, `buyer_archive`, `user_roles`, `tasks`, `kpi_snapshots`, `jv_partners` all include an `is_admin(auth.uid())` clause. **No migrations required.**
-- Role mutations use `supabase.from('user_roles').insert/delete` — allowed by the existing "Roles: admin manage" policy.
-- Self-demotion guard is client-side only (RLS allows it); we add a confirm dialog to avoid accidental lockout.
-- Date-range filtering reuses the same custom range pattern from the KPI page.
-- New components: `src/components/admin/UserDrawer.tsx`, `src/components/admin/RoleManager.tsx`. Page split into per-tab subcomponents inside `src/pages/Admin.tsx` to keep file readable.
+- Add "Forgot password?" link on `Login` calling `resetPasswordForEmail({ redirectTo: origin + '/reset-password' })`.
+- New public `src/pages/ResetPassword.tsx` that calls `supabase.auth.updateUser({ password })` when URL hash contains `type=recovery`.
+- Add route in `App.tsx`.
+
+## Technical Summary
+
+**New files**
+- `src/pages/Dashboard.tsx`, `src/pages/Tasks.tsx`, `src/pages/ResetPassword.tsx`
+- `src/components/tasks/TaskModal.tsx`, `src/components/tasks/TaskList.tsx`
+- `src/components/notifications/NotificationBell.tsx`
+- `src/components/pipeline/DealActivity.tsx`
+- `supabase/functions/generate-notifications/index.ts`
+
+**Edited**
+- `src/App.tsx` — add layout wrappers, new routes, dashboard at `/`
+- `src/components/layout/TopBar.tsx` — mount `NotificationBell`
+- `src/components/layout/Sidebar.tsx` — add Dashboard + Tasks nav items
+- `src/components/pipeline/DealDrawer.tsx` — Activity + Tasks tabs
+- `src/pages/Login.tsx` — forgot password link
+
+**DB migrations**
+- Create `deal_activity`, `notifications` tables + RLS
+- Trigger functions for deal change logging
+- `pg_cron` schedule for `generate-notifications`
+
+**Order of implementation**
+1. DB migrations (deal_activity, notifications, triggers)
+2. Protected routes + reset password
+3. Tasks page + modal + sidebar entry
+4. Deal Activity tab in drawer
+5. Notification bell + realtime
+6. Dashboard page (depends on the above)
+7. Edge function + cron schedule for notification generation
