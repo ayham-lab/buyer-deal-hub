@@ -42,7 +42,7 @@ export function Sidebar() {
       {/* Nav */}
       <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
         {items.map((it) => {
-          const active = pathname.startsWith(it.to);
+          const active = it.exact ? pathname === it.to : pathname.startsWith(it.to);
           return (
             <NavLink
               key={it.to}
