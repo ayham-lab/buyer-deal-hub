@@ -12,9 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, CheckSquare } from "lucide-react";
+import { Plus, Trash2, CheckSquare, Download } from "lucide-react";
 import { format, isToday, isPast, parseISO } from "date-fns";
 import { toast } from "sonner";
+import { exportToCsv } from "@/lib/csv";
 
 interface Task {
   id: string;
@@ -82,9 +83,17 @@ export default function Tasks() {
         title="Tasks"
         subtitle="Reminders and to-dos across your deals"
         actions={
-          <Button onClick={() => { setEditing(null); setShowAdd(true); }} className="bg-primary hover:bg-primary-hover">
-            <Plus className="h-4 w-4 mr-1" /> New Task
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => exportToCsv(filtered.map((t) => ({
+              title: t.title, description: t.description, due_date: t.due_date,
+              priority: t.priority, completed: t.is_completed, created_at: t.created_at,
+            })), `tasks-${new Date().toISOString().slice(0,10)}`)}>
+              <Download className="h-4 w-4 mr-1" /> Export
+            </Button>
+            <Button onClick={() => { setEditing(null); setShowAdd(true); }} className="bg-primary hover:bg-primary-hover">
+              <Plus className="h-4 w-4 mr-1" /> New Task
+            </Button>
+          </div>
         }
         tabs={
           <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>

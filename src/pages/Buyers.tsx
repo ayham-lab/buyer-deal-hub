@@ -4,13 +4,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Users as UsersIcon, Upload } from "lucide-react";
+import { Plus, Search, Users as UsersIcon, Upload, Download } from "lucide-react";
 import { AddBuyerModal } from "@/components/buyers/AddBuyerModal";
 import { ImportBuyersModal } from "@/components/buyers/ImportBuyersModal";
 import { BuyerDrawer } from "@/components/buyers/BuyerDrawer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { exportToCsv } from "@/lib/csv";
 
 export interface Buyer {
   id: string;
@@ -89,6 +90,16 @@ export default function Buyers() {
         subtitle="Your private buyer database"
         actions={
           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => exportToCsv(filtered.map((b) => ({
+              name: b.name, email: b.email, phone: b.phone,
+              markets: (b.markets || []).join("|"),
+              property_types: (b.property_types || []).join("|"),
+              price_min: b.price_min, price_max: b.price_max,
+              source: b.source, status: b.buyer_status, deal_count: b.deal_count,
+              created_at: b.created_at,
+            })), `buyers-${new Date().toISOString().slice(0,10)}`)}>
+              <Download className="h-4 w-4 mr-1" /> Export CSV
+            </Button>
             <Button variant="outline" onClick={() => setShowImport(true)}>
               <Upload className="h-4 w-4 mr-1" /> Import CSV
             </Button>

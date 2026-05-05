@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
-import { Plus, LayoutGrid, List } from "lucide-react";
+import { Plus, LayoutGrid, List, Download } from "lucide-react";
+import { exportToCsv } from "@/lib/csv";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { KanbanBoard } from "@/components/pipeline/KanbanBoard";
 import { DealListView } from "@/components/pipeline/DealListView";
@@ -58,9 +59,20 @@ export default function Pipeline() {
         title="Deal Pipeline"
         subtitle={`${deals.length} deals`}
         actions={
-          <Button onClick={() => setShowAdd(true)} className="bg-primary hover:bg-primary-hover text-primary-foreground">
-            <Plus className="h-4 w-4 mr-1" /> Add Deal
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => exportToCsv(deals.map((d) => ({
+              property_address: d.property_address, status: d.status,
+              ip_expiry_date: d.ip_expiry_date, closing_date: d.closing_date,
+              emd_received: d.emd_received, emd_amount: d.emd_amount,
+              assignment_fee: d.assignment_fee, arv: d.arv, asking_price: d.asking_price,
+              lead_source: d.lead_source, created_at: d.created_at,
+            })), `deals-${new Date().toISOString().slice(0,10)}`)}>
+              <Download className="h-4 w-4 mr-1" /> Export CSV
+            </Button>
+            <Button onClick={() => setShowAdd(true)} className="bg-primary hover:bg-primary-hover text-primary-foreground">
+              <Plus className="h-4 w-4 mr-1" /> Add Deal
+            </Button>
+          </div>
         }
       />
       <div className="p-6 lg:p-8">
