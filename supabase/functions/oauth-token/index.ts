@@ -40,14 +40,24 @@ Deno.serve(async (req) => {
     if (!body[k]) body[k] = v;
   });
 
-  // Basic auth fallback
+  // RFC 6749 §2.3.1 — Basic auth is the standard way OAuth clients
+  // (including GoHighLevel) authenticate to the token endpoint.
+  // Always parse it when present; prefer it over body params.
   const auth = req.headers.get("authorization") ?? "";
-  if (!body.client_id && auth.startsWith("Basic ")) {
+  if (auth.toLowerCase().startsWith("basic ")) {
     try {
-      const [cid, csec] = atob(auth.slice(6)).split(":");
-      body.client_id = cid;
-      body.client_secret = csec;
-    } catch (_e) { /* ignore */ }
+      const decoded = atob(auth.slice(6).trim());
+      const idx = decoded.indexOf(":");
+      if (idx > -1) {
+        const cid = decoded.slice(0, idx);
+        const csec = decoded.slice(idx + 1);
+        // Per spec, credentials are form-urlencoded before base64 encoding
+        body.client_id = decodeURIComponent(cid);
+        body.client_secret = decodeURIComponent(csec);
+      }
+    } catch (e) {
+      console.warn("oauth-token failed to decode Basic auth header", String(e));
+    }
   }
 
   const grant_type = (body.grant_type ?? body.grantType ?? req.headers.get("x-grant-type") ?? "").trim();
