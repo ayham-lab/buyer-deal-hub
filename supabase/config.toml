@@ -1,1 +1,4 @@
 project_id = "ihvqhjrrahgyunmfvtrp"
+
+[functions.oauth-token]
+verify_jwt = false
