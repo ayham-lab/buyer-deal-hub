@@ -45,8 +45,16 @@ Deno.serve(async (req) => {
     } catch (_e) { /* ignore */ }
   }
 
-  const { grant_type, client_id, client_secret } = body;
+  const grant_type = (body.grant_type ?? "").trim();
+  const client_id = (body.client_id ?? "").trim();
+  const client_secret = (body.client_secret ?? "").trim();
   if (!client_id || !client_secret) {
+    console.warn("oauth-token invalid_client", {
+      reason: "missing_credentials",
+      grant_type,
+      has_client_id: Boolean(client_id),
+      has_client_secret: Boolean(client_secret),
+    });
     return json({ error: "invalid_client" }, 401);
   }
 
@@ -60,10 +68,28 @@ Deno.serve(async (req) => {
     .select("client_id, client_secret_hash")
     .eq("client_id", client_id)
     .maybeSingle();
-  if (!client) return json({ error: "invalid_client" }, 401);
+  if (!client) {
+    console.warn("oauth-token invalid_client", {
+      reason: "unknown_client_id",
+      grant_type,
+      client_id_length: client_id.length,
+      client_id_prefix: client_id.slice(0, 8),
+    });
+    return json({ error: "invalid_client" }, 401);
+  }
 
   const hash = await sha256Hex(client_secret);
-  if (hash !== client.client_secret_hash) return json({ error: "invalid_client" }, 401);
+  if (hash !== client.client_secret_hash) {
+    console.warn("oauth-token invalid_client", {
+      reason: "secret_mismatch",
+      grant_type,
+      client_id_length: client_id.length,
+      client_id_prefix: client_id.slice(0, 8),
+      secret_length: client_secret.length,
+      secret_hash_prefix: hash.slice(0, 8),
+    });
+    return json({ error: "invalid_client" }, 401);
+  }
 
   if (grant_type === "authorization_code") {
     const { code, redirect_uri } = body;
