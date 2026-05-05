@@ -50,9 +50,25 @@ Deno.serve(async (req) => {
     } catch (_e) { /* ignore */ }
   }
 
-  const grant_type = (body.grant_type ?? body.grantType ?? "").trim();
-  const client_id = (body.client_id ?? body.clientId ?? body.client_key ?? body.clientKey ?? "").trim();
-  const client_secret = (body.client_secret ?? body.clientSecret ?? "").trim();
+  const grant_type = (body.grant_type ?? body.grantType ?? req.headers.get("x-grant-type") ?? "").trim();
+  const client_id = (
+    body.client_id ??
+    body.clientId ??
+    body.client_key ??
+    body.clientKey ??
+    req.headers.get("x-client-id") ??
+    req.headers.get("client-id") ??
+    req.headers.get("client_id") ??
+    ""
+  ).trim();
+  const client_secret = (
+    body.client_secret ??
+    body.clientSecret ??
+    req.headers.get("x-client-secret") ??
+    req.headers.get("client-secret") ??
+    req.headers.get("client_secret") ??
+    ""
+  ).trim();
   if (!client_id || !client_secret) {
     console.warn("oauth-token invalid_client", {
       reason: "missing_credentials",
