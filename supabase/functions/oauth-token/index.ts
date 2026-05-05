@@ -99,13 +99,20 @@ Deno.serve(async (req) => {
 async function issueTokens(supabase: any, client_id: string, user_id: string, scope: string, ghl_location_id: string | null) {
   const access_token = rand(32);
   const refresh_token = rand(32);
-  const expiresInSec = 3600;
+  const expiresInSec = 86399;
   const expires_at = new Date(Date.now() + expiresInSec * 1000).toISOString();
   await supabase.from("oauth_access_tokens").insert({
     access_token, refresh_token, client_id, user_id, scope, ghl_location_id, expires_at,
   });
   return json({
-    access_token, token_type: "Bearer", expires_in: expiresInSec, refresh_token, scope,
+    access_token,
+    token_type: "Bearer",
+    expires_in: expiresInSec,
+    refresh_token,
+    scope,
+    userType: ghl_location_id ? "Location" : "Company",
+    locationId: ghl_location_id,
+    companyId: null,
   });
 }
 
