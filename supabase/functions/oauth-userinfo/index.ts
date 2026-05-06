@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
   const { data: locations } = await supabase
     .from("ghl_location_links")
     .select("ghl_location_id, ghl_location_name")
-    .eq("workspace_owner_user_id", t.user_id);
+    .eq("user_id", t.user_id);
 
   return j({
     sub: t.user_id,
