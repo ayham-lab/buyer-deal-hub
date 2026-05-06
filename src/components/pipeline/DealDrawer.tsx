@@ -237,6 +237,10 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
             />
           </TabsContent>
 
+          <TabsContent value="marketing" className="mt-4">
+            <DealMarketing dealId={dealId} deal={deal} onChange={(patch) => setDeal({ ...deal, ...patch })} />
+          </TabsContent>
+
           <TabsContent value="activity" className="mt-4">
             <DealActivity dealId={dealId} />
           </TabsContent>
