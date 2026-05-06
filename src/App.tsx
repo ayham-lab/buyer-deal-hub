@@ -8,6 +8,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
 import OAuthConsent from "./pages/OAuthConsent";
+import OAuthCallback from "./pages/OAuthCallback";
 import Dashboard from "./pages/Dashboard";
 import Buyers from "./pages/Buyers";
 import Finder from "./pages/Finder";
