@@ -411,27 +411,33 @@ export type Database = {
       }
       ghl_location_links: {
         Row: {
+          ghl_company_id: string | null
           ghl_location_id: string
           ghl_location_name: string | null
           id: string
           linked_at: string
           linked_by_user_id: string
+          user_id: string
           workspace_owner_user_id: string
         }
         Insert: {
+          ghl_company_id?: string | null
           ghl_location_id: string
           ghl_location_name?: string | null
           id?: string
           linked_at?: string
           linked_by_user_id: string
+          user_id: string
           workspace_owner_user_id: string
         }
         Update: {
+          ghl_company_id?: string | null
           ghl_location_id?: string
           ghl_location_name?: string | null
           id?: string
           linked_at?: string
           linked_by_user_id?: string
+          user_id?: string
           workspace_owner_user_id?: string
         }
         Relationships: []
