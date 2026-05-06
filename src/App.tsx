@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
 import OAuthConsent from "./pages/OAuthConsent";
 import OAuthCallback from "./pages/OAuthCallback";
+import PublicDeal from "./pages/PublicDeal";
 import Dashboard from "./pages/Dashboard";
 import Buyers from "./pages/Buyers";
 import Finder from "./pages/Finder";
