@@ -75,8 +75,10 @@ export function AddDealModal({ open, onClose, onCreated }: { open: boolean; onCl
 
     if (error) { toast.error(error.message); setBusy(false); return; }
 
+    const { data: prof } = await supabase.from("profiles").select("default_checklist").eq("user_id", user.id).maybeSingle();
+    const items = ((prof as any)?.default_checklist?.length ? (prof as any).default_checklist : DEFAULT_CHECKLIST) as string[];
     await supabase.from("deal_checklist").insert(
-      DEFAULT_CHECKLIST.map((t, i) => ({ deal_id: data.id, item_text: t, sort_order: i }))
+      items.map((t, i) => ({ deal_id: data.id, item_text: t, sort_order: i }))
     );
 
     toast.success("Deal created with checklist");
