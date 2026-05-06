@@ -51,13 +51,16 @@ export function DealFiles({ dealId }: { dealId: string }) {
   }
 
   async function openFile(f: DealFile) {
+    if (/^https?:\/\//i.test(f.file_path)) { window.open(f.file_path, "_blank"); return; }
     const { data } = await supabase.storage.from("deal-files").createSignedUrl(f.file_path, 300);
     if (data?.signedUrl) window.open(data.signedUrl, "_blank");
   }
 
   async function remove(f: DealFile) {
     if (!confirm(`Delete ${f.file_name}?`)) return;
-    await supabase.storage.from("deal-files").remove([f.file_path]);
+    if (!/^https?:\/\//i.test(f.file_path)) {
+      await supabase.storage.from("deal-files").remove([f.file_path]);
+    }
     await supabase.from("deal_files").delete().eq("id", f.id);
     load();
   }
