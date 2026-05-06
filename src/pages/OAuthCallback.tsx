@@ -43,7 +43,15 @@ export default function OAuthCallback() {
           setStatus("error");
           return;
         }
-        const token = data as TokenResp;
+        const raw = data as any;
+        console.log("oauth-marketplace-callback raw response:", raw);
+        const token: TokenResp = {
+          ...raw,
+          locationId: raw.locationId ?? raw.location_id,
+          companyId: raw.companyId ?? raw.company_id,
+          userId: raw.userId ?? raw.user_id,
+          userType: raw.userType ?? raw.user_type,
+        };
         setResp(token);
 
         const { data: userData } = await supabase.auth.getUser();
