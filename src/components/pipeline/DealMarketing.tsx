@@ -45,6 +45,11 @@ export function DealMarketing({ dealId, deal, onChange }: Props) {
       if (error) { toast.error(error.message); continue; }
       const { data } = supabase.storage.from("deal-marketing").getPublicUrl(path);
       newPaths.push(data.publicUrl);
+      // Also link into the Files tab under "Photos"
+      await supabase.from("deal_files").insert({
+        deal_id: dealId, user_id: user.id, category: "photo",
+        file_path: data.publicUrl, file_name: file.name, mime_type: file.type, size_bytes: file.size,
+      });
     }
     const updated = [...photos, ...newPaths];
     setPhotos(updated);

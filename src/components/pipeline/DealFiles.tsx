@@ -6,11 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Upload, Trash2, FileText, Image as ImageIcon, Download } from "lucide-react";
 
-type Category = "photo" | "psa" | "assignment" | "addendum" | "other";
+type Category = "photo" | "psa" | "assignment" | "jv_contract" | "addendum" | "other";
 const CATEGORIES: { key: Category; label: string; accept: string }[] = [
   { key: "photo", label: "Photos", accept: "image/*" },
   { key: "psa", label: "Purchase & Sale Agreement", accept: ".pdf,image/*" },
   { key: "assignment", label: "Assignment", accept: ".pdf,image/*" },
+  { key: "jv_contract", label: "JV Contract", accept: ".pdf,image/*" },
   { key: "addendum", label: "Addendums", accept: ".pdf,image/*" },
   { key: "other", label: "Other", accept: "*" },
 ];
@@ -50,13 +51,16 @@ export function DealFiles({ dealId }: { dealId: string }) {
   }
 
   async function openFile(f: DealFile) {
+    if (/^https?:\/\//i.test(f.file_path)) { window.open(f.file_path, "_blank"); return; }
     const { data } = await supabase.storage.from("deal-files").createSignedUrl(f.file_path, 300);
     if (data?.signedUrl) window.open(data.signedUrl, "_blank");
   }
 
   async function remove(f: DealFile) {
     if (!confirm(`Delete ${f.file_name}?`)) return;
-    await supabase.storage.from("deal-files").remove([f.file_path]);
+    if (!/^https?:\/\//i.test(f.file_path)) {
+      await supabase.storage.from("deal-files").remove([f.file_path]);
+    }
     await supabase.from("deal_files").delete().eq("id", f.id);
     load();
   }
