@@ -30,7 +30,7 @@ export function DealMarketing({ dealId, deal, onChange }: Props) {
   }, [dealId]);
 
   async function save(patch: Record<string, any>) {
-    const { error } = await supabase.from("deals").update(patch).eq("id", dealId);
+    const { error } = await supabase.from("deals").update(patch as any).eq("id", dealId);
     if (error) return toast.error(error.message);
     onChange(patch);
   }
