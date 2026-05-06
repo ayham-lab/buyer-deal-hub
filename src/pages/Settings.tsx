@@ -18,15 +18,83 @@ export default function Settings() {
         <Tabs defaultValue="profile">
           <TabsList>
             <TabsTrigger value="profile">Profile</TabsTrigger>
+            <TabsTrigger value="checklist">Checklist</TabsTrigger>
             <TabsTrigger value="ghl">GHL Connections</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
           </TabsList>
           <TabsContent value="profile"><ProfileTab /></TabsContent>
+          <TabsContent value="checklist"><ChecklistTab /></TabsContent>
           <TabsContent value="ghl"><GhlTab /></TabsContent>
           <TabsContent value="notifications"><NotificationsTab /></TabsContent>
         </Tabs>
       </div>
     </AppLayout>
+  );
+}
+
+function ChecklistTab() {
+  const { user } = useAuth();
+  const [items, setItems] = useState<string[]>([]);
+  const [newItem, setNewItem] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("profiles").select("default_checklist").eq("user_id", user.id).maybeSingle()
+      .then(({ data }) => {
+        setItems(((data as any)?.default_checklist as string[]) ?? []);
+        setLoading(false);
+      });
+  }, [user]);
+
+  async function persist(next: string[]) {
+    if (!user) return;
+    setBusy(true);
+    const { error } = await supabase.from("profiles").update({ default_checklist: next } as any).eq("user_id", user.id);
+    setBusy(false);
+    if (error) toast.error(error.message);
+    else toast.success("Saved");
+  }
+
+  function add() {
+    const v = newItem.trim();
+    if (!v) return;
+    const next = [...items, v];
+    setItems(next); setNewItem("");
+    persist(next);
+  }
+  function remove(i: number) {
+    const next = items.filter((_, idx) => idx !== i);
+    setItems(next); persist(next);
+  }
+  function updateLocal(i: number, v: string) {
+    setItems((arr) => arr.map((x, idx) => idx === i ? v : x));
+  }
+
+  if (loading) return <Loader2 className="h-4 w-4 animate-spin mt-6" />;
+
+  return (
+    <div className="space-y-4 mt-6">
+      <p className="text-sm text-muted-foreground">
+        These items are added to every new deal's checklist. Changes apply to future deals only.
+      </p>
+      <div className="space-y-2">
+        {items.map((item, i) => (
+          <div key={i} className="flex gap-2">
+            <Input value={item} onChange={(e) => updateLocal(i, e.target.value)} onBlur={() => persist(items)} />
+            <Button variant="ghost" size="icon" onClick={() => remove(i)} disabled={busy}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-2 pt-2 border-t">
+        <Input placeholder="New checklist item" value={newItem} onChange={(e) => setNewItem(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }} />
+        <Button onClick={add} disabled={busy || !newItem.trim()}>Add</Button>
+      </div>
+    </div>
   );
 }
 
