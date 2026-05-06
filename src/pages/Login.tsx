@@ -50,15 +50,50 @@ export default function Login() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      // Link GHL location if present
       const sso = sessionStorage.getItem("ghl_sso");
       if (sso) {
         const parsed = JSON.parse(sso);
-        supabase
-          .from("profiles")
-          .update({ ghl_location_id: parsed.locationId, ghl_user_id: parsed.userId })
-          .eq("user_id", user.id)
-          .then(() => sessionStorage.removeItem("ghl_sso"));
+        (async () => {
+          try {
+            // 1. Update profile identity fields
+            await supabase
+              .from("profiles")
+              .update({
+                ghl_location_id: parsed.locationId,
+                ghl_user_id: parsed.userId,
+              })
+              .eq("user_id", user.id);
+
+            // 2. Determine workspace owner: first user from this location wins.
+            const { data: existing } = await supabase
+              .from("ghl_location_links")
+              .select("workspace_owner_user_id")
+              .eq("ghl_location_id", parsed.locationId)
+              .limit(1)
+              .maybeSingle();
+
+            const ownerId = existing?.workspace_owner_user_id ?? user.id;
+
+            // 3. Upsert this user's membership row.
+            await supabase
+              .from("ghl_location_links")
+              .upsert(
+                {
+                  user_id: user.id,
+                  workspace_owner_user_id: ownerId,
+                  linked_by_user_id: user.id,
+                  ghl_location_id: parsed.locationId,
+                  ghl_location_name: parsed.locationName ?? null,
+                  ghl_company_id: parsed.companyId ?? null,
+                },
+                { onConflict: "user_id,ghl_location_id" },
+              );
+          } catch (e) {
+            console.error("ghl link upsert failed", e);
+          } finally {
+            sessionStorage.removeItem("ghl_sso");
+          }
+        })();
       }
       const next = params.get("next");
       nav(next ? decodeURIComponent(next) : "/buyers", { replace: true });
