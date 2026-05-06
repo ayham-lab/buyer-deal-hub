@@ -6,11 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Upload, Trash2, FileText, Image as ImageIcon, Download } from "lucide-react";
 
-type Category = "photo" | "psa" | "assignment" | "addendum" | "other";
+type Category = "photo" | "psa" | "assignment" | "jv_contract" | "addendum" | "other";
 const CATEGORIES: { key: Category; label: string; accept: string }[] = [
   { key: "photo", label: "Photos", accept: "image/*" },
   { key: "psa", label: "Purchase & Sale Agreement", accept: ".pdf,image/*" },
   { key: "assignment", label: "Assignment", accept: ".pdf,image/*" },
+  { key: "jv_contract", label: "JV Contract", accept: ".pdf,image/*" },
   { key: "addendum", label: "Addendums", accept: ".pdf,image/*" },
   { key: "other", label: "Other", accept: "*" },
 ];
