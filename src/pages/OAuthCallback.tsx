@@ -141,7 +141,7 @@ export default function OAuthCallback() {
             </p>
           </div>
           {needsAuth ? (
-            <Button onClick={() => nav("/signup")} className="w-full">
+            <Button onClick={() => nav("/login")} className="w-full">
               Sign in to finish setup
             </Button>
           ) : (
