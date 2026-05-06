@@ -41,6 +41,7 @@ const App = () => (
               <Route path="/reset-password" element={wrap(<ResetPassword />)} />
               <Route path="/oauth/consent" element={wrap(<OAuthConsent />)} />
               <Route path="/oauth/callback" element={wrap(<OAuthCallback />)} />
+              <Route path="/deal/:id" element={wrap(<PublicDeal />)} />
               <Route path="/buyers" element={wrap(<Buyers />)} />
               <Route path="/finder" element={wrap(<Finder />)} />
               <Route path="/pipeline" element={wrap(<Pipeline />)} />
