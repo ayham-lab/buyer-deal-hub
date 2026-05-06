@@ -14,6 +14,7 @@ import { DealFiles } from "./DealFiles";
 import { DealBuyerMatch } from "./DealBuyerMatch";
 import { DealAssignees } from "./DealAssignees";
 import { DealActivity } from "./DealActivity";
+import { DealMarketing } from "./DealMarketing";
 import { format } from "date-fns";
 
 export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | null; onClose: () => void; onUpdated: () => void }) {
@@ -100,6 +101,7 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
             <TabsTrigger value="checklist">Checklist ({checklist.filter((c) => !c.is_completed).length})</TabsTrigger>
             <TabsTrigger value="tasks">Tasks</TabsTrigger>
             <TabsTrigger value="notes">Notes</TabsTrigger>
+            <TabsTrigger value="marketing">Marketing</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
           </TabsList>
 
@@ -233,6 +235,10 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
               rows={10}
               placeholder="Deal notes…"
             />
+          </TabsContent>
+
+          <TabsContent value="marketing" className="mt-4">
+            <DealMarketing dealId={dealId} deal={deal} onChange={(patch) => setDeal({ ...deal, ...patch })} />
           </TabsContent>
 
           <TabsContent value="activity" className="mt-4">

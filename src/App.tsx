@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
 import OAuthConsent from "./pages/OAuthConsent";
 import OAuthCallback from "./pages/OAuthCallback";
+import PublicDeal from "./pages/PublicDeal";
 import Dashboard from "./pages/Dashboard";
 import Buyers from "./pages/Buyers";
 import Finder from "./pages/Finder";
@@ -40,6 +41,7 @@ const App = () => (
               <Route path="/reset-password" element={wrap(<ResetPassword />)} />
               <Route path="/oauth/consent" element={wrap(<OAuthConsent />)} />
               <Route path="/oauth/callback" element={wrap(<OAuthCallback />)} />
+              <Route path="/deal/:id" element={wrap(<PublicDeal />)} />
               <Route path="/buyers" element={wrap(<Buyers />)} />
               <Route path="/finder" element={wrap(<Finder />)} />
               <Route path="/pipeline" element={wrap(<Pipeline />)} />
