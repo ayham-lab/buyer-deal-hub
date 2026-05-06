@@ -14,6 +14,7 @@ import { DealFiles } from "./DealFiles";
 import { DealBuyerMatch } from "./DealBuyerMatch";
 import { DealAssignees } from "./DealAssignees";
 import { DealActivity } from "./DealActivity";
+import { DealMarketing } from "./DealMarketing";
 import { format } from "date-fns";
 
 export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | null; onClose: () => void; onUpdated: () => void }) {
