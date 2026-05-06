@@ -54,8 +54,8 @@ export default function OAuthCallback() {
         };
         setResp(token);
 
-        const { data: userData } = await supabase.auth.getUser();
-        const user = userData?.user;
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (user && token.locationId) {
           const { error: upsertErr } = await supabase
             .from("ghl_location_links")
@@ -72,6 +72,9 @@ export default function OAuthCallback() {
             );
           if (upsertErr) console.error("ghl_location_links upsert failed", upsertErr);
           setNeedsAuth(false);
+          setStatus("success");
+          nav("/dashboard");
+          return;
         } else {
           sessionStorage.setItem(
             "ghl_marketplace_pending_install",
@@ -92,7 +95,7 @@ export default function OAuthCallback() {
         setStatus("error");
       }
     })();
-  }, [params]);
+  }, [params, nav]);
 
   if (status === "loading") {
     return (
