@@ -2,3 +2,6 @@ project_id = "ihvqhjrrahgyunmfvtrp"
 
 [functions.oauth-token]
 verify_jwt = false
+
+[functions.oauth-marketplace-callback]
+verify_jwt = false
