@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS default_checklist text[] NOT NULL DEFAULT ARRAY['Verify ARV','Get property photos','Send to buyer list','Confirm EMD received','Schedule walkthrough','Execute assignment contract','Confirm closing date with title']::text[];

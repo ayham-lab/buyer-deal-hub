@@ -673,6 +673,7 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          default_checklist: string[]
           email: string | null
           ghl_location_id: string | null
           ghl_user_id: string | null
@@ -686,6 +687,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          default_checklist?: string[]
           email?: string | null
           ghl_location_id?: string | null
           ghl_user_id?: string | null
@@ -699,6 +701,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          default_checklist?: string[]
           email?: string | null
           ghl_location_id?: string | null
           ghl_user_id?: string | null
