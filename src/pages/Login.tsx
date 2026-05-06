@@ -95,6 +95,41 @@ export default function Login() {
           }
         })();
       }
+      const pendingRaw = sessionStorage.getItem("ghl_marketplace_pending_install");
+      if (pendingRaw) {
+        try {
+          const pending = JSON.parse(pendingRaw);
+          if (pending?.locationId) {
+            (async () => {
+              try {
+                await supabase
+                  .from("ghl_location_links")
+                  .upsert(
+                    {
+                      user_id: user.id,
+                      workspace_owner_user_id: user.id,
+                      linked_by_user_id: user.id,
+                      ghl_location_id: pending.locationId,
+                      ghl_company_id: pending.companyId ?? null,
+                      ghl_location_name: null,
+                    },
+                    { onConflict: "user_id,ghl_location_id", ignoreDuplicates: true },
+                  );
+              } catch (e) {
+                console.error("pending marketplace install link failed", e);
+              } finally {
+                sessionStorage.removeItem("ghl_marketplace_pending_install");
+              }
+            })();
+          } else {
+            sessionStorage.removeItem("ghl_marketplace_pending_install");
+          }
+        } catch {
+          sessionStorage.removeItem("ghl_marketplace_pending_install");
+        }
+        nav("/dashboard", { replace: true });
+        return;
+      }
       const next = params.get("next");
       nav(next ? decodeURIComponent(next) : "/buyers", { replace: true });
     }
