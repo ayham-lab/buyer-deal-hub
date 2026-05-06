@@ -312,6 +312,10 @@ export type Database = {
           jv_partner_id: string | null
           jv_partner_name: string | null
           lead_source: string | null
+          marketing_description: string | null
+          marketing_name: string | null
+          marketing_photos: string[]
+          marketing_published: boolean
           minimum_sale_price: number | null
           notes: string | null
           owner_id: string | null
@@ -343,6 +347,10 @@ export type Database = {
           jv_partner_id?: string | null
           jv_partner_name?: string | null
           lead_source?: string | null
+          marketing_description?: string | null
+          marketing_name?: string | null
+          marketing_photos?: string[]
+          marketing_published?: boolean
           minimum_sale_price?: number | null
           notes?: string | null
           owner_id?: string | null
@@ -374,6 +382,10 @@ export type Database = {
           jv_partner_id?: string | null
           jv_partner_name?: string | null
           lead_source?: string | null
+          marketing_description?: string | null
+          marketing_name?: string | null
+          marketing_photos?: string[]
+          marketing_published?: boolean
           minimum_sale_price?: number | null
           notes?: string | null
           owner_id?: string | null
