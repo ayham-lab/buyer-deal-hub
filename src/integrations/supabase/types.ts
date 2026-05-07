@@ -307,6 +307,7 @@ export type Database = {
           emd_amount: number | null
           emd_received: boolean
           emd_received_at: string | null
+          ghl_opportunity_id: string | null
           id: string
           ip_expiry_date: string | null
           jv_partner_id: string | null
@@ -342,6 +343,7 @@ export type Database = {
           emd_amount?: number | null
           emd_received?: boolean
           emd_received_at?: string | null
+          ghl_opportunity_id?: string | null
           id?: string
           ip_expiry_date?: string | null
           jv_partner_id?: string | null
@@ -377,6 +379,7 @@ export type Database = {
           emd_amount?: number | null
           emd_received?: boolean
           emd_received_at?: string | null
+          ghl_opportunity_id?: string | null
           id?: string
           ip_expiry_date?: string | null
           jv_partner_id?: string | null
@@ -451,6 +454,36 @@ export type Database = {
           linked_by_user_id?: string
           user_id?: string
           workspace_owner_user_id?: string
+        }
+        Relationships: []
+      }
+      ghl_location_tokens: {
+        Row: {
+          access_token: string
+          created_at: string
+          expires_at: string | null
+          ghl_company_id: string | null
+          ghl_location_id: string
+          refresh_token: string
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          expires_at?: string | null
+          ghl_company_id?: string | null
+          ghl_location_id: string
+          refresh_token: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          expires_at?: string | null
+          ghl_company_id?: string | null
+          ghl_location_id?: string
+          refresh_token?: string
+          updated_at?: string
         }
         Relationships: []
       }

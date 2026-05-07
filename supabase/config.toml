@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.oauth-marketplace-callback]
 verify_jwt = false
+
+[functions.ghl-opportunity-webhook]
+verify_jwt = false
