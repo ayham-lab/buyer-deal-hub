@@ -945,6 +945,39 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_debug_log: {
+        Row: {
+          body: Json | null
+          function_name: string
+          headers: Json | null
+          id: string
+          ip: string | null
+          method: string | null
+          received_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          body?: Json | null
+          function_name: string
+          headers?: Json | null
+          id?: string
+          ip?: string | null
+          method?: string | null
+          received_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          body?: Json | null
+          function_name?: string
+          headers?: Json | null
+          id?: string
+          ip?: string | null
+          method?: string | null
+          received_at?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

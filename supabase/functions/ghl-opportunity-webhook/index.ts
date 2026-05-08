@@ -15,10 +15,33 @@ Deno.serve(async (req) => {
     return new Response("ok", { status: 200, headers: corsHeaders });
   }
 
+  const admin = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+
+  // Capture raw request for debug logging (best-effort)
+  const headersObj: Record<string, string> = {};
+  req.headers.forEach((v, k) => { headersObj[k] = v; });
+  const rawBody = await req.text().catch(() => "");
+  let parsedBody: unknown = null;
+  try { parsedBody = rawBody ? JSON.parse(rawBody) : null; } catch { parsedBody = { _raw: rawBody }; }
+
+  admin.from("webhook_debug_log").insert({
+    function_name: "ghl-opportunity-webhook",
+    method: req.method,
+    headers: headersObj,
+    body: parsedBody as any,
+    ip: headersObj["x-forwarded-for"] ?? headersObj["x-real-ip"] ?? null,
+    user_agent: headersObj["user-agent"] ?? null,
+  }).then(({ error }) => {
+    if (error) console.error("webhook_debug_log insert failed", error);
+  });
+
   try {
     if (req.method !== "POST") return j({ error: "method_not_allowed" }, 405);
 
-    const body = await req.json().catch(() => ({}));
+    const body = (parsedBody && typeof parsedBody === "object" ? parsedBody : {}) as any;
     console.log("ghl-opportunity-webhook body:", JSON.stringify(body));
 
     const locationId = body.locationId || body.location_id;
@@ -26,11 +49,6 @@ Deno.serve(async (req) => {
     if (!locationId || !opportunityId) {
       return j({ error: "missing_location_or_opportunity" }, 400);
     }
-
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
 
     const { data: tokenRow } = await admin
       .from("ghl_location_tokens")
