@@ -64,6 +64,43 @@ Deno.serve(async (req) => {
       console.error("ghl token exchange non-json response", text);
       return json({ error: "invalid_upstream_response" }, 502);
     }
+
+    // Persist tokens for this location (service role bypasses RLS)
+    try {
+      const tok = parsed as any;
+      const locationId = tok.locationId ?? tok.location_id;
+      const companyId = tok.companyId ?? tok.company_id ?? null;
+      if (!locationId) {
+        console.log("oauth-marketplace-callback: skipping token upsert (no locationId)");
+      } else {
+        const admin = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+        );
+        const expiresAt = new Date(Date.now() + (Number(tok.expires_in) || 0) * 1000).toISOString();
+        const { error: upErr } = await admin
+          .from("ghl_location_tokens")
+          .upsert(
+            {
+              ghl_location_id: locationId,
+              ghl_company_id: companyId,
+              access_token: tok.access_token,
+              refresh_token: tok.refresh_token,
+              expires_at: expiresAt,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "ghl_location_id" },
+          );
+        if (upErr) {
+          console.error("ghl_location_tokens upsert failed", upErr);
+        } else {
+          console.log("ghl_location_tokens upsert ok for", locationId);
+        }
+      }
+    } catch (persistErr) {
+      console.error("ghl_location_tokens persist threw", persistErr);
+    }
+
     return json(parsed, 200);
   } catch (err: any) {
     console.error("oauth-marketplace-callback unhandled error", err);
