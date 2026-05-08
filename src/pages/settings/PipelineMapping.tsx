@@ -41,14 +41,14 @@ export default function PipelineMapping() {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data, error } = await supabase.functions.invoke(
-        "ghl-list-installed-locations",
-        { body: {} },
-      );
-      if (error || (data as any)?.error) {
-        setError((data as any)?.error ?? error?.message ?? "Failed to load locations");
+      const { data, error } = await supabase
+        .from("ghl_location_tokens")
+        .select("ghl_location_id, ghl_company_id")
+        .order("updated_at", { ascending: false });
+      if (error) {
+        setError(error.message ?? "Failed to load locations");
       } else {
-        setLocations((data as any).locations ?? []);
+        setLocations((data as any) ?? []);
       }
       setLoading(false);
     })();
