@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Users, Search, LayoutGrid, BarChart3, ShieldCheck, ChevronsLeft, ChevronsRight, Building2, UsersRound, Home, CheckSquare, Settings as SettingsIcon } from "lucide-react";
+import { Users, Search, LayoutGrid, BarChart3, ShieldCheck, ChevronsLeft, ChevronsRight, Building2, UsersRound, Home, CheckSquare, Settings as SettingsIcon, GitBranch } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -14,7 +14,8 @@ const items = [
   { to: "/tasks", label: "Tasks", icon: CheckSquare },
   { to: "/title-companies", label: "Title Companies", icon: Building2 },
   { to: "/team", label: "Team", icon: UsersRound },
-  { to: "/settings", label: "Settings", icon: SettingsIcon },
+  { to: "/settings/pipelines", label: "Pipeline Mapping", icon: GitBranch },
+  { to: "/settings", label: "Settings", icon: SettingsIcon, exact: true },
 ];
 
 export function Sidebar() {
