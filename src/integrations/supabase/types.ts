@@ -424,6 +424,42 @@ export type Database = {
           },
         ]
       }
+      ghl_dispo_stage_mappings: {
+        Row: {
+          created_at: string
+          ghl_location_id: string
+          ghl_pipeline_id: string
+          ghl_pipeline_name: string | null
+          ghl_stage_id: string
+          ghl_stage_name: string | null
+          id: string
+          updated_at: string
+          workspace_owner_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          ghl_location_id: string
+          ghl_pipeline_id: string
+          ghl_pipeline_name?: string | null
+          ghl_stage_id: string
+          ghl_stage_name?: string | null
+          id?: string
+          updated_at?: string
+          workspace_owner_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          ghl_location_id?: string
+          ghl_pipeline_id?: string
+          ghl_pipeline_name?: string | null
+          ghl_stage_id?: string
+          ghl_stage_name?: string | null
+          id?: string
+          updated_at?: string
+          workspace_owner_user_id?: string | null
+        }
+        Relationships: []
+      }
       ghl_location_links: {
         Row: {
           ghl_company_id: string | null
