@@ -16,11 +16,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
-interface LocationLink {
-  id: string;
+interface InstalledLocation {
   ghl_location_id: string;
-  ghl_location_name: string | null;
-  workspace_owner_user_id: string;
+  ghl_company_id: string | null;
 }
 
 interface Stage {
@@ -36,17 +34,22 @@ interface Pipeline {
 
 export default function PipelineMapping() {
   const { user } = useAuth();
-  const [links, setLinks] = useState<LocationLink[]>([]);
+  const [locations, setLocations] = useState<InstalledLocation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data } = await supabase
-        .from("ghl_location_links")
-        .select("id, ghl_location_id, ghl_location_name, workspace_owner_user_id")
-        .eq("workspace_owner_user_id", user.id);
-      setLinks((data as any) ?? []);
+      const { data, error } = await supabase.functions.invoke(
+        "ghl-list-installed-locations",
+        { body: {} },
+      );
+      if (error || (data as any)?.error) {
+        setError((data as any)?.error ?? error?.message ?? "Failed to load locations");
+      } else {
+        setLocations((data as any).locations ?? []);
+      }
       setLoading(false);
     })();
   }, [user]);
@@ -60,19 +63,21 @@ export default function PipelineMapping() {
       <div className="p-6 lg:p-8 max-w-4xl space-y-6">
         {loading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
-        ) : links.length === 0 ? (
+        ) : error ? (
+          <div className="text-sm text-destructive">Error: {error}</div>
+        ) : locations.length === 0 ? (
           <div className="text-sm text-muted-foreground p-6 border border-dashed rounded-md">
-            No GHL locations connected. Install the app in a sub-account first.
+            No GHL locations have installed the app yet.
           </div>
         ) : (
-          links.map((l) => <LocationMapper key={l.id} link={l} />)
+          locations.map((l) => <LocationMapper key={l.ghl_location_id} location={l} />)
         )}
       </div>
     </AppLayout>
   );
 }
 
-function LocationMapper({ link }: { link: LocationLink }) {
+function LocationMapper({ location }: { location: InstalledLocation }) {
   const { user } = useAuth();
   const [pipelines, setPipelines] = useState<Pipeline[] | null>(null);
   const [loadingPipes, setLoadingPipes] = useState(false);
@@ -81,14 +86,13 @@ function LocationMapper({ link }: { link: LocationLink }) {
   const [checkedStages, setCheckedStages] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
 
-  // Load pipelines via edge function
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoadingPipes(true);
       setPipeError(null);
       const { data, error } = await supabase.functions.invoke("ghl-list-pipelines", {
-        body: { ghl_location_id: link.ghl_location_id },
+        body: { ghl_location_id: location.ghl_location_id },
       });
       if (cancelled) return;
       if (error || (data as any)?.error) {
@@ -102,22 +106,21 @@ function LocationMapper({ link }: { link: LocationLink }) {
     return () => {
       cancelled = true;
     };
-  }, [link.ghl_location_id]);
+  }, [location.ghl_location_id]);
 
-  // Load existing mappings for this location
   useEffect(() => {
     (async () => {
       const { data } = await supabase
         .from("ghl_dispo_stage_mappings")
         .select("ghl_pipeline_id, ghl_stage_id")
-        .eq("ghl_location_id", link.ghl_location_id);
+        .eq("ghl_location_id", location.ghl_location_id);
       const rows = (data as any[]) ?? [];
       if (rows.length > 0) {
         setSelectedPipelineId(rows[0].ghl_pipeline_id);
         setCheckedStages(new Set(rows.map((r) => r.ghl_stage_id)));
       }
     })();
-  }, [link.ghl_location_id]);
+  }, [location.ghl_location_id]);
 
   const pipeline = pipelines?.find((p) => p.id === selectedPipelineId) ?? null;
 
@@ -134,11 +137,10 @@ function LocationMapper({ link }: { link: LocationLink }) {
     if (!user || !pipeline) return;
     setSaving(true);
 
-    // Delete existing mappings for this location not in the new set
     const { error: delErr } = await supabase
       .from("ghl_dispo_stage_mappings")
       .delete()
-      .eq("ghl_location_id", link.ghl_location_id);
+      .eq("ghl_location_id", location.ghl_location_id);
     if (delErr) {
       setSaving(false);
       toast.error(delErr.message);
@@ -149,7 +151,7 @@ function LocationMapper({ link }: { link: LocationLink }) {
       const rows = Array.from(checkedStages).map((stageId) => {
         const stage = pipeline.stages.find((s) => s.id === stageId);
         return {
-          ghl_location_id: link.ghl_location_id,
+          ghl_location_id: location.ghl_location_id,
           ghl_pipeline_id: pipeline.id,
           ghl_pipeline_name: pipeline.name,
           ghl_stage_id: stageId,
@@ -175,10 +177,15 @@ function LocationMapper({ link }: { link: LocationLink }) {
     <Card>
       <CardHeader>
         <CardTitle className="text-base">
-          {link.ghl_location_name ?? "GHL Location"}{" "}
+          Location{" "}
           <span className="ml-2 text-xs font-mono text-muted-foreground">
-            {link.ghl_location_id}
+            {location.ghl_location_id}
           </span>
+          {location.ghl_company_id && (
+            <span className="ml-2 text-xs font-mono text-muted-foreground">
+              · company {location.ghl_company_id}
+            </span>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
