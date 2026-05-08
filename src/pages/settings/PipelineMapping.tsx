@@ -41,10 +41,22 @@ export default function PipelineMapping() {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data, error } = await supabase
+      // If we're inside the GHL iframe, scope to the active sub-account only.
+      let activeLocationId: string | null = null;
+      try {
+        const raw = sessionStorage.getItem("ghl_active_location");
+        if (raw) activeLocationId = JSON.parse(raw)?.locationId ?? null;
+      } catch {}
+
+      let query = supabase
         .from("ghl_location_tokens")
         .select("ghl_location_id, ghl_company_id")
         .order("updated_at", { ascending: false });
+      if (activeLocationId) {
+        query = query.eq("ghl_location_id", activeLocationId);
+      }
+
+      const { data, error } = await query;
       if (error) {
         setError(error.message ?? "Failed to load locations");
       } else {
