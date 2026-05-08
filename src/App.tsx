@@ -19,6 +19,7 @@ import KPIs from "./pages/KPIs";
 import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
+import PipelineMapping from "./pages/settings/PipelineMapping";
 import TitleCompanies from "./pages/TitleCompanies";
 import Team from "./pages/Team";
 import Tasks from "./pages/Tasks";
@@ -53,6 +54,7 @@ const App = () => (
               <Route path="/admin" element={wrap(<Admin />)} />
               <Route path="/profile" element={wrap(<Profile />)} />
               <Route path="/settings" element={wrap(<Settings />)} />
+              <Route path="/settings/pipelines" element={wrap(<PipelineMapping />)} />
               <Route path="/title-companies" element={wrap(<TitleCompanies />)} />
               <Route path="/team" element={wrap(<Team />)} />
               <Route path="*" element={wrap(<NotFound />)} />

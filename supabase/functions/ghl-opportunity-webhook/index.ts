@@ -61,62 +61,64 @@ Deno.serve(async (req) => {
     const oppJson = JSON.parse(oppText);
     const opp = oppJson.opportunity ?? oppJson;
 
-    // Fetch pipelines to resolve stage name
-    const pipeRes = await fetch(
-      `https://services.leadconnectorhq.com/opportunities/pipelines?locationId=${encodeURIComponent(locationId)}`,
-      { headers: ghlHeaders },
-    );
-    const pipeText = await pipeRes.text();
-    let stageName = "";
-    if (pipeRes.ok) {
-      const pipeJson = JSON.parse(pipeText);
-      const pipelines = pipeJson.pipelines ?? [];
-      const stageId = body.pipelineStageId || opp.pipelineStageId;
-      const pipelineId = body.pipelineId || opp.pipelineId;
-      const pipeline = pipelines.find((p: any) => p.id === pipelineId) ?? pipelines[0];
-      const stage = pipeline?.stages?.find((s: any) => s.id === stageId);
-      stageName = stage?.name ?? "";
-    } else {
-      console.error("pipelines fetch failed", pipeRes.status, pipeText);
+    const stageId = body.pipelineStageId || opp.pipelineStageId;
+    const pipelineId = body.pipelineId || opp.pipelineId;
+    console.log("ghl-opportunity-webhook locationId:", locationId, "stageId:", stageId, "pipelineId:", pipelineId);
+
+    if (!stageId) {
+      return j({ ok: true, skipped: "no_stage_id" }, 200);
+    }
+
+    // Look up the configured mapping for this (location, stage)
+    const { data: mapping } = await admin
+      .from("ghl_dispo_stage_mappings")
+      .select("ghl_pipeline_id, ghl_pipeline_name, ghl_stage_name, workspace_owner_user_id")
+      .eq("ghl_location_id", locationId)
+      .eq("ghl_stage_id", stageId)
+      .maybeSingle();
+
+    if (!mapping) {
+      return j({ ok: true, skipped: "no_mapping", stageId, locationId }, 200);
     }
 
     let written = false;
-    if (stageName.toLowerCase().includes("dispo")) {
-      // Find a workspace owner for this location to satisfy deals.user_id NOT NULL
-      const { data: link } = await admin
-        .from("ghl_location_links")
-        .select("workspace_owner_user_id")
-        .eq("ghl_location_id", locationId)
-        .limit(1)
-        .maybeSingle();
+    const ownerUserId =
+      mapping.workspace_owner_user_id ??
+      (
+        await admin
+          .from("ghl_location_links")
+          .select("workspace_owner_user_id")
+          .eq("ghl_location_id", locationId)
+          .limit(1)
+          .maybeSingle()
+      ).data?.workspace_owner_user_id;
 
-      if (link?.workspace_owner_user_id) {
-        const address =
-          opp.name ||
-          opp.contact?.name ||
-          `GHL Opportunity ${opportunityId}`;
+    if (ownerUserId) {
+      const address =
+        opp.name ||
+        opp.contact?.name ||
+        `GHL Opportunity ${opportunityId}`;
 
-        const { error: upErr } = await admin
-          .from("deals")
-          .upsert(
-            {
-              user_id: link.workspace_owner_user_id,
-              property_address: address,
-              status: "lead",
-              lead_source: "ghl",
-              ghl_opportunity_id: opportunityId,
-              notes: `Imported from GHL stage "${stageName}"`,
-            },
-            { onConflict: "ghl_opportunity_id" },
-          );
-        if (upErr) console.error("deal upsert failed", upErr);
-        else written = true;
-      } else {
-        console.log("no workspace owner for location", locationId);
-      }
+      const { error: upErr } = await admin
+        .from("deals")
+        .upsert(
+          {
+            user_id: ownerUserId,
+            property_address: address,
+            status: "lead",
+            lead_source: "ghl",
+            ghl_opportunity_id: opportunityId,
+            notes: `Imported from GHL stage "${mapping.ghl_stage_name ?? stageId}"`,
+          },
+          { onConflict: "ghl_opportunity_id" },
+        );
+      if (upErr) console.error("deal upsert failed", upErr);
+      else written = true;
+    } else {
+      console.log("no workspace owner for location", locationId);
     }
 
-    return j({ ok: true, written, stageName }, 200);
+    return j({ ok: true, written, stageId, stageName: mapping.ghl_stage_name }, 200);
   } catch (err: any) {
     console.error("ghl-opportunity-webhook unhandled error", err);
     return j({ error: err?.message ?? "unexpected_error" }, 500);
