@@ -22,6 +22,15 @@ export default function Embed() {
         const companyId = info.ghl_company_id || info.companyId;
         if (!locationId) return;
 
+        // Remember which GHL sub-account this iframe is currently scoped to,
+        // so pages like Pipeline Mapping can filter to the active location.
+        try {
+          sessionStorage.setItem(
+            "ghl_active_location",
+            JSON.stringify({ locationId, companyId: companyId ?? null }),
+          );
+        } catch {}
+
         const { data: { session } } = await supabase.auth.getSession();
         const user = session?.user;
 
