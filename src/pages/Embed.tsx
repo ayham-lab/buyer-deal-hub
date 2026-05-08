@@ -1,29 +1,18 @@
-import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import Dashboard from "./Dashboard";
 
 export default function Embed() {
-  const [params] = useSearchParams();
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState<string>("");
+  const handledRef = useRef(false);
 
   useEffect(() => {
-    const ssoToken =
-      params.get("ssoToken") ||
-      params.get("sso") ||
-      params.get("ssotoken") ||
-      "";
-
-    (async () => {
+    const processBlob = async (ssoToken: string) => {
+      if (handledRef.current) return;
+      handledRef.current = true;
       try {
-        if (!ssoToken) {
-          setError("Missing SSO token in URL.");
-          setStatus("error");
-          return;
-        }
-
         const { data, error: invokeErr } = await supabase.functions.invoke(
           "oauth-userinfo",
           { body: { sso: ssoToken } },
@@ -59,7 +48,6 @@ export default function Embed() {
             );
           if (upErr) console.error("embed link upsert failed", upErr);
         } else {
-          // No session yet — stash for the post-login flow in Login.tsx.
           sessionStorage.setItem(
             "ghl_marketplace_pending_install",
             JSON.stringify({ locationId, companyId }),
@@ -72,13 +60,43 @@ export default function Embed() {
         setError(e?.message ?? "Unexpected error");
         setStatus("error");
       }
-    })();
-  }, [params]);
+    };
+
+    const handler = (event: MessageEvent) => {
+      const payload = (event.data && (event.data as any).payload) as unknown;
+      if (typeof payload === "string" && payload.length > 0) {
+        console.log("embed received postMessage payload");
+        processBlob(payload);
+      }
+    };
+
+    window.addEventListener("message", handler);
+
+    try {
+      window.parent.postMessage({ message: "REQUEST_USER_DATA" }, "*");
+    } catch (e) {
+      console.error("postMessage to parent failed", e);
+    }
+
+    const timeout = window.setTimeout(() => {
+      if (!handledRef.current) {
+        handledRef.current = true;
+        setError("Missing SSO token in URL.");
+        setStatus("error");
+      }
+    }, 10000);
+
+    return () => {
+      window.removeEventListener("message", handler);
+      window.clearTimeout(timeout);
+    };
+  }, []);
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-3">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <div className="text-sm text-muted-foreground">Connecting to GoHighLevel...</div>
       </div>
     );
   }
