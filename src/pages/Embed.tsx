@@ -1,11 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
 import Dashboard from "./Dashboard";
 
 export default function Embed() {
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
-  const [error, setError] = useState<string>("");
   const handledRef = useRef(false);
 
   useEffect(() => {
@@ -18,21 +15,17 @@ export default function Embed() {
           { body: { sso: ssoToken } },
         );
         console.log("embed sso response:", data, invokeErr);
-
-        if (invokeErr || !data || (data as any).error) {
-          setError((data as any)?.error || invokeErr?.message || "SSO failed");
-          setStatus("error");
-          return;
-        }
+        if (invokeErr || !data || (data as any).error) return;
 
         const info = data as any;
         const locationId = info.ghl_location_id || info.locationId;
         const companyId = info.ghl_company_id || info.companyId;
+        if (!locationId) return;
 
         const { data: { session } } = await supabase.auth.getSession();
         const user = session?.user;
 
-        if (user && locationId) {
+        if (user) {
           const { error: upErr } = await supabase
             .from("ghl_location_links")
             .upsert(
@@ -53,12 +46,8 @@ export default function Embed() {
             JSON.stringify({ locationId, companyId }),
           );
         }
-
-        setStatus("ready");
-      } catch (e: any) {
-        console.error("embed fatal", e);
-        setError(e?.message ?? "Unexpected error");
-        setStatus("error");
+      } catch (e) {
+        console.error("embed sso processing failed", e);
       }
     };
 
@@ -71,47 +60,16 @@ export default function Embed() {
     };
 
     window.addEventListener("message", handler);
-
     try {
       window.parent.postMessage({ message: "REQUEST_USER_DATA" }, "*");
     } catch (e) {
       console.error("postMessage to parent failed", e);
     }
 
-    const timeout = window.setTimeout(() => {
-      if (!handledRef.current) {
-        handledRef.current = true;
-        setError("Missing SSO token in URL.");
-        setStatus("error");
-      }
-    }, 10000);
-
     return () => {
       window.removeEventListener("message", handler);
-      window.clearTimeout(timeout);
     };
   }, []);
 
-  if (status === "loading") {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-3">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        <div className="text-sm text-muted-foreground">Connecting to GoHighLevel...</div>
-      </div>
-    );
-  }
-
-  if (status === "error") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-6">
-        <div className="text-sm text-muted-foreground">Embed failed: {error}</div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-background">
-      <Dashboard />
-    </div>
-  );
+  return <Dashboard />;
 }
