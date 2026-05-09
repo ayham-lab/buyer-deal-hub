@@ -74,6 +74,19 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    // Best-effort: log every token-exchange payload we get from GHL so we can
+    // diagnose installs that don't end up writing rows.
+    try {
+      await admin.from("oauth_install_log").insert({
+        source: "oauth-marketplace-callback",
+        company_id: parsed.companyId ?? parsed.company_id ?? null,
+        location_id: parsed.locationId ?? parsed.location_id ?? null,
+        payload: parsed,
+      });
+    } catch (e) {
+      console.error("oauth_install_log insert failed", e);
+    }
+
     const companyId: string | null = parsed.companyId ?? parsed.company_id ?? null;
     const locationId: string | null = parsed.locationId ?? parsed.location_id ?? null;
     const userType: string = parsed.userType ?? parsed.user_type ?? (locationId ? "Location" : "Company");
