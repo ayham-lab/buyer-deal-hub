@@ -41,6 +41,11 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   });
   const [debugMessages, setDebugMessages] = useState<string[]>([]);
   const [debugStatus, setDebugStatus] = useState<string>("waiting for postMessage…");
+  const isIframed = (() => {
+    try { return window.self !== window.top; } catch { return true; }
+  })();
+  // Standalone is always "ready". Iframed is ready once activeLocation is set.
+  const handshakeReady = !isIframed || activeLocation !== null;
   const handledRef = useRef(false);
   const navigate = useNavigate();
 
