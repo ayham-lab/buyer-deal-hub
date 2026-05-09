@@ -1,5 +1,6 @@
 // Lists pipelines (with stages) for a GHL location using the stored access token.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { getValidGhlAccessToken } from "../_shared/ghlToken.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
