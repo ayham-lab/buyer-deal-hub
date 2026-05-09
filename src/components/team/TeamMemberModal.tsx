@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { withLocation } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";

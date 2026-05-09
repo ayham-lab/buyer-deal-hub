@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Papa from "papaparse";
 import { supabase } from "@/integrations/supabase/client";
+import { withLocation } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
