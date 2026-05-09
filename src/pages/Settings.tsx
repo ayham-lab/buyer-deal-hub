@@ -159,7 +159,12 @@ function GhlTab() {
 
   async function load() {
     setLoading(true);
-    const { data } = await supabase.from("ghl_location_links").select("*").order("linked_at", { ascending: false });
+    // SCOPE: this tab is admin-standalone only (gated above), so no location
+    // header is sent. RLS still restricts via "GHLLinks: scoped owner select".
+    const { data } = await supabase
+      .from("ghl_location_links")
+      .select("*")
+      .order("linked_at", { ascending: false });
     setLinks(data ?? []);
     setLoading(false);
   }
