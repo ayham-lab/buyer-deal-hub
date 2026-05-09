@@ -46,13 +46,19 @@ export default function PipelineMapping() {
       if (raw) activeLocationId = JSON.parse(raw)?.locationId ?? null;
     } catch {}
 
-    let query = supabase
+    if (!activeLocationId) {
+      setError("No active GHL sub-account in this session. Open Dispo Pro from inside the GHL sub-account you want to configure.");
+      setLocations([]);
+      setLoading(false);
+      return;
+    }
+
+    const { data, error } = await supabase
       .from("ghl_location_tokens")
       .select("ghl_location_id, ghl_company_id")
-      .order("updated_at", { ascending: false });
-    if (activeLocationId) query = query.eq("ghl_location_id", activeLocationId);
+      .eq("ghl_location_id", activeLocationId)
+      .limit(1);
 
-    const { data, error } = await query;
     if (error) setError(error.message ?? "Failed to load locations");
     else setLocations((data as any) ?? []);
     setLoading(false);
