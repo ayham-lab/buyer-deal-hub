@@ -169,11 +169,16 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     if (isIframed) {
       // GHL only injects activeLocation into iframes whose URL it recognizes
       // as the app's custom-page (/embed). If we're deep-linked anywhere else
-      // inside the iframe, hard-navigate to /embed (preserving query+hash) so
-      // the parent frame issues the handshake.
+      // inside the iframe, stash the original deep-link, hard-navigate to
+      // /embed (so GHL fires the handshake), then return there once we have
+      // the active location.
       if (window.location.pathname !== "/embed") {
+        const original = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+        try {
+          sessionStorage.setItem("ghl_post_handshake_return", original);
+        } catch {}
         const target = `/embed${window.location.search}${window.location.hash}`;
-        pushDebug(`iframed but not /embed → redirecting to ${target}`);
+        pushDebug(`iframed but not /embed → redirecting to ${target} (return=${original})`);
         window.location.replace(target);
         return;
       }
