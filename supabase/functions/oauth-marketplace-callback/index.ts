@@ -119,6 +119,45 @@ Deno.serve(async (req) => {
 
     // Agency install: enumerate installed sub-accounts and mint per-location tokens.
     if (userType === "Company" && companyId) {
+      // Persist the Company-scoped token (ghl_location_id IS NULL) so we can
+      // later refresh it from cron and re-enumerate sub-accounts without
+      // forcing the user through a full agency reinstall.
+      try {
+        const { data: existing, error: selErr } = await admin
+          .from("ghl_location_tokens")
+          .select("id")
+          .is("ghl_location_id", null)
+          .eq("ghl_company_id", companyId)
+          .maybeSingle();
+        if (selErr) throw selErr;
+
+        const companyRow = {
+          ghl_company_id: companyId,
+          ghl_location_id: null as string | null,
+          access_token: parsed.access_token,
+          refresh_token: parsed.refresh_token,
+          expires_at: expiresAt(parsed.expires_in),
+          updated_at: new Date().toISOString(),
+        };
+
+        if (existing?.id) {
+          const { error: updErr } = await admin
+            .from("ghl_location_tokens")
+            .update(companyRow)
+            .eq("id", existing.id);
+          if (updErr) throw updErr;
+        } else {
+          const { error: insErr } = await admin
+            .from("ghl_location_tokens")
+            .insert(companyRow);
+          if (insErr) throw insErr;
+        }
+        console.log("persisted company token row for", companyId);
+      } catch (e: any) {
+        console.error("company token persist failed", e);
+        errors.push(`company persist: ${e?.message ?? "err"}`);
+      }
+
       if (!app_id) {
         console.error("GHL_MARKETPLACE_APP_ID missing — cannot enumerate installed locations");
         errors.push("missing_app_id");

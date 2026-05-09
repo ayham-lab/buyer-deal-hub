@@ -499,7 +499,8 @@ export type Database = {
           created_at: string
           expires_at: string | null
           ghl_company_id: string | null
-          ghl_location_id: string
+          ghl_location_id: string | null
+          id: string
           refresh_token: string
           updated_at: string
         }
@@ -508,7 +509,8 @@ export type Database = {
           created_at?: string
           expires_at?: string | null
           ghl_company_id?: string | null
-          ghl_location_id: string
+          ghl_location_id?: string | null
+          id?: string
           refresh_token: string
           updated_at?: string
         }
@@ -517,7 +519,8 @@ export type Database = {
           created_at?: string
           expires_at?: string | null
           ghl_company_id?: string | null
-          ghl_location_id?: string
+          ghl_location_id?: string | null
+          id?: string
           refresh_token?: string
           updated_at?: string
         }
