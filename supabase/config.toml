@@ -12,3 +12,6 @@ verify_jwt = false
 [functions.ghl-list-pipelines]
 verify_jwt = false
 
+[functions.sync-ghl-sub-accounts]
+verify_jwt = false
+
