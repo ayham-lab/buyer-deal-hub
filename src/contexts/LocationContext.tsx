@@ -69,6 +69,8 @@ export function LocationProvider({ children }: { children: ReactNode }) {
           sessionStorage.setItem("ghl_active_location", JSON.stringify(next));
         } catch {}
         setActiveLocation(next);
+        pushDebug(`SSO ok → location ${locationId}`);
+        setDebugStatus("active");
 
         const { data: { session } } = await supabase.auth.getSession();
         const user = session?.user;
