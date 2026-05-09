@@ -36,6 +36,18 @@ export function withLocation<T extends Record<string, unknown>>(
 }
 
 /**
+ * Defense-in-depth: explicitly filter a SELECT query by ghl_location_id when
+ * an active location is set. RLS enforces this server-side, but adding the
+ * filter client-side makes the scope visible in queries and protects against
+ * RLS regressions. No-op in standalone mode (returns the query unchanged).
+ */
+export function scopeToLocation<T>(query: T): T {
+  const loc = getActiveLocationId();
+  if (!loc) return query;
+  return (query as any).eq("ghl_location_id", loc);
+}
+
+/**
  * Patches global fetch ONCE so every request to the Supabase REST/Auth/
  * Functions endpoints carries `x-ghl-location-id` when an active location
  * is set. Safe to call multiple times — only patches on first call.
