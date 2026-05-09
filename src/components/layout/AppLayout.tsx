@@ -3,10 +3,12 @@ import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useActiveLocation } from "@/contexts/LocationContext";
 import { Loader2 } from "lucide-react";
 
 export function AppLayout({ children, requireAdmin }: { children: ReactNode; requireAdmin?: boolean }) {
   const { user, loading, isAdmin } = useAuth();
+  const { isIframed } = useActiveLocation();
 
   if (loading) {
     return (
@@ -16,6 +18,8 @@ export function AppLayout({ children, requireAdmin }: { children: ReactNode; req
     );
   }
   if (!user) return <Navigate to="/login" replace />;
+  // Admin Console is a cross-tenant tool — never expose it inside a GHL iframe.
+  if (requireAdmin && isIframed) return <Navigate to="/" replace />;
   if (requireAdmin && !isAdmin) return <Navigate to="/buyers" replace />;
 
   return (
