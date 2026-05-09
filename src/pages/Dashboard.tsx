@@ -62,12 +62,16 @@ export default function Dashboard() {
         openTasks: openTasks.count || 0,
       });
     })();
-  }, [user]);
+  }, [user, handshakeReady, activeLocation?.locationId]);
+
+  const displayName = isIframed
+    ? activeLocation?.userName || null
+    : profile?.name || null;
 
   return (
     <AppLayout>
       <PageHeader
-        title={`Welcome back${profile?.name ? `, ${profile.name.split(" ")[0]}` : ""}`}
+        title={`Welcome back${displayName ? `, ${displayName.split(" ")[0]}` : ""}`}
         subtitle="Here's what's happening across your pipeline today."
       />
 
