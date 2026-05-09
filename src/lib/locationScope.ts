@@ -80,6 +80,14 @@ export function installLocationHeader() {
       return originalFetch(input, init);
     }
 
+    // Skip edge function calls — they don't enforce per-row RLS scoping
+    // (they run with the service role) and adding these custom headers
+    // would force a CORS preflight that the functions don't whitelist,
+    // silently breaking every functions.invoke() call from the browser.
+    if (url.includes("/functions/v1/")) {
+      return originalFetch(input, init);
+    }
+
     const loc = getActiveLocationId();
     if (!loc && !isIframed) return originalFetch(input, init);
 
