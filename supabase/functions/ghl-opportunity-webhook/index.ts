@@ -138,6 +138,7 @@ Deno.serve(async (req) => {
             status: "lead",
             lead_source: "ghl",
             ghl_opportunity_id: opportunityId,
+            ghl_location_id: locationId,
             notes: `Imported from GHL stage "${mapping.ghl_stage_name ?? stageId}"`,
           });
         if (insErr) {
