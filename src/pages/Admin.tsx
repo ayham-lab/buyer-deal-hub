@@ -315,9 +315,15 @@ function DealsTab({ deals, users, onOpenUser }: any) {
             {filtered.map((d: any) => (
               <tr key={d.id}>
                 <td>
-                  <button className="text-primary hover:underline text-xs" onClick={() => onOpenUser(d.user_id)}>
-                    {userMap[d.user_id]?.email || d.user_id.slice(0, 8)}
-                  </button>
+                  {d.user_id ? (
+                    <button className="text-primary hover:underline text-xs" onClick={() => onOpenUser(d.user_id)}>
+                      {userMap[d.user_id]?.email || d.user_id.slice(0, 8)}
+                    </button>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">
+                      {d.ghl_assigned_user_id ? `GHL: ${d.ghl_assigned_user_id}` : "— (GHL import)"}
+                    </span>
+                  )}
                 </td>
                 <td className="font-medium truncate max-w-[260px]">{d.property_address}</td>
                 <td><Badge variant="outline" className="capitalize">{d.status}</Badge></td>
