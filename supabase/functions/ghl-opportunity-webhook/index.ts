@@ -99,60 +99,51 @@ Deno.serve(async (req) => {
       return j({ ok: true, skipped: "no_mapping", stageId, locationId }, 200);
     }
 
+    // SECURITY: never attribute a GHL-imported deal to a Lovable workspace user.
+    // Store the GHL identity (assignedTo) in a dedicated column instead.
+    const ghlAssignedUserId =
+      body.assignedTo || body.assigned_to || opp.assignedTo || opp.assigned_to || null;
+
     let written = false;
-    const ownerUserId =
-      mapping.workspace_owner_user_id ??
-      (
-        await admin
-          .from("ghl_location_links")
-          .select("workspace_owner_user_id")
-          .eq("ghl_location_id", locationId)
-          .limit(1)
-          .maybeSingle()
-      ).data?.workspace_owner_user_id;
-
     let insertError: string | null = null;
-    if (ownerUserId) {
-      const address =
-        opp.name ||
-        opp.contact?.name ||
-        `GHL Opportunity ${opportunityId}`;
+    const address =
+      opp.name ||
+      opp.contact?.name ||
+      `GHL Opportunity ${opportunityId}`;
 
-      const { data: existing, error: selErr } = await admin
-        .from("deals")
-        .select("id")
-        .eq("ghl_opportunity_id", opportunityId)
-        .maybeSingle();
+    const { data: existing, error: selErr } = await admin
+      .from("deals")
+      .select("id")
+      .eq("ghl_opportunity_id", opportunityId)
+      .maybeSingle();
 
-      if (selErr) {
-        console.error("deal select failed", selErr);
-        insertError = `select: ${selErr.message}`;
-      } else if (existing) {
-        written = true;
-      } else {
-        const { error: insErr } = await admin
-          .from("deals")
-          .insert({
-            user_id: ownerUserId,
-            property_address: address,
-            status: "lead",
-            lead_source: "ghl",
-            ghl_opportunity_id: opportunityId,
-            ghl_location_id: locationId,
-            notes: `Imported from GHL stage "${mapping.ghl_stage_name ?? stageId}"`,
-          });
-        if (insErr) {
-          console.error("deal insert failed", insErr);
-          insertError = `insert: ${insErr.message}`;
-        } else {
-          written = true;
-        }
-      }
+    if (selErr) {
+      console.error("deal select failed", selErr);
+      insertError = `select: ${selErr.message}`;
+    } else if (existing) {
+      written = true;
     } else {
-      console.log("no workspace owner for location", locationId);
+      const { error: insErr } = await admin
+        .from("deals")
+        .insert({
+          user_id: null,
+          ghl_assigned_user_id: ghlAssignedUserId,
+          property_address: address,
+          status: "lead",
+          lead_source: "ghl",
+          ghl_opportunity_id: opportunityId,
+          ghl_location_id: locationId,
+          notes: `Imported from GHL stage "${mapping.ghl_stage_name ?? stageId}"`,
+        });
+      if (insErr) {
+        console.error("deal insert failed", insErr);
+        insertError = `insert: ${insErr.message}`;
+      } else {
+        written = true;
+      }
     }
 
-    return j({ ok: true, written, stageId, stageName: mapping.ghl_stage_name, ownerUserId: ownerUserId ?? null, insertError }, 200);
+    return j({ ok: true, written, stageId, stageName: mapping.ghl_stage_name, ghlAssignedUserId, insertError }, 200);
   } catch (err: any) {
     console.error("ghl-opportunity-webhook unhandled error", err);
     return j({ error: err?.message ?? "unexpected_error" }, 500);

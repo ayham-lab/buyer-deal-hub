@@ -316,6 +316,7 @@ export type Database = {
           emd_amount: number | null
           emd_received: boolean
           emd_received_at: string | null
+          ghl_assigned_user_id: string | null
           ghl_location_id: string | null
           ghl_opportunity_id: string | null
           id: string
@@ -335,7 +336,7 @@ export type Database = {
           status: Database["public"]["Enums"]["deal_status"]
           title_company_id: string | null
           updated_at: string
-          user_id: string
+          user_id: string | null
           va_id: string | null
         }
         Insert: {
@@ -353,6 +354,7 @@ export type Database = {
           emd_amount?: number | null
           emd_received?: boolean
           emd_received_at?: string | null
+          ghl_assigned_user_id?: string | null
           ghl_location_id?: string | null
           ghl_opportunity_id?: string | null
           id?: string
@@ -372,7 +374,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["deal_status"]
           title_company_id?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
           va_id?: string | null
         }
         Update: {
@@ -390,6 +392,7 @@ export type Database = {
           emd_amount?: number | null
           emd_received?: boolean
           emd_received_at?: string | null
+          ghl_assigned_user_id?: string | null
           ghl_location_id?: string | null
           ghl_opportunity_id?: string | null
           id?: string
@@ -409,7 +412,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["deal_status"]
           title_company_id?: string | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
           va_id?: string | null
         }
         Relationships: [
