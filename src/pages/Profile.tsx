@@ -55,7 +55,7 @@ export default function Profile() {
   }
 
   return (
-    <AppLayout>
+    <AppLayout standaloneOnly>
       <PageHeader title="Profile & Account" subtitle="Manage your profile, email, and password" />
       <div className="p-6 lg:p-8 max-w-3xl">
         <Tabs defaultValue="profile" className="space-y-6">
