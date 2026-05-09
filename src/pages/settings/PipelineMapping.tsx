@@ -46,19 +46,16 @@ export default function PipelineMapping() {
       if (raw) activeLocationId = JSON.parse(raw)?.locationId ?? null;
     } catch {}
 
-    if (!activeLocationId) {
-      setError("No active GHL sub-account in this session. Open Dispo Pro from inside the GHL sub-account you want to configure.");
-      setLocations([]);
-      setLoading(false);
-      return;
-    }
-
-    const { data, error } = await supabase
+    let query = supabase
       .from("ghl_location_tokens")
       .select("ghl_location_id, ghl_company_id")
-      .eq("ghl_location_id", activeLocationId)
-      .limit(1);
+      .order("updated_at", { ascending: false });
 
+    // Inside GHL iframe: scope to the active sub-account only.
+    // Outside GHL (agency owner in standalone app): show all sub-accounts.
+    if (activeLocationId) query = query.eq("ghl_location_id", activeLocationId).limit(1);
+
+    const { data, error } = await query;
     if (error) setError(error.message ?? "Failed to load locations");
     else setLocations((data as any) ?? []);
     setLoading(false);
