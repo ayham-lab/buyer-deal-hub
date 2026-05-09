@@ -190,13 +190,6 @@ export function LocationProvider({ children }: { children: ReactNode }) {
 
     window.addEventListener("message", handler);
 
-    const isIframed = (() => {
-      try {
-        return window.self !== window.top;
-      } catch {
-        return true;
-      }
-    })();
     pushDebug(`mounted. iframed=${isIframed} path=${window.location.pathname}`);
     if (isIframed) {
       // GHL only injects activeLocation into iframes whose URL it recognizes
