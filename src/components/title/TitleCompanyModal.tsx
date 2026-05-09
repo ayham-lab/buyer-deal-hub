@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { withLocation } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -98,7 +99,7 @@ export function TitleCompanyModal({
     };
     const { error } = existing
       ? await supabase.from("title_companies").update(payload).eq("id", existing.id)
-      : await supabase.from("title_companies").insert(payload);
+      : await supabase.from("title_companies").insert(withLocation(payload as Record<string, unknown>) as any);
     setSaving(false);
     if (error) {
       toast({ title: "Save failed", description: error.message, variant: "destructive" });

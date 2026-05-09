@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { withLocation } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
@@ -54,7 +55,7 @@ export function AddDealModal({ open, onClose, onCreated }: { open: boolean; onCl
     e.preventDefault();
     if (!user) return;
     setBusy(true);
-    const { data, error } = await supabase.from("deals").insert({
+    const { data, error } = await supabase.from("deals").insert(withLocation({
       user_id: user.id,
       property_address: form.property_address,
       status: form.status as any,
@@ -71,7 +72,7 @@ export function AddDealModal({ open, onClose, onCreated }: { open: boolean; onCl
       owner_id: form.owner_id || user.id,
       acquisitions_manager_id: form.acquisitions_manager_id || null,
       va_id: form.va_id || null,
-    } as any).select().single();
+    }) as any).select().single();
 
     if (error) { toast.error(error.message); setBusy(false); return; }
 

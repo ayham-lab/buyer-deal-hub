@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { withLocation } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -46,10 +47,10 @@ export function DealMarketing({ dealId, deal, onChange }: Props) {
       const { data } = supabase.storage.from("deal-marketing").getPublicUrl(path);
       newPaths.push(data.publicUrl);
       // Also link into the Files tab under "Photos"
-      await supabase.from("deal_files").insert({
+      await supabase.from("deal_files").insert(withLocation({
         deal_id: dealId, user_id: user.id, category: "photo",
         file_path: data.publicUrl, file_name: file.name, mime_type: file.type, size_bytes: file.size,
-      });
+      }));
     }
     const updated = [...photos, ...newPaths];
     setPhotos(updated);

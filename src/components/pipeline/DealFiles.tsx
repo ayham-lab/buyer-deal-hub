@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { withLocation } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -39,10 +40,10 @@ export function DealFiles({ dealId }: { dealId: string }) {
       const path = `${user.id}/${dealId}/${cat}/${Date.now()}-${file.name}`;
       const { error: upErr } = await supabase.storage.from("deal-files").upload(path, file);
       if (upErr) { toast.error(upErr.message); continue; }
-      const { error } = await supabase.from("deal_files").insert({
+      const { error } = await supabase.from("deal_files").insert(withLocation({
         deal_id: dealId, user_id: user.id, category: cat,
         file_path: path, file_name: file.name, mime_type: file.type, size_bytes: file.size,
-      });
+      }));
       if (error) toast.error(error.message);
     }
     setBusy(null);

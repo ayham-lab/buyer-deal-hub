@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { withLocation } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { X, Upload } from "lucide-react";
@@ -119,7 +120,7 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
       previous_deals: form.previous_deals || null,
       experience: form.experience || null,
     };
-    const { data: inserted, error } = await supabase.from("buyers").insert(payload).select("id").single();
+    const { data: inserted, error } = await supabase.from("buyers").insert(withLocation(payload)).select("id").single();
     if (error) { toast.error(error.message); setBusy(false); return; }
 
     if (pofFiles.length > 0) {

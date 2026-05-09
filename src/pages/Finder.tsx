@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { withLocation } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
 import { Input } from "@/components/ui/input";
@@ -77,7 +78,7 @@ export default function Finder() {
 
   async function addToMine(b: Match) {
     if (!user) return;
-    const { error } = await supabase.from("buyers").insert({
+    const { error } = await supabase.from("buyers").insert(withLocation({
       user_id: user.id,
       name: b.name,
       email: b.email,
@@ -87,7 +88,7 @@ export default function Finder() {
       price_min: b.price_min,
       price_max: b.price_max,
       source: b.source,
-    });
+    }));
     if (error) toast.error(error.message);
     else toast.success(`${b.name} added to your buyers`);
   }

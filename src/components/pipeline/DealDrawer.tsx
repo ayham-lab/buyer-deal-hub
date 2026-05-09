@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { withLocation } from "@/lib/locationScope";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -70,7 +71,7 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
 
   async function addTask() {
     if (!newTask.trim() || !user) return;
-    const { data } = await supabase.from("tasks").insert({ user_id: user.id, deal_id: dealId, title: newTask }).select().single();
+    const { data } = await supabase.from("tasks").insert(withLocation({ user_id: user.id, deal_id: dealId, title: newTask })).select().single();
     if (data) setTasks([data, ...tasks]);
     setNewTask("");
   }
