@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { scopeToLocation } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +27,7 @@ export function DealAssignees({ dealId }: { dealId: string }) {
   async function load() {
     const [{ data: a }, { data: t }] = await Promise.all([
       supabase.from("deal_assignees").select("*").eq("deal_id", dealId),
-      user ? supabase.from("team_members").select("id,name,role").eq("user_id", user.id).order("name") : Promise.resolve({ data: [] as any }),
+      user ? scopeToLocation(supabase.from("team_members").select("id,name,role").eq("user_id", user.id).order("name")) : Promise.resolve({ data: [] as any }),
     ]);
     setAssignees((a as any) || []);
     setTeam((t as any) || []);

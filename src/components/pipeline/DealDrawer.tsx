@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { withLocation } from "@/lib/locationScope";
+import { withLocation, scopeToLocation } from "@/lib/locationScope";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -36,9 +36,9 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
         supabase.from("deals").select("*").eq("id", dealId).single(),
         supabase.from("deal_checklist").select("*").eq("deal_id", dealId).order("sort_order"),
         supabase.from("tasks").select("*").eq("deal_id", dealId).order("created_at", { ascending: false }),
-        user ? supabase.from("title_companies").select("id,name").eq("user_id", user.id).order("name") : Promise.resolve({ data: [] as any }),
+        user ? scopeToLocation(supabase.from("title_companies").select("id,name").eq("user_id", user.id).order("name")) : Promise.resolve({ data: [] as any }),
         supabase.from("profiles").select("user_id,name,email").order("name"),
-        user ? supabase.from("team_members").select("id,name,role").eq("user_id", user.id).order("name") : Promise.resolve({ data: [] as any }),
+        user ? scopeToLocation(supabase.from("team_members").select("id,name,role").eq("user_id", user.id).order("name")) : Promise.resolve({ data: [] as any }),
       ]);
       setDeal(d); setChecklist(c || []); setTasks(t || []); setTitleCos((tc as any) || []); setOwners((ow as any) || []); setTeam((tm as any) || []);
     })();

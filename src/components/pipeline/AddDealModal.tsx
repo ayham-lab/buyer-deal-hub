@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { withLocation } from "@/lib/locationScope";
+import { withLocation, scopeToLocation } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
@@ -36,11 +36,11 @@ export function AddDealModal({ open, onClose, onCreated }: { open: boolean; onCl
 
   useEffect(() => {
     if (!open || !user) return;
-    supabase.from("title_companies").select("id,name").eq("user_id", user.id).order("name")
+    scopeToLocation(supabase.from("title_companies").select("id,name").eq("user_id", user.id).order("name"))
       .then(({ data }) => setTitleCos((data as any) || []));
     supabase.from("profiles").select("user_id,name,email").order("name")
       .then(({ data }) => setOwners((data as any) || []));
-    supabase.from("team_members").select("id,name,role").eq("user_id", user.id).order("name")
+    scopeToLocation(supabase.from("team_members").select("id,name,role").eq("user_id", user.id).order("name"))
       .then(({ data }) => setTeam((data as any) || []));
     setForm((f) => ({ ...f, owner_id: f.owner_id || user.id }));
   }, [open, user]);

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { scopeToLocation } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,7 @@ export default function Team() {
 
   async function load() {
     if (!user) return;
-    let { data } = await supabase.from("team_members").select("*").eq("user_id", user.id).order("name");
+    let { data } = await scopeToLocation(supabase.from("team_members").select("*").eq("user_id", user.id).order("name"));
     let list = data || [];
 
     const ownerEmail = profile?.email || user.email;
@@ -38,7 +39,7 @@ export default function Team() {
         .select()
         .single();
       // Re-fetch to avoid duplicates from concurrent loads
-      const { data: refreshed } = await supabase.from("team_members").select("*").eq("user_id", user.id).order("name");
+      const { data: refreshed } = await scopeToLocation(supabase.from("team_members").select("*").eq("user_id", user.id).order("name"));
       list = refreshed || (inserted ? [...list, inserted] : list);
     }
     setMembers(list);
