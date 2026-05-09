@@ -1,6 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { Users, Search, LayoutGrid, BarChart3, ShieldCheck, ChevronsLeft, ChevronsRight, Building2, UsersRound, Home, CheckSquare, Settings as SettingsIcon, GitBranch } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useActiveLocation } from "@/contexts/LocationContext";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import logo from "@/assets/logo.png";
@@ -20,6 +21,7 @@ const items = [
 
 export function Sidebar() {
   const { isAdmin } = useAuth();
+  const { isIframed } = useActiveLocation();
   const { pathname } = useLocation();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -63,7 +65,7 @@ export function Sidebar() {
             </NavLink>
           );
         })}
-        {isAdmin && (
+        {isAdmin && !isIframed && (
           <div className="pt-3 mt-3 border-t border-sidebar-border">
             {!collapsed && (
               <div className="px-3 pb-1 text-[10px] uppercase tracking-wider text-sidebar-foreground/60 font-semibold">
