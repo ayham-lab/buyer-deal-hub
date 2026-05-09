@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
+import { useActiveLocation } from "@/contexts/LocationContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -34,38 +35,58 @@ interface Pipeline {
 
 export default function PipelineMapping() {
   const { user } = useAuth();
+  const { activeLocation } = useActiveLocation();
   const [locations, setLocations] = useState<InstalledLocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
 
   async function loadLocations() {
+    const isIframed = (() => {
+      try {
+        return window.self !== window.top;
+      } catch {
+        return true;
+      }
+    })();
+
     let activeLocationId: string | null = null;
     try {
       const raw = sessionStorage.getItem("ghl_active_location");
       if (raw) activeLocationId = JSON.parse(raw)?.locationId ?? null;
     } catch {}
 
+    // Inside GHL iframe: ONLY show the active sub-account. If we don't yet
+    // know which one, render nothing rather than leaking the full agency list.
+    if (isIframed && !activeLocationId) {
+      setLocations([]);
+      setError("Waiting for GHL to send active sub-account…");
+      setLoading(false);
+      return;
+    }
+
     let query = supabase
       .from("ghl_location_tokens")
       .select("ghl_location_id, ghl_company_id")
       .order("updated_at", { ascending: false });
 
-    // Inside GHL iframe: scope to the active sub-account only.
-    // Outside GHL (agency owner in standalone app): show all sub-accounts.
     if (activeLocationId) query = query.eq("ghl_location_id", activeLocationId).limit(1);
 
     const { data, error } = await query;
     if (error) setError(error.message ?? "Failed to load locations");
-    else setLocations((data as any) ?? []);
+    else {
+      setError(null);
+      setLocations((data as any) ?? []);
+    }
     setLoading(false);
   }
 
   useEffect(() => {
     if (!user) return;
     loadLocations();
+    // Re-run when LocationProvider populates the active location post-handshake.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, activeLocation?.locationId]);
 
   async function syncSubAccounts() {
     setSyncing(true);
