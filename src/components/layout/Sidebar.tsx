@@ -45,7 +45,7 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
-        {items.map((it) => {
+        {items.filter((it) => !isIframed || !it.to.startsWith("/settings")).map((it) => {
           const active = it.exact ? pathname === it.to : pathname.startsWith(it.to);
           return (
             <NavLink
