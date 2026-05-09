@@ -78,7 +78,6 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         const locationId = info.locationId;
         const companyId = info.companyId || null;
         if (!locationId) {
-        if (!locationId) {
           pushDebug(`SSO returned no locationId. keys=${Object.keys(info).join(",")}`);
           setDebugStatus("SSO returned no locationId");
           return;
