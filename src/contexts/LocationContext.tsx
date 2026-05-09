@@ -48,12 +48,21 @@ export function LocationProvider({ children }: { children: ReactNode }) {
           { body: { sso: ssoToken } },
         );
         console.log("LocationProvider sso response:", data, invokeErr);
-        if (invokeErr || !data || (data as any).error) return;
+        if (invokeErr || (data as any)?.error) {
+          pushDebug(`SSO decrypt error: ${invokeErr?.message ?? (data as any)?.error}`);
+          setDebugStatus("SSO decrypt failed");
+          return;
+        }
+        if (!data) return;
 
         const info = data as any;
         const locationId = info.ghl_location_id || info.locationId;
         const companyId = info.ghl_company_id || info.companyId || null;
-        if (!locationId) return;
+        if (!locationId) {
+          pushDebug(`SSO returned no locationId. keys=${Object.keys(info).join(",")}`);
+          setDebugStatus("SSO returned no locationId");
+          return;
+        }
 
         const next = { locationId, companyId };
         try {
