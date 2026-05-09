@@ -739,6 +739,36 @@ export type Database = {
         }
         Relationships: []
       }
+      oauth_install_log: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          error: string | null
+          id: string
+          location_id: string | null
+          payload: Json | null
+          source: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          location_id?: string | null
+          payload?: Json | null
+          source: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          location_id?: string | null
+          payload?: Json | null
+          source?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
