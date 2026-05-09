@@ -9,22 +9,32 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Trash2 } from "lucide-react";
+import { useActiveLocation } from "@/contexts/LocationContext";
 
 export default function Settings() {
+  const { isIframed } = useActiveLocation();
+  const { isAdmin } = useAuth();
+  // GATE: Profile + GHL Connections are workspace-owner concerns.
+  // Inside a GHL iframe we MUST hide them entirely — Profile would let an iframe
+  // user edit another tenant's Lovable workspace user; GHL Connections would let
+  // them disconnect another tenant's OAuth install.
+  const showProfile = !isIframed;
+  const showGhl = !isIframed && isAdmin;
+  const defaultTab = showProfile ? "profile" : "checklist";
   return (
-    <AppLayout standaloneOnly>
+    <AppLayout>
       <PageHeader title="Settings" subtitle="Manage your account and integrations" />
       <div className="p-6 lg:p-8 max-w-3xl">
-        <Tabs defaultValue="profile">
+        <Tabs defaultValue={defaultTab}>
           <TabsList>
-            <TabsTrigger value="profile">Profile</TabsTrigger>
+            {showProfile && <TabsTrigger value="profile">Profile</TabsTrigger>}
             <TabsTrigger value="checklist">Checklist</TabsTrigger>
-            <TabsTrigger value="ghl">GHL Connections</TabsTrigger>
+            {showGhl && <TabsTrigger value="ghl">GHL Connections</TabsTrigger>}
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
           </TabsList>
-          <TabsContent value="profile"><ProfileTab /></TabsContent>
+          {showProfile && <TabsContent value="profile"><ProfileTab /></TabsContent>}
           <TabsContent value="checklist"><ChecklistTab /></TabsContent>
-          <TabsContent value="ghl"><GhlTab /></TabsContent>
+          {showGhl && <TabsContent value="ghl"><GhlTab /></TabsContent>}
           <TabsContent value="notifications"><NotificationsTab /></TabsContent>
         </Tabs>
       </div>
@@ -149,7 +159,12 @@ function GhlTab() {
 
   async function load() {
     setLoading(true);
-    const { data } = await supabase.from("ghl_location_links").select("*").order("linked_at", { ascending: false });
+    // SCOPE: this tab is admin-standalone only (gated above), so no location
+    // header is sent. RLS still restricts via "GHLLinks: scoped owner select".
+    const { data } = await supabase
+      .from("ghl_location_links")
+      .select("*")
+      .order("linked_at", { ascending: false });
     setLinks(data ?? []);
     setLoading(false);
   }
