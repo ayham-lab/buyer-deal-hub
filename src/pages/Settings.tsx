@@ -12,7 +12,7 @@ import { Loader2, Trash2 } from "lucide-react";
 
 export default function Settings() {
   return (
-    <AppLayout>
+    <AppLayout standaloneOnly>
       <PageHeader title="Settings" subtitle="Manage your account and integrations" />
       <div className="p-6 lg:p-8 max-w-3xl">
         <Tabs defaultValue="profile">
