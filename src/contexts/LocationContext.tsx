@@ -63,10 +63,10 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       handledRef.current = true;
       try {
         const { data, error: invokeErr } = await supabase.functions.invoke(
-          "oauth-userinfo",
+          "decrypt-ghl-sso",
           { body: { sso: ssoToken } },
         );
-        console.log("LocationProvider sso response:", data, invokeErr);
+        console.log("LocationProvider decrypt-ghl-sso response:", data, invokeErr);
         if (invokeErr || (data as any)?.error) {
           pushDebug(`SSO decrypt error: ${invokeErr?.message ?? (data as any)?.error}`);
           setDebugStatus("SSO decrypt failed");
@@ -75,8 +75,8 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         if (!data) return;
 
         const info = data as any;
-        const locationId = info.ghl_location_id || info.locationId;
-        const companyId = info.ghl_company_id || info.companyId || null;
+        const locationId = info.locationId;
+        const companyId = info.companyId || null;
         if (!locationId) {
           pushDebug(`SSO returned no locationId. keys=${Object.keys(info).join(",")}`);
           setDebugStatus("SSO returned no locationId");
