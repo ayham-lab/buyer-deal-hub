@@ -30,7 +30,13 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       return null;
     }
   });
+  const [debugMessages, setDebugMessages] = useState<string[]>([]);
+  const [debugStatus, setDebugStatus] = useState<string>("waiting for postMessage…");
   const handledRef = useRef(false);
+
+  const pushDebug = (msg: string) => {
+    setDebugMessages((prev) => [...prev.slice(-9), `${new Date().toISOString().slice(11, 19)} ${msg}`]);
+  };
 
   useEffect(() => {
     const processBlob = async (ssoToken: string) => {
