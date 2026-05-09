@@ -99,7 +99,13 @@ export function LocationProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        const next = { locationId, companyId, userName: info.userName ?? null };
+        const next = {
+          locationId,
+          companyId,
+          userName: info.userName ?? null,
+          email: info.email ?? null,
+          role: info.role ?? null,
+        };
         try {
           sessionStorage.setItem("ghl_active_location", JSON.stringify(next));
         } catch {}
