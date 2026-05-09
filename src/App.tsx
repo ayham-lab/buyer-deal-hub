@@ -37,30 +37,32 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <ErrorBoundary>
-            <Routes>
-              <Route path="/" element={wrap(<Dashboard />)} />
-              <Route path="/login" element={wrap(<Login />)} />
-              <Route path="/signup" element={<Navigate to="/login" replace />} />
-              <Route path="/reset-password" element={wrap(<ResetPassword />)} />
-              <Route path="/oauth/consent" element={wrap(<OAuthConsent />)} />
-              <Route path="/oauth/callback" element={wrap(<OAuthCallback />)} />
-              <Route path="/embed" element={wrap(<Embed />)} />
-              <Route path="/deal/:id" element={wrap(<PublicDeal />)} />
-              <Route path="/buyers" element={wrap(<Buyers />)} />
-              <Route path="/finder" element={wrap(<Finder />)} />
-              <Route path="/pipeline" element={wrap(<Pipeline />)} />
-              <Route path="/kpis" element={wrap(<KPIs />)} />
-              <Route path="/tasks" element={wrap(<Tasks />)} />
-              <Route path="/admin" element={wrap(<Admin />)} />
-              <Route path="/profile" element={wrap(<Profile />)} />
-              <Route path="/settings" element={wrap(<Settings />)} />
-              <Route path="/settings/pipelines" element={wrap(<PipelineMapping />)} />
-              <Route path="/title-companies" element={wrap(<TitleCompanies />)} />
-              <Route path="/team" element={wrap(<Team />)} />
-              <Route path="*" element={wrap(<NotFound />)} />
-            </Routes>
-          </ErrorBoundary>
+          <LocationProvider>
+            <ErrorBoundary>
+              <Routes>
+                <Route path="/" element={wrap(<Dashboard />)} />
+                <Route path="/login" element={wrap(<Login />)} />
+                <Route path="/signup" element={<Navigate to="/login" replace />} />
+                <Route path="/reset-password" element={wrap(<ResetPassword />)} />
+                <Route path="/oauth/consent" element={wrap(<OAuthConsent />)} />
+                <Route path="/oauth/callback" element={wrap(<OAuthCallback />)} />
+                <Route path="/embed" element={wrap(<Embed />)} />
+                <Route path="/deal/:id" element={wrap(<PublicDeal />)} />
+                <Route path="/buyers" element={wrap(<Buyers />)} />
+                <Route path="/finder" element={wrap(<Finder />)} />
+                <Route path="/pipeline" element={wrap(<Pipeline />)} />
+                <Route path="/kpis" element={wrap(<KPIs />)} />
+                <Route path="/tasks" element={wrap(<Tasks />)} />
+                <Route path="/admin" element={wrap(<Admin />)} />
+                <Route path="/profile" element={wrap(<Profile />)} />
+                <Route path="/settings" element={wrap(<Settings />)} />
+                <Route path="/settings/pipelines" element={wrap(<PipelineMapping />)} />
+                <Route path="/title-companies" element={wrap(<TitleCompanies />)} />
+                <Route path="/team" element={wrap(<Team />)} />
+                <Route path="*" element={wrap(<NotFound />)} />
+              </Routes>
+            </ErrorBoundary>
+          </LocationProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
