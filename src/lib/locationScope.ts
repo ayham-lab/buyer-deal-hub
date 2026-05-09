@@ -54,6 +54,14 @@ export function installLocationHeader() {
   })();
   if (!supabaseHost) return;
 
+  const isIframed = (() => {
+    try {
+      return window.self !== window.top;
+    } catch {
+      return true;
+    }
+  })();
+
   const originalFetch = window.fetch.bind(window);
   window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
     let url: string | null = null;
@@ -73,10 +81,13 @@ export function installLocationHeader() {
     }
 
     const loc = getActiveLocationId();
-    if (!loc) return originalFetch(input, init);
+    if (!loc && !isIframed) return originalFetch(input, init);
 
     const headers = new Headers(init?.headers ?? (input as Request)?.headers);
-    headers.set("x-ghl-location-id", loc);
+    if (loc) headers.set("x-ghl-location-id", loc);
+    // Belt-and-suspenders: tell the DB this request is from inside the GHL
+    // iframe. The DB guard refuses to run if iframe=1 but no location is set.
+    if (isIframed) headers.set("x-ghl-iframe", "1");
     return originalFetch(input, { ...(init ?? {}), headers });
   };
 }
