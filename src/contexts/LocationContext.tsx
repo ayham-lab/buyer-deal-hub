@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ActiveLocation {
@@ -33,6 +34,24 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   const [debugMessages, setDebugMessages] = useState<string[]>([]);
   const [debugStatus, setDebugStatus] = useState<string>("waiting for postMessage…");
   const handledRef = useRef(false);
+  const navigate = useNavigate();
+
+  // After the postMessage handshake lands on /embed, return to the original
+  // deep-link the user (or GHL menu) was trying to reach.
+  useEffect(() => {
+    if (!activeLocation) return;
+    if (window.location.pathname !== "/embed") return;
+    let target: string | null = null;
+    try {
+      target = sessionStorage.getItem("ghl_post_handshake_return");
+    } catch {}
+    if (!target || target === "/embed") return;
+    try {
+      sessionStorage.removeItem("ghl_post_handshake_return");
+    } catch {}
+    pushDebug(`handshake done → returning to ${target}`);
+    navigate(target, { replace: true });
+  }, [activeLocation, navigate]);
 
   const pushDebug = (msg: string) => {
     setDebugMessages((prev) => [...prev.slice(-9), `${new Date().toISOString().slice(11, 19)} ${msg}`]);
@@ -168,11 +187,16 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     if (isIframed) {
       // GHL only injects activeLocation into iframes whose URL it recognizes
       // as the app's custom-page (/embed). If we're deep-linked anywhere else
-      // inside the iframe, hard-navigate to /embed (preserving query+hash) so
-      // the parent frame issues the handshake.
+      // inside the iframe, stash the original deep-link, hard-navigate to
+      // /embed (so GHL fires the handshake), then return there once we have
+      // the active location.
       if (window.location.pathname !== "/embed") {
+        const original = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+        try {
+          sessionStorage.setItem("ghl_post_handshake_return", original);
+        } catch {}
         const target = `/embed${window.location.search}${window.location.hash}`;
-        pushDebug(`iframed but not /embed → redirecting to ${target}`);
+        pushDebug(`iframed but not /embed → redirecting to ${target} (return=${original})`);
         window.location.replace(target);
         return;
       }
