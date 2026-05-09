@@ -119,7 +119,7 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
       previous_deals: form.previous_deals || null,
       experience: form.experience || null,
     };
-    const { data: inserted, error } = await supabase.from("buyers").insert(payload).select("id").single();
+    const { data: inserted, error } = await supabase.from("buyers").insert(withLocation(payload)).select("id").single();
     if (error) { toast.error(error.message); setBusy(false); return; }
 
     if (pofFiles.length > 0) {

@@ -206,7 +206,7 @@ function TaskModal({ open, task, onClose, onSaved }: { open: boolean; task: Task
       const { error } = await supabase.from("tasks").update(payload).eq("id", task.id);
       if (error) toast.error(error.message);
     } else {
-      const { error } = await supabase.from("tasks").insert({ ...payload, user_id: user.id });
+      const { error } = await supabase.from("tasks").insert(withLocation({ ...payload, user_id: user.id }));
       if (error) toast.error(error.message);
     }
     setBusy(false);

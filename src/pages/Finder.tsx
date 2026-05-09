@@ -77,7 +77,7 @@ export default function Finder() {
 
   async function addToMine(b: Match) {
     if (!user) return;
-    const { error } = await supabase.from("buyers").insert({
+    const { error } = await supabase.from("buyers").insert(withLocation({
       user_id: user.id,
       name: b.name,
       email: b.email,
@@ -87,7 +87,7 @@ export default function Finder() {
       price_min: b.price_min,
       price_max: b.price_max,
       source: b.source,
-    });
+    }));
     if (error) toast.error(error.message);
     else toast.success(`${b.name} added to your buyers`);
   }

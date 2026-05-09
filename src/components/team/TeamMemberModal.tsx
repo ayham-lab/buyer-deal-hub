@@ -34,7 +34,7 @@ export function TeamMemberModal({ open, onClose, member, onSaved }: { open: bool
     const payload = { name: form.name, email: form.email || null, phone: form.phone || null, role: form.role, notes: form.notes || null };
     const { error } = member
       ? await supabase.from("team_members").update(payload).eq("id", member.id)
-      : await supabase.from("team_members").insert({ ...payload, user_id: user.id });
+      : await supabase.from("team_members").insert(withLocation({ ...payload, user_id: user.id }));
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success(member ? "Team member updated" : "Team member added");
