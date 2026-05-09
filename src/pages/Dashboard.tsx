@@ -27,10 +27,15 @@ interface Stats {
 
 export default function Dashboard() {
   const { user, profile } = useAuth();
+  const { activeLocation, isIframed, handshakeReady } = useActiveLocation();
   const [stats, setStats] = useState<Stats | null>(null);
 
   useEffect(() => {
     if (!user) return;
+    // In iframe mode, wait for the SSO handshake to resolve before firing
+    // any queries — otherwise they go without x-ghl-location-id and RLS
+    // (which is admin-permissive when no header is set) returns cross-tenant rows.
+    if (!handshakeReady) return;
     (async () => {
       const today = new Date();
       const weekFromNow = addDays(today, 7);
