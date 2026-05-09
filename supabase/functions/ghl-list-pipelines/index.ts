@@ -1,5 +1,6 @@
 // Lists pipelines (with stages) for a GHL location using the stored access token.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { getValidGhlAccessToken } from "../_shared/ghlToken.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -43,19 +44,23 @@ Deno.serve(async (req) => {
 
     const { data: tokenRow, error: tokErr } = await admin
       .from("ghl_location_tokens")
-      .select("access_token")
+      .select("ghl_location_id, ghl_company_id, access_token, refresh_token, expires_at")
       .eq("ghl_location_id", locationId)
       .maybeSingle();
 
     console.log("token present:", !!tokenRow?.access_token, "tokErr:", tokErr?.message);
     if (!tokenRow?.access_token) return j({ error: "no_token_for_location" });
 
+    const { access_token, refreshed, error: refreshErr } = await getValidGhlAccessToken(admin, tokenRow as any);
+    if (refreshErr) console.error("token refresh error:", refreshErr);
+    if (refreshed) console.log("refreshed token for", locationId);
+
     try {
       const res = await fetch(
         `https://services.leadconnectorhq.com/opportunities/pipelines?locationId=${encodeURIComponent(locationId)}`,
         {
           headers: {
-            Authorization: `Bearer ${tokenRow.access_token}`,
+            Authorization: `Bearer ${access_token}`,
             Version: "2021-07-28",
             Accept: "application/json",
           },
