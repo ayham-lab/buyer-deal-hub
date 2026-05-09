@@ -68,8 +68,9 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         );
         console.log("LocationProvider decrypt-ghl-sso response:", data, invokeErr);
         if (invokeErr || (data as any)?.error) {
-          pushDebug(`SSO decrypt error: ${invokeErr?.message ?? (data as any)?.error}`);
-          setDebugStatus("SSO decrypt failed");
+          const detail = (data as any)?.detail ?? (data as any)?.error ?? invokeErr?.message ?? "unknown";
+          pushDebug(`decrypt failed: ${detail}`);
+          setDebugStatus("decrypt failed");
           return;
         }
         if (!data) return;
@@ -78,8 +79,8 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         const locationId = info.locationId;
         const companyId = info.companyId || null;
         if (!locationId) {
-          pushDebug(`SSO returned no locationId. keys=${Object.keys(info).join(",")}`);
-          setDebugStatus("SSO returned no locationId");
+          pushDebug(`decrypt failed: no activeLocation in payload (keys=${Object.keys(info).join(",")})`);
+          setDebugStatus("decrypt failed");
           return;
         }
 
@@ -88,7 +89,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
           sessionStorage.setItem("ghl_active_location", JSON.stringify(next));
         } catch {}
         setActiveLocation(next);
-        pushDebug(`SSO ok → location ${locationId}`);
+        pushDebug(`decrypted: ${locationId}`);
         setDebugStatus("active");
 
         const { data: { session } } = await supabase.auth.getSession();
