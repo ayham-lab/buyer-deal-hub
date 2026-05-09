@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
     const listUrl = `${GHL_BASE}/oauth/installedLocations?companyId=${encodeURIComponent(companyId)}&appId=${encodeURIComponent(app_id)}&limit=500`;
     const listResp = await fetch(listUrl, {
       headers: {
-        Authorization: `Bearer ${seed.access_token}`,
+        Authorization: `Bearer ${seedAccessToken}`,
         Accept: "application/json",
         Version: GHL_API_VERSION,
       },
@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
         const mintResp = await fetch(`${GHL_BASE}/oauth/locationToken`, {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${seed.access_token}`,
+            Authorization: `Bearer ${seedAccessToken}`,
             "Content-Type": "application/x-www-form-urlencoded",
             Accept: "application/json",
             Version: GHL_API_VERSION,
