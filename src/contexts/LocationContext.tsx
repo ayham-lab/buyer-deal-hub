@@ -5,13 +5,21 @@ import { supabase } from "@/integrations/supabase/client";
 interface ActiveLocation {
   locationId: string;
   companyId: string | null;
+  userName?: string | null;
 }
 
 interface LocationContextValue {
   activeLocation: ActiveLocation | null;
+  isIframed: boolean;
+  /** True when standalone, OR when iframed AND the SSO handshake has resolved. */
+  handshakeReady: boolean;
 }
 
-const LocationContext = createContext<LocationContextValue>({ activeLocation: null });
+const LocationContext = createContext<LocationContextValue>({
+  activeLocation: null,
+  isIframed: false,
+  handshakeReady: true,
+});
 
 export function useActiveLocation() {
   return useContext(LocationContext);
