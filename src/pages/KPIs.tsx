@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { scopeToLocation } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
@@ -30,8 +31,8 @@ export default function KPIs() {
   useEffect(() => {
     if (!user) return;
     Promise.all([
-      supabase.from("deals").select("*").eq("user_id", user.id),
-      supabase.from("buyers").select("id, created_at").eq("user_id", user.id),
+      scopeToLocation(supabase.from("deals").select("*").eq("user_id", user.id)),
+      scopeToLocation(supabase.from("buyers").select("id, created_at").eq("user_id", user.id)),
       supabase.from("profiles").select("user_id,name,email").order("name"),
     ]).then(([d, b, o]) => { setDeals(d.data || []); setBuyers(b.data || []); setOwners((o.data as any) || []); });
   }, [user]);

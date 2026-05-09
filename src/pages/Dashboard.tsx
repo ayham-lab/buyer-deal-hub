@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { scopeToLocation } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveLocation } from "@/contexts/LocationContext";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
@@ -45,12 +46,12 @@ export default function Dashboard() {
       const sevenDaysAgo = format(addDays(today, -7), "yyyy-MM-dd");
 
       const [closings, emd, ip, leads, revenue, openTasks] = await Promise.all([
-        supabase.from("deals").select("id,property_address,city,state,closing_date,assignment_fee").gte("closing_date", todayISO).lte("closing_date", weekISO).order("closing_date"),
-        supabase.from("deals").select("id,property_address,emd_amount,closing_date,status").eq("status", "under_contract").eq("emd_received", false),
-        supabase.from("deals").select("id,property_address,ip_expiry_date").gte("ip_expiry_date", todayISO).lte("ip_expiry_date", weekISO).order("ip_expiry_date"),
-        supabase.from("deals").select("id", { count: "exact", head: true }).gte("created_at", sevenDaysAgo),
-        supabase.from("deals").select("assignment_fee").gte("closed_at", monthStart.toISOString()),
-        supabase.from("tasks").select("id", { count: "exact", head: true }).eq("is_completed", false),
+        scopeToLocation(supabase.from("deals").select("id,property_address,city,state,closing_date,assignment_fee").gte("closing_date", todayISO).lte("closing_date", weekISO).order("closing_date")),
+        scopeToLocation(supabase.from("deals").select("id,property_address,emd_amount,closing_date,status").eq("status", "under_contract").eq("emd_received", false)),
+        scopeToLocation(supabase.from("deals").select("id,property_address,ip_expiry_date").gte("ip_expiry_date", todayISO).lte("ip_expiry_date", weekISO).order("ip_expiry_date")),
+        scopeToLocation(supabase.from("deals").select("id", { count: "exact", head: true }).gte("created_at", sevenDaysAgo)),
+        scopeToLocation(supabase.from("deals").select("assignment_fee").gte("closed_at", monthStart.toISOString())),
+        scopeToLocation(supabase.from("tasks").select("id", { count: "exact", head: true }).eq("is_completed", false)),
       ]);
 
       setStats({

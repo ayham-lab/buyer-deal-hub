@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { scopeToLocation } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -64,12 +65,14 @@ export default function Buyers() {
   async function load() {
     if (!user) return;
     setLoading(true);
-    const { data } = await supabase
-      .from("buyers")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("is_archived", false)
-      .order("created_at", { ascending: false });
+    const { data } = await scopeToLocation(
+      supabase
+        .from("buyers")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("is_archived", false)
+        .order("created_at", { ascending: false })
+    );
     setBuyers((data as any) || []);
     setLoading(false);
   }

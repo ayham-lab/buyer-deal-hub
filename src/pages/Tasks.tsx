@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { withLocation } from "@/lib/locationScope";
+import { withLocation, scopeToLocation } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -45,12 +45,14 @@ export default function Tasks() {
 
   async function load() {
     setLoading(true);
-    const { data } = await supabase
-      .from("tasks")
-      .select("*")
-      .order("is_completed")
-      .order("due_date", { ascending: true, nullsFirst: false })
-      .order("created_at", { ascending: false });
+    const { data } = await scopeToLocation(
+      supabase
+        .from("tasks")
+        .select("*")
+        .order("is_completed")
+        .order("due_date", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: false })
+    );
     setTasks((data as any) || []);
     setLoading(false);
   }

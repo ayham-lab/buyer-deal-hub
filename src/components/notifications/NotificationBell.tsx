@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Bell, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { scopeToLocation } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useNavigate } from "react-router-dom";
@@ -26,11 +27,13 @@ export function NotificationBell() {
     if (!user) return;
     let mounted = true;
     (async () => {
-      const { data } = await supabase
-        .from("notifications")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(30);
+      const { data } = await scopeToLocation(
+        supabase
+          .from("notifications")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(30)
+      );
       if (mounted) setItems((data as any) || []);
     })();
 
@@ -40,12 +43,13 @@ export function NotificationBell() {
         "postgres_changes",
         { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
         () => {
-          supabase
-            .from("notifications")
-            .select("*")
-            .order("created_at", { ascending: false })
-            .limit(30)
-            .then(({ data }) => setItems((data as any) || []));
+          scopeToLocation(
+            supabase
+              .from("notifications")
+              .select("*")
+              .order("created_at", { ascending: false })
+              .limit(30)
+          ).then(({ data }) => setItems((data as any) || []));
         }
       )
       .subscribe();
