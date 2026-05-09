@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useActiveLocation } from "@/contexts/LocationContext";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
@@ -26,10 +27,15 @@ interface Stats {
 
 export default function Dashboard() {
   const { user, profile } = useAuth();
+  const { activeLocation, isIframed, handshakeReady } = useActiveLocation();
   const [stats, setStats] = useState<Stats | null>(null);
 
   useEffect(() => {
     if (!user) return;
+    // In iframe mode, wait for the SSO handshake to resolve before firing
+    // any queries — otherwise they go without x-ghl-location-id and RLS
+    // (which is admin-permissive when no header is set) returns cross-tenant rows.
+    if (!handshakeReady) return;
     (async () => {
       const today = new Date();
       const weekFromNow = addDays(today, 7);
@@ -56,12 +62,16 @@ export default function Dashboard() {
         openTasks: openTasks.count || 0,
       });
     })();
-  }, [user]);
+  }, [user, handshakeReady, activeLocation?.locationId]);
+
+  const displayName = isIframed
+    ? activeLocation?.userName || null
+    : profile?.name || null;
 
   return (
     <AppLayout>
       <PageHeader
-        title={`Welcome back${profile?.name ? `, ${profile.name.split(" ")[0]}` : ""}`}
+        title={`Welcome back${displayName ? `, ${displayName.split(" ")[0]}` : ""}`}
         subtitle="Here's what's happening across your pipeline today."
       />
 

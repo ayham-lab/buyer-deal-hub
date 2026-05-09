@@ -5,13 +5,21 @@ import { supabase } from "@/integrations/supabase/client";
 interface ActiveLocation {
   locationId: string;
   companyId: string | null;
+  userName?: string | null;
 }
 
 interface LocationContextValue {
   activeLocation: ActiveLocation | null;
+  isIframed: boolean;
+  /** True when standalone, OR when iframed AND the SSO handshake has resolved. */
+  handshakeReady: boolean;
 }
 
-const LocationContext = createContext<LocationContextValue>({ activeLocation: null });
+const LocationContext = createContext<LocationContextValue>({
+  activeLocation: null,
+  isIframed: false,
+  handshakeReady: true,
+});
 
 export function useActiveLocation() {
   return useContext(LocationContext);
@@ -33,6 +41,11 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   });
   const [debugMessages, setDebugMessages] = useState<string[]>([]);
   const [debugStatus, setDebugStatus] = useState<string>("waiting for postMessage…");
+  const isIframed = (() => {
+    try { return window.self !== window.top; } catch { return true; }
+  })();
+  // Standalone is always "ready". Iframed is ready once activeLocation is set.
+  const handshakeReady = !isIframed || activeLocation !== null;
   const handledRef = useRef(false);
   const navigate = useNavigate();
 
@@ -84,7 +97,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        const next = { locationId, companyId };
+        const next = { locationId, companyId, userName: info.userName ?? null };
         try {
           sessionStorage.setItem("ghl_active_location", JSON.stringify(next));
         } catch {}
@@ -177,13 +190,6 @@ export function LocationProvider({ children }: { children: ReactNode }) {
 
     window.addEventListener("message", handler);
 
-    const isIframed = (() => {
-      try {
-        return window.self !== window.top;
-      } catch {
-        return true;
-      }
-    })();
     pushDebug(`mounted. iframed=${isIframed} path=${window.location.pathname}`);
     if (isIframed) {
       // GHL only injects activeLocation into iframes whose URL it recognizes
@@ -218,7 +224,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <LocationContext.Provider value={{ activeLocation }}>
+    <LocationContext.Provider value={{ activeLocation, isIframed, handshakeReady }}>
       {children}
       <DebugOverlay
         status={debugStatus}
