@@ -19,6 +19,7 @@ export type Database = {
           added_by_user_id: string | null
           created_at: string
           email: string | null
+          ghl_location_id: string | null
           id: string
           is_shared: boolean
           markets: string[] | null
@@ -33,6 +34,7 @@ export type Database = {
           added_by_user_id?: string | null
           created_at?: string
           email?: string | null
+          ghl_location_id?: string | null
           id?: string
           is_shared?: boolean
           markets?: string[] | null
@@ -47,6 +49,7 @@ export type Database = {
           added_by_user_id?: string | null
           created_at?: string
           email?: string | null
+          ghl_location_id?: string | null
           id?: string
           is_shared?: boolean
           markets?: string[] | null
@@ -71,6 +74,7 @@ export type Database = {
           email: string | null
           experience: string | null
           first_name: string | null
+          ghl_location_id: string | null
           id: string
           is_archived: boolean
           last_contact_at: string | null
@@ -99,6 +103,7 @@ export type Database = {
           email?: string | null
           experience?: string | null
           first_name?: string | null
+          ghl_location_id?: string | null
           id?: string
           is_archived?: boolean
           last_contact_at?: string | null
@@ -127,6 +132,7 @@ export type Database = {
           email?: string | null
           experience?: string | null
           first_name?: string | null
+          ghl_location_id?: string | null
           id?: string
           is_archived?: boolean
           last_contact_at?: string | null
@@ -254,6 +260,7 @@ export type Database = {
           deal_id: string
           file_name: string
           file_path: string
+          ghl_location_id: string | null
           id: string
           mime_type: string | null
           size_bytes: number | null
@@ -265,6 +272,7 @@ export type Database = {
           deal_id: string
           file_name: string
           file_path: string
+          ghl_location_id?: string | null
           id?: string
           mime_type?: string | null
           size_bytes?: number | null
@@ -276,6 +284,7 @@ export type Database = {
           deal_id?: string
           file_name?: string
           file_path?: string
+          ghl_location_id?: string | null
           id?: string
           mime_type?: string | null
           size_bytes?: number | null
@@ -307,6 +316,7 @@ export type Database = {
           emd_amount: number | null
           emd_received: boolean
           emd_received_at: string | null
+          ghl_location_id: string | null
           ghl_opportunity_id: string | null
           id: string
           ip_expiry_date: string | null
@@ -343,6 +353,7 @@ export type Database = {
           emd_amount?: number | null
           emd_received?: boolean
           emd_received_at?: string | null
+          ghl_location_id?: string | null
           ghl_opportunity_id?: string | null
           id?: string
           ip_expiry_date?: string | null
@@ -379,6 +390,7 @@ export type Database = {
           emd_amount?: number | null
           emd_received?: boolean
           emd_received_at?: string | null
+          ghl_location_id?: string | null
           ghl_opportunity_id?: string | null
           id?: string
           ip_expiry_date?: string | null
@@ -532,6 +544,7 @@ export type Database = {
           created_at: string
           deal_count: number
           email: string | null
+          ghl_location_id: string | null
           id: string
           name: string
           phone: string | null
@@ -544,6 +557,7 @@ export type Database = {
           created_at?: string
           deal_count?: number
           email?: string | null
+          ghl_location_id?: string | null
           id?: string
           name: string
           phone?: string | null
@@ -556,6 +570,7 @@ export type Database = {
           created_at?: string
           deal_count?: number
           email?: string | null
+          ghl_location_id?: string | null
           id?: string
           name?: string
           phone?: string | null
@@ -572,6 +587,7 @@ export type Database = {
           created_at: string
           deals_closed: number
           deals_opened: number
+          ghl_location_id: string | null
           id: string
           month: number
           revenue_closed: number
@@ -586,6 +602,7 @@ export type Database = {
           created_at?: string
           deals_closed?: number
           deals_opened?: number
+          ghl_location_id?: string | null
           id?: string
           month: number
           revenue_closed?: number
@@ -600,6 +617,7 @@ export type Database = {
           created_at?: string
           deals_closed?: number
           deals_opened?: number
+          ghl_location_id?: string | null
           id?: string
           month?: number
           revenue_closed?: number
@@ -614,6 +632,7 @@ export type Database = {
         Row: {
           body: string | null
           created_at: string
+          ghl_location_id: string | null
           id: string
           is_read: boolean
           link_url: string | null
@@ -624,6 +643,7 @@ export type Database = {
         Insert: {
           body?: string | null
           created_at?: string
+          ghl_location_id?: string | null
           id?: string
           is_read?: boolean
           link_url?: string | null
@@ -634,6 +654,7 @@ export type Database = {
         Update: {
           body?: string | null
           created_at?: string
+          ghl_location_id?: string | null
           id?: string
           is_read?: boolean
           link_url?: string | null
@@ -824,6 +845,7 @@ export type Database = {
           deal_id: string | null
           description: string | null
           due_date: string | null
+          ghl_location_id: string | null
           id: string
           is_completed: boolean
           priority: Database["public"]["Enums"]["task_priority"]
@@ -837,6 +859,7 @@ export type Database = {
           deal_id?: string | null
           description?: string | null
           due_date?: string | null
+          ghl_location_id?: string | null
           id?: string
           is_completed?: boolean
           priority?: Database["public"]["Enums"]["task_priority"]
@@ -850,6 +873,7 @@ export type Database = {
           deal_id?: string | null
           description?: string | null
           due_date?: string | null
+          ghl_location_id?: string | null
           id?: string
           is_completed?: boolean
           priority?: Database["public"]["Enums"]["task_priority"]
@@ -871,6 +895,7 @@ export type Database = {
         Row: {
           created_at: string
           email: string | null
+          ghl_location_id: string | null
           id: string
           name: string
           notes: string | null
@@ -882,6 +907,7 @@ export type Database = {
         Insert: {
           created_at?: string
           email?: string | null
+          ghl_location_id?: string | null
           id?: string
           name: string
           notes?: string | null
@@ -893,6 +919,7 @@ export type Database = {
         Update: {
           created_at?: string
           email?: string | null
+          ghl_location_id?: string | null
           id?: string
           name?: string
           notes?: string | null
@@ -912,6 +939,7 @@ export type Database = {
           deal_types: string[]
           email: string | null
           file_fee_amount: number | null
+          ghl_location_id: string | null
           id: string
           name: string
           notes: string | null
@@ -929,6 +957,7 @@ export type Database = {
           deal_types?: string[]
           email?: string | null
           file_fee_amount?: number | null
+          ghl_location_id?: string | null
           id?: string
           name: string
           notes?: string | null
@@ -946,6 +975,7 @@ export type Database = {
           deal_types?: string[]
           email?: string | null
           file_fee_amount?: number | null
+          ghl_location_id?: string | null
           id?: string
           name?: string
           notes?: string | null
@@ -1016,6 +1046,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      current_ghl_location: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
