@@ -35,6 +35,7 @@ interface Pipeline {
 
 export default function PipelineMapping() {
   const { user } = useAuth();
+  const { activeLocation } = useActiveLocation();
   const [locations, setLocations] = useState<InstalledLocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
