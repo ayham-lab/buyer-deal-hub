@@ -6,6 +6,8 @@ interface ActiveLocation {
   locationId: string;
   companyId: string | null;
   userName?: string | null;
+  email?: string | null;
+  role?: string | null;
 }
 
 interface LocationContextValue {
