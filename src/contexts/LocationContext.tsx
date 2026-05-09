@@ -107,9 +107,15 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       } catch {}
 
       const data: any = event.data ?? {};
+      let preview: string;
+      try {
+        preview = typeof data === "string" ? data.slice(0, 80) : JSON.stringify(data).slice(0, 120);
+      } catch {
+        preview = String(data);
+      }
+      pushDebug(`msg from ${event.origin}: ${preview}`);
 
-      // 1) Encrypted SSO blob path — GHL sends { payload: "<encrypted-string>" }
-      //    in response to REQUEST_USER_DATA. Decrypt via oauth-userinfo.
+      // 1) Encrypted SSO blob path
       const ssoBlob =
         typeof data.payload === "string" && data.payload.length > 0
           ? data.payload
@@ -117,16 +123,13 @@ export function LocationProvider({ children }: { children: ReactNode }) {
             ? data.sso
             : null;
       if (ssoBlob) {
-        console.log("LocationProvider received SSO blob");
+        pushDebug("→ SSO blob, decrypting…");
+        setDebugStatus("decrypting SSO");
         processBlob(ssoBlob);
         return;
       }
 
-      // 2) Plain activeLocation path — some GHL contexts post the location
-      //    directly without the encrypted blob. Check both nesting shapes:
-      //      { activeLocation: { id, companyId } }
-      //      { payload: { activeLocation: { id, companyId } } }
-      //      { payload: { locationId, companyId } }
+      // 2) Plain activeLocation path
       const candidates = [
         data.activeLocation,
         data.payload?.activeLocation,
@@ -138,7 +141,6 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         const locationId = c.locationId || c.id || c.location_id;
         const companyId = c.companyId || c.company_id || null;
         if (typeof locationId === "string" && locationId.length > 0) {
-          console.log("LocationProvider received plain activeLocation:", { locationId, companyId });
           if (handledRef.current) return;
           handledRef.current = true;
           const next = { locationId, companyId };
@@ -146,6 +148,8 @@ export function LocationProvider({ children }: { children: ReactNode }) {
             sessionStorage.setItem("ghl_active_location", JSON.stringify(next));
           } catch {}
           setActiveLocation(next);
+          pushDebug(`→ plain activeLocation ${locationId}`);
+          setDebugStatus("active");
           return;
         }
       }
@@ -153,7 +157,6 @@ export function LocationProvider({ children }: { children: ReactNode }) {
 
     window.addEventListener("message", handler);
 
-    // Only request from parent if we're actually framed (iframe inside GHL).
     const isIframed = (() => {
       try {
         return window.self !== window.top;
@@ -161,12 +164,17 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         return true;
       }
     })();
+    pushDebug(`mounted. iframed=${isIframed}`);
     if (isIframed) {
       try {
         window.parent.postMessage({ message: "REQUEST_USER_DATA" }, "*");
-      } catch (e) {
+        pushDebug("posted REQUEST_USER_DATA to parent");
+      } catch (e: any) {
+        pushDebug(`postMessage failed: ${e?.message ?? e}`);
         console.error("postMessage to parent failed", e);
       }
+    } else {
+      setDebugStatus("not iframed (standalone)");
     }
 
     return () => {
@@ -177,6 +185,70 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   return (
     <LocationContext.Provider value={{ activeLocation }}>
       {children}
+      <DebugOverlay
+        status={debugStatus}
+        activeLocation={activeLocation}
+        messages={debugMessages}
+      />
     </LocationContext.Provider>
   );
 }
+
+function DebugOverlay({
+  status,
+  activeLocation,
+  messages,
+}: {
+  status: string;
+  activeLocation: ActiveLocation | null;
+  messages: string[];
+}) {
+  const [open, setOpen] = useState(true);
+  return (
+    <div
+      style={{
+        position: "fixed",
+        bottom: 8,
+        right: 8,
+        zIndex: 99999,
+        maxWidth: 420,
+        fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+        fontSize: 11,
+        background: "rgba(0,0,0,0.85)",
+        color: "#0f0",
+        border: "1px solid #0f0",
+        borderRadius: 6,
+        padding: 8,
+        pointerEvents: "auto",
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+        <strong style={{ color: "#fff" }}>GHL Location Debug</strong>
+        <button
+          onClick={() => setOpen((o) => !o)}
+          style={{ background: "transparent", color: "#fff", border: "1px solid #555", borderRadius: 4, padding: "0 6px", cursor: "pointer" }}
+        >
+          {open ? "−" : "+"}
+        </button>
+      </div>
+      {open && (
+        <div style={{ marginTop: 6 }}>
+          <div>status: <span style={{ color: "#ff0" }}>{status}</span></div>
+          <div>
+            activeLocation: <span style={{ color: "#ff0" }}>
+              {activeLocation ? `${activeLocation.locationId} / ${activeLocation.companyId ?? "—"}` : "null"}
+            </span>
+          </div>
+          <div style={{ marginTop: 6, borderTop: "1px solid #333", paddingTop: 6, maxHeight: 200, overflow: "auto" }}>
+            {messages.length === 0 ? (
+              <div style={{ opacity: 0.6 }}>no messages yet…</div>
+            ) : (
+              messages.map((m, i) => <div key={i}>{m}</div>)
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
