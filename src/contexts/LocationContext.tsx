@@ -84,10 +84,53 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     };
 
     const handler = (event: MessageEvent) => {
-      const payload = (event.data && (event.data as any).payload) as unknown;
-      if (typeof payload === "string" && payload.length > 0) {
-        console.log("LocationProvider received postMessage payload");
-        processBlob(payload);
+      // Log the entire payload so we can see the exact shape GHL is sending.
+      try {
+        console.log("LocationProvider postMessage e.data:", event.data);
+      } catch {}
+
+      const data: any = event.data ?? {};
+
+      // 1) Encrypted SSO blob path — GHL sends { payload: "<encrypted-string>" }
+      //    in response to REQUEST_USER_DATA. Decrypt via oauth-userinfo.
+      const ssoBlob =
+        typeof data.payload === "string" && data.payload.length > 0
+          ? data.payload
+          : typeof data.sso === "string" && data.sso.length > 0
+            ? data.sso
+            : null;
+      if (ssoBlob) {
+        console.log("LocationProvider received SSO blob");
+        processBlob(ssoBlob);
+        return;
+      }
+
+      // 2) Plain activeLocation path — some GHL contexts post the location
+      //    directly without the encrypted blob. Check both nesting shapes:
+      //      { activeLocation: { id, companyId } }
+      //      { payload: { activeLocation: { id, companyId } } }
+      //      { payload: { locationId, companyId } }
+      const candidates = [
+        data.activeLocation,
+        data.payload?.activeLocation,
+        data.payload && typeof data.payload === "object" ? data.payload : null,
+        data,
+      ].filter(Boolean);
+
+      for (const c of candidates) {
+        const locationId = c.locationId || c.id || c.location_id;
+        const companyId = c.companyId || c.company_id || null;
+        if (typeof locationId === "string" && locationId.length > 0) {
+          console.log("LocationProvider received plain activeLocation:", { locationId, companyId });
+          if (handledRef.current) return;
+          handledRef.current = true;
+          const next = { locationId, companyId };
+          try {
+            sessionStorage.setItem("ghl_active_location", JSON.stringify(next));
+          } catch {}
+          setActiveLocation(next);
+          return;
+        }
       }
     };
 
