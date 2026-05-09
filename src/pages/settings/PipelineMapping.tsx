@@ -37,34 +37,46 @@ export default function PipelineMapping() {
   const [locations, setLocations] = useState<InstalledLocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+
+  async function loadLocations() {
+    let activeLocationId: string | null = null;
+    try {
+      const raw = sessionStorage.getItem("ghl_active_location");
+      if (raw) activeLocationId = JSON.parse(raw)?.locationId ?? null;
+    } catch {}
+
+    let query = supabase
+      .from("ghl_location_tokens")
+      .select("ghl_location_id, ghl_company_id")
+      .order("updated_at", { ascending: false });
+    if (activeLocationId) query = query.eq("ghl_location_id", activeLocationId);
+
+    const { data, error } = await query;
+    if (error) setError(error.message ?? "Failed to load locations");
+    else setLocations((data as any) ?? []);
+    setLoading(false);
+  }
 
   useEffect(() => {
     if (!user) return;
-    (async () => {
-      // If we're inside the GHL iframe, scope to the active sub-account only.
-      let activeLocationId: string | null = null;
-      try {
-        const raw = sessionStorage.getItem("ghl_active_location");
-        if (raw) activeLocationId = JSON.parse(raw)?.locationId ?? null;
-      } catch {}
-
-      let query = supabase
-        .from("ghl_location_tokens")
-        .select("ghl_location_id, ghl_company_id")
-        .order("updated_at", { ascending: false });
-      if (activeLocationId) {
-        query = query.eq("ghl_location_id", activeLocationId);
-      }
-
-      const { data, error } = await query;
-      if (error) {
-        setError(error.message ?? "Failed to load locations");
-      } else {
-        setLocations((data as any) ?? []);
-      }
-      setLoading(false);
-    })();
+    loadLocations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  async function syncSubAccounts() {
+    setSyncing(true);
+    const { data, error } = await supabase.functions.invoke("sync-ghl-sub-accounts", { body: {} });
+    setSyncing(false);
+    if (error || (data as any)?.error) {
+      toast.error((data as any)?.error ?? error?.message ?? "Sync failed");
+      return;
+    }
+    const minted = (data as any)?.minted_count ?? 0;
+    const total = (data as any)?.total ?? 0;
+    toast.success(`Synced ${minted}/${total} sub-account${total === 1 ? "" : "s"}`);
+    await loadLocations();
+  }
 
   return (
     <AppLayout>
@@ -73,13 +85,19 @@ export default function PipelineMapping() {
         subtitle="Choose which GoHighLevel pipeline stages should sync deals into Dispo Pro."
       />
       <div className="p-6 lg:p-8 max-w-4xl space-y-6">
+        <div className="flex justify-end">
+          <Button variant="outline" onClick={syncSubAccounts} disabled={syncing}>
+            {syncing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            Sync sub-accounts
+          </Button>
+        </div>
         {loading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : error ? (
           <div className="text-sm text-destructive">Error: {error}</div>
         ) : locations.length === 0 ? (
           <div className="text-sm text-muted-foreground p-6 border border-dashed rounded-md">
-            No GHL locations have installed the app yet.
+            No GHL locations have installed the app yet. Click "Sync sub-accounts" if you've installed at the agency level.
           </div>
         ) : (
           locations.map((l) => <LocationMapper key={l.ghl_location_id} location={l} />)
