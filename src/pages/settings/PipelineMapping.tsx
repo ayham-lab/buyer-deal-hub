@@ -84,8 +84,9 @@ export default function PipelineMapping() {
   useEffect(() => {
     if (!user) return;
     loadLocations();
+    // Re-run when LocationProvider populates the active location post-handshake.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, activeLocation?.locationId]);
 
   async function syncSubAccounts() {
     setSyncing(true);
