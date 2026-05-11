@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return j({ ok: true, written, stageId, stageName: mapping.ghl_stage_name, ghlAssignedUserId, insertError }, 200);
+    return j({ ok: true, written, stageId, stageName: mapping?.ghl_stage_name ?? null, mapped: !!mapping, ghlAssignedUserId, insertError }, 200);
   } catch (err: any) {
     console.error("ghl-opportunity-webhook unhandled error", err);
     return j({ error: err?.message ?? "unexpected_error" }, 500);
