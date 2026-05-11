@@ -33,6 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const userIdRef = useRef<string | null>(null);
 
@@ -42,7 +43,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       supabase.from("user_roles").select("role").eq("user_id", uid),
     ]);
     setProfile(p as any);
-    setIsAdmin(!!roles?.some((r: any) => r.role === "admin"));
+    const roleList = (roles || []).map((r: any) => r.role);
+    setIsSuperAdmin(roleList.includes("super_admin"));
+    setIsAdmin(roleList.includes("admin") || roleList.includes("super_admin"));
   }, []);
 
   useEffect(() => {
@@ -55,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setProfile(null);
         setIsAdmin(false);
+        setIsSuperAdmin(false);
       }
     });
 
@@ -66,7 +70,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    // Refresh roles when tab regains focus (catches role grants made in another session)
     const onFocus = () => {
       if (userIdRef.current) loadProfile(userIdRef.current);
     };
@@ -87,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <Ctx.Provider value={{ user, session, profile, isAdmin, loading, signOut, refreshRoles }}>
+    <Ctx.Provider value={{ user, session, profile, isAdmin, isSuperAdmin, loading, signOut, refreshRoles }}>
       {children}
     </Ctx.Provider>
   );
