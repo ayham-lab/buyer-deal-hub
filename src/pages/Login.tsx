@@ -16,7 +16,19 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
+
+  // US phone helpers — strip to digits, validate 10, mask as (555) 555-5555
+  const phoneDigits = phone.replace(/\D/g, "").slice(0, 10);
+  const phoneValid = phoneDigits.length === 10;
+  function formatPhoneMask(raw: string) {
+    const d = raw.replace(/\D/g, "").slice(0, 10);
+    if (d.length === 0) return "";
+    if (d.length < 4) return `(${d}`;
+    if (d.length < 7) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
+    return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+  }
   const [ssoBusy, setSsoBusy] = useState(false);
 
   // GHL SSO flow
