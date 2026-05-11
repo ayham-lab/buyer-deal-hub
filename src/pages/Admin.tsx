@@ -225,6 +225,12 @@ export default function Admin() {
               <PricingTab />
             </TabsContent>
           )}
+
+          {showArchiveBuyers && (
+            <TabsContent value="archive_buyers">
+              <ArchiveBuyersTab />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 
