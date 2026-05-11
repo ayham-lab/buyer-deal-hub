@@ -30,18 +30,23 @@ export default function Admin() {
   const [buyers, setBuyers] = useState<any[]>([]);
   const [archive, setArchive] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
+  const [locationNames, setLocationNames] = useState<Record<string, string>>({});
   const [openUserId, setOpenUserId] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
-    const [{ data: pf }, { data: dl }, { data: by }, { data: ar }, { data: rl }] = await Promise.all([
+    const [{ data: pf }, { data: dl }, { data: by }, { data: ar }, { data: rl }, { data: lt }] = await Promise.all([
       supabase.from("profiles").select("*").order("created_at", { ascending: false }),
       supabase.from("deals").select("*").order("created_at", { ascending: false }),
       supabase.from("buyers").select("*").order("created_at", { ascending: false }),
       supabase.from("buyer_archive").select("*").order("created_at", { ascending: false }),
       supabase.from("user_roles").select("*"),
+      supabase.from("ghl_location_tokens").select("ghl_location_id, location_name"),
     ]);
     setUsers(pf || []); setDeals(dl || []); setBuyers(by || []); setArchive(ar || []); setRoles(rl || []);
+    const map: Record<string, string> = {};
+    (lt || []).forEach((r: any) => { if (r.ghl_location_id) map[r.ghl_location_id] = r.location_name || ""; });
+    setLocationNames(map);
     setLoading(false);
   }
   useEffect(() => { load(); }, []);
@@ -201,7 +206,7 @@ export default function Admin() {
 
           {/* DEALS */}
           <TabsContent value="deals">
-            <DealsTab deals={deals} users={users} onOpenUser={setOpenUserId} />
+            <DealsTab deals={deals} users={users} locationNames={locationNames} onOpenUser={setOpenUserId} />
           </TabsContent>
 
           {/* BUYERS */}
@@ -289,7 +294,7 @@ function UsersTab({ users, dealsByUser, buyersByUser, onOpen }: any) {
   );
 }
 
-function DealsTab({ deals, users, onOpenUser }: any) {
+function DealsTab({ deals, users, locationNames, onOpenUser }: any) {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");
   const [stateFilter, setStateFilter] = useState("all");
@@ -333,7 +338,7 @@ function DealsTab({ deals, users, onOpenUser }: any) {
       </div>
       <div className="rounded-lg border border-border overflow-hidden">
         <table className="data-table w-full">
-          <thead><tr><th>Owner</th><th>Address</th><th>Status</th><th>Asking</th><th>Fee</th><th>Created</th><th>Closed</th></tr></thead>
+          <thead><tr><th>Owner</th><th>Source</th><th>Address</th><th>Status</th><th>Asking</th><th>Fee</th><th>Created</th><th>Closed</th></tr></thead>
           <tbody>
             {filtered.map((d: any) => (
               <tr key={d.id}>
@@ -348,6 +353,9 @@ function DealsTab({ deals, users, onOpenUser }: any) {
                     </span>
                   )}
                 </td>
+                <td className="text-xs text-muted-foreground">
+                  {d.ghl_location_id ? (locationNames?.[d.ghl_location_id] || d.ghl_location_id.slice(0, 8)) : "—"}
+                </td>
                 <td className="font-medium truncate max-w-[260px]">{d.property_address}</td>
                 <td><Badge variant="outline" className="capitalize">{d.status}</Badge></td>
                 <td>{d.asking_price ? `$${Number(d.asking_price).toLocaleString()}` : "—"}</td>
@@ -356,7 +364,7 @@ function DealsTab({ deals, users, onOpenUser }: any) {
                 <td className="text-xs text-muted-foreground">{d.closed_at ? new Date(d.closed_at).toLocaleDateString() : "—"}</td>
               </tr>
             ))}
-            {filtered.length === 0 && <tr><td colSpan={7} className="text-center py-6 text-muted-foreground">No deals match.</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={8} className="text-center py-6 text-muted-foreground">No deals match.</td></tr>}
           </tbody>
         </table>
       </div>
