@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
+import { useActiveLocation } from "@/contexts/LocationContext";
 import { DealFiles } from "./DealFiles";
 import { DealBuyerMatch } from "./DealBuyerMatch";
 import { DealAssignees } from "./DealAssignees";
