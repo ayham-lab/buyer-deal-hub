@@ -15,11 +15,15 @@ import {
 import { UserDrawer } from "@/components/admin/UserDrawer";
 import { RoleManager } from "@/components/admin/RoleManager";
 import { PricingTab } from "@/components/admin/PricingTab";
+import { ArchiveBuyersTab } from "@/components/admin/ArchiveBuyersTab";
 import { useActiveLocation } from "@/contexts/LocationContext";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Admin() {
   const { isIframed } = useActiveLocation();
+  const { isSuperAdmin } = useAuth();
   const showPricing = !isIframed;
+  const showArchiveBuyers = !isIframed && isSuperAdmin;
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<any[]>([]);
   const [deals, setDeals] = useState<any[]>([]);
@@ -106,6 +110,7 @@ export default function Admin() {
             <TabsTrigger value="archive">Archive</TabsTrigger>
             <TabsTrigger value="roles">Roles</TabsTrigger>
             {showPricing && <TabsTrigger value="pricing">Pricing</TabsTrigger>}
+            {showArchiveBuyers && <TabsTrigger value="archive_buyers">Archive Buyers</TabsTrigger>}
           </TabsList>
 
           {/* OVERVIEW */}
@@ -218,6 +223,12 @@ export default function Admin() {
           {showPricing && (
             <TabsContent value="pricing">
               <PricingTab />
+            </TabsContent>
+          )}
+
+          {showArchiveBuyers && (
+            <TabsContent value="archive_buyers">
+              <ArchiveBuyersTab />
             </TabsContent>
           )}
         </Tabs>
