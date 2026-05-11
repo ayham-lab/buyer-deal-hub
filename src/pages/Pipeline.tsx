@@ -31,6 +31,7 @@ export interface Deal {
   jv_partner_id: string | null;
   buyer_id: string | null;
   notes: string | null;
+  ghl_location_id?: string | null;
   created_at: string;
 }
 
@@ -41,6 +42,7 @@ export default function Pipeline() {
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [locationNames, setLocationNames] = useState<Record<string, string>>({});
 
   async function load() {
     if (!user) return;
@@ -51,6 +53,18 @@ export default function Pipeline() {
     const query = isIframed ? base : base.eq("user_id", user.id);
     const { data } = await scopeToLocation(query);
     setDeals((data as any) || []);
+
+    // Source location names (for "From: <location>" badge on cards). RLS limits us to
+    // the active location in iframe mode; in standalone admin mode we get all rows.
+    const { data: locRows } = await supabase
+      .from("ghl_location_tokens")
+      .select("ghl_location_id, location_name");
+    const map: Record<string, string> = {};
+    (locRows || []).forEach((r: any) => {
+      if (r.ghl_location_id) map[r.ghl_location_id] = r.location_name || r.ghl_location_id.slice(0, 8);
+    });
+    setLocationNames(map);
+
     setLoading(false);
   }
   useEffect(() => { load(); }, [user]);
@@ -90,7 +104,7 @@ export default function Pipeline() {
           </TabsList>
           <TabsContent value="kanban" className="mt-6">
             {loading ? <Skeleton className="h-96 w-full" /> :
-              <KanbanBoard deals={deals} onStatusChange={updateStatus} onSelect={setActiveId} />}
+              <KanbanBoard deals={deals} onStatusChange={updateStatus} onSelect={setActiveId} locationNames={locationNames} />}
           </TabsContent>
           <TabsContent value="list" className="mt-6">
             <DealListView deals={deals} onSelect={setActiveId} />

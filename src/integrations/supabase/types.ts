@@ -506,6 +506,7 @@ export type Database = {
           emd_received: boolean
           emd_received_at: string | null
           ghl_assigned_user_id: string | null
+          ghl_contact_id: string | null
           ghl_location_id: string | null
           ghl_opportunity_id: string | null
           id: string
@@ -521,6 +522,9 @@ export type Database = {
           notes: string | null
           owner_id: string | null
           property_address: string
+          seller_email: string | null
+          seller_name: string | null
+          seller_phone: string | null
           state: string | null
           status: Database["public"]["Enums"]["deal_status"]
           title_company_id: string | null
@@ -544,6 +548,7 @@ export type Database = {
           emd_received?: boolean
           emd_received_at?: string | null
           ghl_assigned_user_id?: string | null
+          ghl_contact_id?: string | null
           ghl_location_id?: string | null
           ghl_opportunity_id?: string | null
           id?: string
@@ -559,6 +564,9 @@ export type Database = {
           notes?: string | null
           owner_id?: string | null
           property_address: string
+          seller_email?: string | null
+          seller_name?: string | null
+          seller_phone?: string | null
           state?: string | null
           status?: Database["public"]["Enums"]["deal_status"]
           title_company_id?: string | null
@@ -582,6 +590,7 @@ export type Database = {
           emd_received?: boolean
           emd_received_at?: string | null
           ghl_assigned_user_id?: string | null
+          ghl_contact_id?: string | null
           ghl_location_id?: string | null
           ghl_opportunity_id?: string | null
           id?: string
@@ -597,6 +606,9 @@ export type Database = {
           notes?: string | null
           owner_id?: string | null
           property_address?: string
+          seller_email?: string | null
+          seller_name?: string | null
+          seller_phone?: string | null
           state?: string | null
           status?: Database["public"]["Enums"]["deal_status"]
           title_company_id?: string | null
@@ -705,6 +717,7 @@ export type Database = {
           ghl_company_id: string | null
           ghl_location_id: string | null
           id: string
+          location_name: string | null
           refresh_token: string
           updated_at: string
         }
@@ -715,6 +728,7 @@ export type Database = {
           ghl_company_id?: string | null
           ghl_location_id?: string | null
           id?: string
+          location_name?: string | null
           refresh_token: string
           updated_at?: string
         }
@@ -725,6 +739,7 @@ export type Database = {
           ghl_company_id?: string | null
           ghl_location_id?: string | null
           id?: string
+          location_name?: string | null
           refresh_token?: string
           updated_at?: string
         }

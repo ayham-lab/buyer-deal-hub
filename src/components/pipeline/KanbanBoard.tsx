@@ -3,8 +3,9 @@ import { Deal, DealStatus } from "@/pages/Pipeline";
 import { STATUS_COLS, ipBadge } from "./utils";
 import { cn } from "@/lib/utils";
 
-export function KanbanBoard({ deals, onStatusChange, onSelect }: {
+export function KanbanBoard({ deals, onStatusChange, onSelect, locationNames }: {
   deals: Deal[]; onStatusChange: (id: string, s: DealStatus) => void; onSelect: (id: string) => void;
+  locationNames?: Record<string, string>;
 }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   function onDragEnd(e: DragEndEvent) {
@@ -17,15 +18,13 @@ export function KanbanBoard({ deals, onStatusChange, onSelect }: {
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-4">
         {STATUS_COLS.map((col) => {
-          // Fallback: deals with NULL/unknown status (e.g. webhook-imported before mapping was set)
-          // render into the Lead column so they're visible instead of silently dropped.
           const knownStatuses = new Set(STATUS_COLS.map((c) => c.id));
           const colDeals =
             col.id === "lead"
               ? deals.filter((d) => d.status === "lead" || !d.status || !knownStatuses.has(d.status as any))
               : deals.filter((d) => d.status === col.id);
           return (
-            <Column key={col.id} id={col.id} label={col.label} deals={colDeals} onSelect={onSelect} />
+            <Column key={col.id} id={col.id} label={col.label} deals={colDeals} onSelect={onSelect} locationNames={locationNames} />
           );
         })}
       </div>
@@ -33,7 +32,7 @@ export function KanbanBoard({ deals, onStatusChange, onSelect }: {
   );
 }
 
-function Column({ id, label, deals, onSelect }: { id: string; label: string; deals: Deal[]; onSelect: (id: string) => void }) {
+function Column({ id, label, deals, onSelect, locationNames }: { id: string; label: string; deals: Deal[]; onSelect: (id: string) => void; locationNames?: Record<string, string> }) {
   const { setNodeRef, isOver } = useDroppable({ id });
   return (
     <div className="bg-muted/50 border border-border rounded-xl p-3 min-h-[400px]">
@@ -42,16 +41,19 @@ function Column({ id, label, deals, onSelect }: { id: string; label: string; dea
         <span className="text-[11px] text-muted-foreground bg-card border border-border rounded-full px-2 py-0.5">{deals.length}</span>
       </div>
       <div ref={setNodeRef} className={cn("space-y-2 min-h-[300px] rounded transition-colors", isOver && "bg-primary/5 ring-1 ring-primary/30")}>
-        {deals.map((d) => <Card key={d.id} deal={d} onSelect={onSelect} />)}
+        {deals.map((d) => <Card key={d.id} deal={d} onSelect={onSelect} locationNames={locationNames} />)}
       </div>
     </div>
   );
 }
 
-function Card({ deal, onSelect }: { deal: Deal; onSelect: (id: string) => void }) {
+function Card({ deal, onSelect, locationNames }: { deal: Deal; onSelect: (id: string) => void; locationNames?: Record<string, string> }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: deal.id });
   const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined;
   const ip = ipBadge(deal.ip_expiry_date);
+  const sourceName = deal.ghl_location_id
+    ? (locationNames?.[deal.ghl_location_id] || deal.ghl_location_id.slice(0, 8))
+    : null;
   return (
     <div
       ref={setNodeRef}
@@ -72,6 +74,9 @@ function Card({ deal, onSelect }: { deal: Deal; onSelect: (id: string) => void }
         {ip && <span className={cn("text-[10px] px-1.5 py-0.5 rounded font-medium", ip.cls)}>{ip.label}</span>}
       </div>
       {deal.lead_source && <div className="mt-2 text-[10px] text-muted-foreground uppercase tracking-wider">{deal.lead_source}</div>}
+      {sourceName && (
+        <div className="mt-1 text-[10px] text-muted-foreground/80 truncate">From: {sourceName}</div>
+      )}
     </div>
   );
 }

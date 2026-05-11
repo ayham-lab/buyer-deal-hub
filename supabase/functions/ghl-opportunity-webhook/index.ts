@@ -101,6 +101,16 @@ Deno.serve(async (req) => {
     const ghlAssignedUserId =
       body.assignedTo || body.assigned_to || opp.assignedTo || opp.assigned_to || null;
 
+    // Capture seller contact details from GHL payload (Wave 2a). Keep these
+    // in sync on every webhook fire — overwrite when GHL sends new values,
+    // preserve existing when GHL omits them.
+    const contact = opp.contact ?? body.contact ?? {};
+    const composedName = [contact.firstName, contact.lastName].filter(Boolean).join(" ").trim();
+    const sellerName = composedName || contact.name || body.contactName || null;
+    const sellerPhone = contact.phone || body.phone || null;
+    const sellerEmail = contact.email || body.email || null;
+    const ghlContactId = body.contactId || opp.contactId || contact.id || contact._id || null;
+
     let written = false;
     let insertError: string | null = null;
     const address =
@@ -110,7 +120,7 @@ Deno.serve(async (req) => {
 
     const { data: existing, error: selErr } = await admin
       .from("deals")
-      .select("id")
+      .select("id, seller_name, seller_phone, seller_email, ghl_contact_id")
       .eq("ghl_opportunity_id", opportunityId)
       .maybeSingle();
 
@@ -118,6 +128,20 @@ Deno.serve(async (req) => {
       console.error("deal select failed", selErr);
       insertError = `select: ${selErr.message}`;
     } else if (existing) {
+      // UPSERT: keep seller fields in sync, but only overwrite when we got a fresh value.
+      const patch: Record<string, unknown> = {};
+      if (sellerName) patch.seller_name = sellerName;
+      if (sellerPhone) patch.seller_phone = sellerPhone;
+      if (sellerEmail) patch.seller_email = sellerEmail;
+      if (ghlContactId) patch.ghl_contact_id = ghlContactId;
+      if (ghlAssignedUserId) patch.ghl_assigned_user_id = ghlAssignedUserId;
+      if (Object.keys(patch).length > 0) {
+        const { error: updErr } = await admin.from("deals").update(patch).eq("id", existing.id);
+        if (updErr) {
+          console.error("deal update failed", updErr);
+          insertError = `update: ${updErr.message}`;
+        }
+      }
       written = true;
     } else {
       const { error: insErr } = await admin
@@ -130,6 +154,10 @@ Deno.serve(async (req) => {
           lead_source: "ghl",
           ghl_opportunity_id: opportunityId,
           ghl_location_id: locationId,
+          ghl_contact_id: ghlContactId,
+          seller_name: sellerName,
+          seller_phone: sellerPhone,
+          seller_email: sellerEmail,
           notes: mapping
             ? `Imported from GHL stage "${mapping.ghl_stage_name ?? stageId}"`
             : `Imported from GHL (stage ${stageId} not yet mapped — defaulted to Lead)`,
