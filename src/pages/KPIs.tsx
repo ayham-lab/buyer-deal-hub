@@ -19,6 +19,7 @@ const COLORS = ["#CC0000", "#FF1A1A", "#FF6B6B", "#FFA07A", "#FFD93D", "#6BCB77"
 
 export default function KPIs() {
   const { user } = useAuth();
+  const { isIframed, activeLocation } = useActiveLocation();
   const [deals, setDeals] = useState<any[]>([]);
   const [buyers, setBuyers] = useState<any[]>([]);
   const [owners, setOwners] = useState<{ user_id: string; name: string | null; email: string | null }[]>([]);
@@ -31,12 +32,30 @@ export default function KPIs() {
 
   useEffect(() => {
     if (!user) return;
-    Promise.all([
-      scopeToLocation(supabase.from("deals").select("*").eq("user_id", user.id)),
-      scopeToLocation(supabase.from("buyers").select("id, created_at").eq("user_id", user.id)),
-      supabase.from("profiles").select("user_id,name,email").order("name"),
-    ]).then(([d, b, o]) => { setDeals(d.data || []); setBuyers(b.data || []); setOwners((o.data as any) || []); });
-  }, [user]);
+    // In iframe, scope deals/buyers to the location (RLS allows seeing all per-location rows
+    // including webhook-imported ones with user_id=NULL). Standalone scopes by owner.
+    const dealsQ = isIframed
+      ? supabase.from("deals").select("*")
+      : supabase.from("deals").select("*").eq("user_id", user.id);
+    const buyersQ = isIframed
+      ? supabase.from("buyers").select("id, created_at")
+      : supabase.from("buyers").select("id, created_at").eq("user_id", user.id);
+    const promises: any[] = [
+      scopeToLocation(dealsQ),
+      scopeToLocation(buyersQ),
+    ];
+    // SECURITY: never source the iframe owners dropdown from the Lovable `profiles` table —
+    // it can leak workspace users from other tenants. In iframe mode we leave owners empty
+    // and hide the dropdown; identity comes from GHL (ghl_assigned_user_id / activeLocation.userName).
+    if (!isIframed) {
+      promises.push(supabase.from("profiles").select("user_id,name,email").order("name"));
+    }
+    Promise.all(promises).then(([d, b, o]) => {
+      setDeals(d.data || []);
+      setBuyers(b.data || []);
+      setOwners(isIframed ? [] : ((o?.data as any) || []));
+    });
+  }, [user, isIframed]);
 
   const { from, to } = useMemo(() => {
     const n = new Date();
