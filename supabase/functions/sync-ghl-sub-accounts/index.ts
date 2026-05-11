@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     // Find any existing token to authenticate against GHL.
     let tokenQuery = admin
       .from("ghl_location_tokens")
-      .select("ghl_location_id, ghl_company_id, access_token, refresh_token, expires_at")
+      .select("id, ghl_location_id, ghl_company_id, access_token, refresh_token, expires_at")
       .order("updated_at", { ascending: false })
       .limit(1);
     if (companyId) tokenQuery = tokenQuery.eq("ghl_company_id", companyId);
@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
           expires_at: newExpiresAt,
           ghl_company_id: rJson.companyId ?? rJson.company_id ?? seed.ghl_company_id,
           updated_at: new Date().toISOString(),
-        }).eq("ghl_location_id", seed.ghl_location_id);
+        }).eq("id", seed.id);
         if (seedUpdateErr) {
           console.error("ghl_location_tokens seed refresh update failed", seedUpdateErr);
           await logInstall({ company_id: companyId, location_id: seed.ghl_location_id, error: seedUpdateErr.message });
@@ -165,17 +165,14 @@ Deno.serve(async (req) => {
         }
         const mintJson = JSON.parse(mintText);
         const expiresAt = new Date(Date.now() + (Number(mintJson.expires_in) || 0) * 1000).toISOString();
-        const { error: upErr } = await admin.from("ghl_location_tokens").upsert(
-          {
-            ghl_location_id: locId,
-            ghl_company_id: companyId,
-            access_token: mintJson.access_token,
-            refresh_token: mintJson.refresh_token ?? mintJson.access_token,
-            expires_at: expiresAt,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "ghl_location_id" },
-        );
+        const { error: upErr } = await persistLocationToken(admin, {
+          ghl_location_id: locId,
+          ghl_company_id: companyId,
+          access_token: mintJson.access_token,
+          refresh_token: mintJson.refresh_token ?? mintJson.access_token,
+          expires_at: expiresAt,
+          updated_at: new Date().toISOString(),
+        });
         if (upErr) {
           console.error("ghl_location_tokens upsert failed", { locationId: locId, error: upErr });
           await logInstall({ company_id: companyId, location_id: locId, error: `upsert: ${upErr.message}`, payload: mintJson });
