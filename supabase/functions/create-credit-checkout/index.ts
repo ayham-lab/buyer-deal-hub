@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
       apiVersion: "2024-06-20",
     });
 
-    const origin = req.headers.get("origin") || "https://buyer-deal-hub.lovable.app";
+    const origin = req.headers.get("origin") || "https://dispo.acquiredcrm.com";
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items: [{ price: pack.stripe_price_id, quantity: 1 }],
