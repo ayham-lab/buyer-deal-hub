@@ -14,8 +14,12 @@ import {
 } from "lucide-react";
 import { UserDrawer } from "@/components/admin/UserDrawer";
 import { RoleManager } from "@/components/admin/RoleManager";
+import { PricingTab } from "@/components/admin/PricingTab";
+import { useActiveLocation } from "@/contexts/LocationContext";
 
 export default function Admin() {
+  const { isIframed } = useActiveLocation();
+  const showPricing = !isIframed;
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<any[]>([]);
   const [deals, setDeals] = useState<any[]>([]);
@@ -101,6 +105,7 @@ export default function Admin() {
             <TabsTrigger value="buyers">Buyers</TabsTrigger>
             <TabsTrigger value="archive">Archive</TabsTrigger>
             <TabsTrigger value="roles">Roles</TabsTrigger>
+            {showPricing && <TabsTrigger value="pricing">Pricing</TabsTrigger>}
           </TabsList>
 
           {/* OVERVIEW */}
@@ -208,6 +213,13 @@ export default function Admin() {
           <TabsContent value="roles">
             <RoleManager users={usersWithRoles} onChanged={load} />
           </TabsContent>
+
+          {/* PRICING */}
+          {showPricing && (
+            <TabsContent value="pricing">
+              <PricingTab />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 
