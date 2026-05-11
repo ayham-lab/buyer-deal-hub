@@ -19,6 +19,7 @@ Deno.serve(async (req) => {
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    { auth: { persistSession: false, autoRefreshToken: false } },
   );
 
   const logInstall = async (entry: {
@@ -96,13 +97,18 @@ Deno.serve(async (req) => {
         const rJson = JSON.parse(rText);
         seedAccessToken = rJson.access_token;
         const newExpiresAt = new Date(Date.now() + (Number(rJson.expires_in) || 0) * 1000).toISOString();
-        await admin.from("ghl_location_tokens").update({
+        const { error: seedUpdateErr } = await admin.from("ghl_location_tokens").update({
           access_token: rJson.access_token,
           refresh_token: rJson.refresh_token ?? seed.refresh_token,
           expires_at: newExpiresAt,
           ghl_company_id: rJson.companyId ?? rJson.company_id ?? seed.ghl_company_id,
           updated_at: new Date().toISOString(),
         }).eq("ghl_location_id", seed.ghl_location_id);
+        if (seedUpdateErr) {
+          console.error("ghl_location_tokens seed refresh update failed", seedUpdateErr);
+          await logInstall({ company_id: companyId, location_id: seed.ghl_location_id, error: seedUpdateErr.message });
+          return json({ error: seedUpdateErr.message }, 500);
+        }
         await logInstall({ company_id: companyId, location_id: seed.ghl_location_id, payload: { refreshed: true } });
       } catch (e: any) {
         await logInstall({ company_id: companyId, location_id: seed.ghl_location_id, error: `refresh threw: ${e?.message ?? "err"}` });
@@ -171,6 +177,7 @@ Deno.serve(async (req) => {
           { onConflict: "ghl_location_id" },
         );
         if (upErr) {
+          console.error("ghl_location_tokens upsert failed", { locationId: locId, error: upErr });
           await logInstall({ company_id: companyId, location_id: locId, error: `upsert: ${upErr.message}`, payload: mintJson });
           errors.push({ locationId: locId, error: upErr.message });
         } else {
@@ -183,12 +190,15 @@ Deno.serve(async (req) => {
       }
     }
 
+    const firstError = errors[0]?.error ?? null;
     return json({
       companyId,
       total: locations.length,
       minted_count: minted.length,
       minted,
       errors,
+      first_error: firstError,
+      error: locations.length > 0 && minted.length === 0 && firstError ? firstError : undefined,
     });
   } catch (err: any) {
     console.error("sync-ghl-sub-accounts unhandled", err);
