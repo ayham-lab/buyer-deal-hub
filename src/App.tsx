@@ -14,6 +14,7 @@ import Embed from "./pages/Embed";
 import PublicDeal from "./pages/PublicDeal";
 import Dashboard from "./pages/Dashboard";
 import Buyers from "./pages/Buyers";
+import Archive from "./pages/Archive";
 import Finder from "./pages/Finder";
 import Pipeline from "./pages/Pipeline";
 import KPIs from "./pages/KPIs";
