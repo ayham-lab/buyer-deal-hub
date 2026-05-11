@@ -130,7 +130,9 @@ Deno.serve(async (req) => {
           lead_source: "ghl",
           ghl_opportunity_id: opportunityId,
           ghl_location_id: locationId,
-          notes: `Imported from GHL stage "${mapping.ghl_stage_name ?? stageId}"`,
+          notes: mapping
+            ? `Imported from GHL stage "${mapping.ghl_stage_name ?? stageId}"`
+            : `Imported from GHL (stage ${stageId} not yet mapped — defaulted to Lead)`,
         });
       if (insErr) {
         console.error("deal insert failed", insErr);
