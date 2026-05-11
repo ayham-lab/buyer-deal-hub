@@ -110,11 +110,23 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
       <SheetContent className="bg-card border-border w-[560px] sm:max-w-[560px] overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="text-lg">{deal.property_address}</SheetTitle>
-          {(locationName || deal.ghl_location_id) && (
-            <p className="text-xs text-muted-foreground mt-1">
-              From {locationName || (deal.ghl_location_id?.slice(0, 8) ?? "—")}
-            </p>
-          )}
+          <div className="flex items-center justify-between gap-2 mt-1">
+            {(locationName || deal.ghl_location_id) ? (
+              <p className="text-xs text-muted-foreground">
+                From {locationName || (deal.ghl_location_id?.slice(0, 8) ?? "—")}
+              </p>
+            ) : <span />}
+            {deal.ghl_contact_id && deal.ghl_location_id && (
+              <a
+                href={`https://app.gohighlevel.com/v2/location/${deal.ghl_location_id}/contacts/detail/${deal.ghl_contact_id}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                Open in GHL <ExternalLink className="h-3 w-3" />
+              </a>
+            )}
+          </div>
         </SheetHeader>
 
         <Tabs defaultValue="overview" className="mt-6">
