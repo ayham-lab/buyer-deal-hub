@@ -140,18 +140,30 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
             </div>
             <div>
               <label className="text-[11px] uppercase tracking-wider text-muted-foreground">Deal Owner (Dispo Manager)</label>
-              <Select
-                value={deal.owner_id || "none"}
-                onValueChange={(v) => saveField("owner_id", v === "none" ? null : v)}
-              >
-                <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Unassigned</SelectItem>
-                  {owners.map((o) => (
-                    <SelectItem key={o.user_id} value={o.user_id}>{o.name || o.email || o.user_id.slice(0, 8)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {isIframed ? (
+                // SECURITY: in iframe mode the owner select is READ-ONLY and shows GHL identity
+                // only — never users.email/users.name from the cross-tenant Lovable profiles table.
+                <div className="border border-border rounded-md px-3 py-2 text-sm bg-muted/30">
+                  {deal.ghl_assigned_user_id
+                    ? (activeLocation?.userName && (deal.ghl_assigned_user_id === (activeLocation as any).userId)
+                        ? activeLocation.userName
+                        : `GHL: ${String(deal.ghl_assigned_user_id).slice(0, 8)}`)
+                    : "Unassigned"}
+                </div>
+              ) : (
+                <Select
+                  value={deal.owner_id || "none"}
+                  onValueChange={(v) => saveField("owner_id", v === "none" ? null : v)}
+                >
+                  <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Unassigned</SelectItem>
+                    {owners.map((o) => (
+                      <SelectItem key={o.user_id} value={o.user_id}>{o.name || o.email || o.user_id.slice(0, 8)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
