@@ -141,6 +141,7 @@ Deno.serve(async (req) => {
       if (sellerEmail) patch.seller_email = sellerEmail;
       if (ghlContactId) patch.ghl_contact_id = ghlContactId;
       if (ghlAssignedUserId) patch.ghl_assigned_user_id = ghlAssignedUserId;
+      if (stageId) patch.ghl_pipeline_stage_id = stageId;
       if (Object.keys(patch).length > 0) {
         const { error: updErr } = await admin.from("deals").update(patch).eq("id", existing.id);
         if (updErr) {
