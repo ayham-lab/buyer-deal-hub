@@ -123,7 +123,18 @@ export default function KPIs() {
   }, [deals]);
 
   // By owner (dispo manager)
-  const ownerName = (id: string | null) => {
+  // In iframe mode, NEVER show users.email/name from the Lovable profiles table —
+  // those leak across tenants. Use GHL identity from the deal (ghl_assigned_user_id)
+  // or the active location's userName. Owner badges fall back to "GHL user" / "Unassigned".
+  const ownerName = (id: string | null, deal?: any) => {
+    if (isIframed) {
+      const ghlId = deal?.ghl_assigned_user_id;
+      if (ghlId) {
+        if (activeLocation?.userName && ghlId === (activeLocation as any).userId) return activeLocation.userName;
+        return `GHL: ${String(ghlId).slice(0, 8)}`;
+      }
+      return "Unassigned";
+    }
     if (!id) return "Unassigned";
     const o = owners.find((x) => x.user_id === id);
     return o?.name || o?.email || id.slice(0, 8);
@@ -131,8 +142,8 @@ export default function KPIs() {
   const byOwner = useMemo(() => {
     const m: Record<string, { name: string; deals: number; closed: number; revenue: number }> = {};
     ownerScoped.forEach((d) => {
-      const key = d.owner_id || "unassigned";
-      m[key] = m[key] || { name: ownerName(d.owner_id), deals: 0, closed: 0, revenue: 0 };
+      const key = (isIframed ? d.ghl_assigned_user_id : d.owner_id) || "unassigned";
+      m[key] = m[key] || { name: ownerName(d.owner_id, d), deals: 0, closed: 0, revenue: 0 };
       m[key].deals += 1;
       if (d.status === "closed") {
         m[key].closed += 1;
@@ -140,7 +151,7 @@ export default function KPIs() {
       }
     });
     return Object.values(m).sort((a, b) => b.revenue - a.revenue);
-  }, [ownerScoped, owners]);
+  }, [ownerScoped, owners, isIframed, activeLocation]);
 
   return (
     <AppLayout>
