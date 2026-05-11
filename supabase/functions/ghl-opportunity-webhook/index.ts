@@ -87,17 +87,14 @@ Deno.serve(async (req) => {
       return j({ ok: true, skipped: "no_stage_id" }, 200);
     }
 
-    // Look up the configured mapping for this (location, stage)
+    // Mapping is OPTIONAL: when absent, we still ingest the opportunity as a "lead"
+    // so the Pipeline kanban shows it instead of silently dropping it.
     const { data: mapping } = await admin
       .from("ghl_dispo_stage_mappings")
       .select("ghl_pipeline_id, ghl_pipeline_name, ghl_stage_name, workspace_owner_user_id")
       .eq("ghl_location_id", locationId)
       .eq("ghl_stage_id", stageId)
       .maybeSingle();
-
-    if (!mapping) {
-      return j({ ok: true, skipped: "no_mapping", stageId, locationId }, 200);
-    }
 
     // SECURITY: never attribute a GHL-imported deal to a Lovable workspace user.
     // Store the GHL identity (assignedTo) in a dedicated column instead.
