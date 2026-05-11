@@ -15,11 +15,15 @@ import {
 import { UserDrawer } from "@/components/admin/UserDrawer";
 import { RoleManager } from "@/components/admin/RoleManager";
 import { PricingTab } from "@/components/admin/PricingTab";
+import { ArchiveBuyersTab } from "@/components/admin/ArchiveBuyersTab";
 import { useActiveLocation } from "@/contexts/LocationContext";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Admin() {
   const { isIframed } = useActiveLocation();
+  const { isSuperAdmin } = useAuth();
   const showPricing = !isIframed;
+  const showArchiveBuyers = !isIframed && isSuperAdmin;
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<any[]>([]);
   const [deals, setDeals] = useState<any[]>([]);
