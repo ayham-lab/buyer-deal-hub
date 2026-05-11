@@ -103,7 +103,7 @@ export default function PipelineMapping() {
   }
 
   return (
-    <AppLayout standaloneOnly>
+    <AppLayout>
       <PageHeader
         title="Pipeline Mapping"
         subtitle="Choose which GoHighLevel pipeline stages should sync deals into Dispo Pro."
