@@ -35,6 +35,69 @@ export type Database = {
         }
         Relationships: []
       }
+      archive_buyers: {
+        Row: {
+          buy_box: Json
+          city: string | null
+          created_at: string
+          email: string | null
+          first_name: string | null
+          full_name: string | null
+          id: string
+          is_active: boolean
+          last_active_at: string | null
+          last_name: string | null
+          notes: string | null
+          phone: string | null
+          preferred_markets: string[]
+          price_max: number | null
+          price_min: number | null
+          property_types: string[]
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          buy_box?: Json
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          full_name?: string | null
+          id?: string
+          is_active?: boolean
+          last_active_at?: string | null
+          last_name?: string | null
+          notes?: string | null
+          phone?: string | null
+          preferred_markets?: string[]
+          price_max?: number | null
+          price_min?: number | null
+          property_types?: string[]
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          buy_box?: Json
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          full_name?: string | null
+          id?: string
+          is_active?: boolean
+          last_active_at?: string | null
+          last_name?: string | null
+          notes?: string | null
+          phone?: string | null
+          preferred_markets?: string[]
+          price_max?: number | null
+          price_min?: number | null
+          property_types?: string[]
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       buyer_archive: {
         Row: {
           added_by_user_id: string | null
@@ -1191,6 +1254,11 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      reveal_archive_buyer: {
+        Args: { p_buyer_id: string; p_location: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "user" | "super_admin"
