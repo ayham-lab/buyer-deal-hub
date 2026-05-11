@@ -807,6 +807,7 @@ export type Database = {
           last_active_at: string | null
           name: string | null
           notification_prefs: Json
+          phone_number: string | null
           subscription_status: Database["public"]["Enums"]["subscription_status"]
           updated_at: string
           user_id: string
@@ -821,6 +822,7 @@ export type Database = {
           last_active_at?: string | null
           name?: string | null
           notification_prefs?: Json
+          phone_number?: string | null
           subscription_status?: Database["public"]["Enums"]["subscription_status"]
           updated_at?: string
           user_id: string
@@ -835,6 +837,7 @@ export type Database = {
           last_active_at?: string | null
           name?: string | null
           notification_prefs?: Json
+          phone_number?: string | null
           subscription_status?: Database["public"]["Enums"]["subscription_status"]
           updated_at?: string
           user_id?: string

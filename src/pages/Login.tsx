@@ -16,7 +16,19 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
+
+  // US phone helpers — strip to digits, validate 10, mask as (555) 555-5555
+  const phoneDigits = phone.replace(/\D/g, "").slice(0, 10);
+  const phoneValid = phoneDigits.length === 10;
+  function formatPhoneMask(raw: string) {
+    const d = raw.replace(/\D/g, "").slice(0, 10);
+    if (d.length === 0) return "";
+    if (d.length < 4) return `(${d}`;
+    if (d.length < 7) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
+    return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+  }
   const [ssoBusy, setSsoBusy] = useState(false);
 
   // GHL SSO flow
@@ -137,17 +149,30 @@ export default function Login() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (mode === "signup" && !phoneValid) {
+      toast.error("Enter a valid 10-digit US phone number");
+      return;
+    }
     setBusy(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const canonicalPhone = `+1${phoneDigits}`;
+        const { data: signUpData, error } = await supabase.auth.signUp({
           email, password,
           options: {
             emailRedirectTo: `${window.location.origin}/buyers`,
-            data: { name },
+            data: { name, phone_number: canonicalPhone },
           },
         });
         if (error) throw error;
+        // Persist phone on profile (handle_new_user trigger creates the row)
+        const newUserId = signUpData.user?.id;
+        if (newUserId) {
+          await supabase
+            .from("profiles")
+            .update({ phone_number: canonicalPhone })
+            .eq("user_id", newUserId);
+        }
         toast.success("Account created", { description: "Check your email to confirm." });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -197,11 +222,34 @@ export default function Login() {
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
+            {mode === "signup" && (
+              <div>
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel-national"
+                  placeholder="(555) 555-5555"
+                  value={formatPhoneMask(phone)}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                  aria-invalid={phone.length > 0 && !phoneValid}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Required — used to contact you about your account.
+                </p>
+              </div>
+            )}
             <div>
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
             </div>
-            <Button type="submit" disabled={busy} className="w-full bg-primary hover:bg-primary-hover">
+            <Button
+              type="submit"
+              disabled={busy || (mode === "signup" && !phoneValid)}
+              className="w-full bg-primary hover:bg-primary-hover"
+            >
               {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {mode === "login" ? "Sign in" : "Create account"}
             </Button>
