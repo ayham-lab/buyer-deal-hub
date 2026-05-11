@@ -72,6 +72,7 @@ Deno.serve(async (req) => {
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false, autoRefreshToken: false } },
     );
 
     // Best-effort: log every token-exchange payload we get from GHL so we can
@@ -245,11 +246,13 @@ Deno.serve(async (req) => {
       errors: errors.length,
     });
 
+    const firstPersistError = errors[0] ?? null;
     return json(
       {
         ...parsed,
         _persisted_locations: upsertedLocations,
         _persist_errors: errors.length ? errors : undefined,
+        _first_persist_error: firstPersistError,
       },
       200,
     );
