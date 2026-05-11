@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      archive_buyer_reveals: {
+        Row: {
+          buyer_id: string
+          ghl_location_id: string
+          id: string
+          revealed_at: string
+        }
+        Insert: {
+          buyer_id: string
+          ghl_location_id: string
+          id?: string
+          revealed_at?: string
+        }
+        Update: {
+          buyer_id?: string
+          ghl_location_id?: string
+          id?: string
+          revealed_at?: string
+        }
+        Relationships: []
+      }
       buyer_archive: {
         Row: {
           added_by_user_id: string | null
@@ -149,6 +170,111 @@ export type Database = {
           source?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      credit_action_costs: {
+        Row: {
+          action_key: string
+          credits: number
+          id: string
+          is_active: boolean
+        }
+        Insert: {
+          action_key: string
+          credits: number
+          id?: string
+          is_active?: boolean
+        }
+        Update: {
+          action_key?: string
+          credits?: number
+          id?: string
+          is_active?: boolean
+        }
+        Relationships: []
+      }
+      credit_balances: {
+        Row: {
+          balance: number
+          ghl_location_id: string
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          ghl_location_id: string
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          ghl_location_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      credit_packs: {
+        Row: {
+          created_at: string
+          credits: number
+          id: string
+          is_active: boolean
+          name: string
+          price_cents: number
+          sort_order: number
+          stripe_price_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          credits: number
+          id?: string
+          is_active?: boolean
+          name: string
+          price_cents: number
+          sort_order?: number
+          stripe_price_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          credits?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_cents?: number
+          sort_order?: number
+          stripe_price_id?: string | null
+        }
+        Relationships: []
+      }
+      credit_transactions: {
+        Row: {
+          action_key: string | null
+          created_at: string
+          delta: number
+          description: string | null
+          ghl_location_id: string
+          id: string
+          related_id: string | null
+          stripe_session_id: string | null
+        }
+        Insert: {
+          action_key?: string | null
+          created_at?: string
+          delta: number
+          description?: string | null
+          ghl_location_id: string
+          id?: string
+          related_id?: string | null
+          stripe_session_id?: string | null
+        }
+        Update: {
+          action_key?: string | null
+          created_at?: string
+          delta?: number
+          description?: string | null
+          ghl_location_id?: string
+          id?: string
+          related_id?: string | null
+          stripe_session_id?: string | null
         }
         Relationships: []
       }
@@ -1052,6 +1178,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consume_credits: {
+        Args: { p_action: string; p_location: string; p_related_id?: string }
+        Returns: boolean
+      }
       current_ghl_location: { Args: never; Returns: string }
       has_role: {
         Args: {
