@@ -110,6 +110,11 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
       <SheetContent className="bg-card border-border w-[560px] sm:max-w-[560px] overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="text-lg">{deal.property_address}</SheetTitle>
+          {(locationName || deal.ghl_location_id) && (
+            <p className="text-xs text-muted-foreground mt-1">
+              From {locationName || (deal.ghl_location_id?.slice(0, 8) ?? "—")}
+            </p>
+          )}
         </SheetHeader>
 
         <Tabs defaultValue="overview" className="mt-6">
@@ -206,6 +211,40 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
             </div>
 
             <DealAssignees dealId={dealId} />
+
+            {/* Seller Contact (Wave 2a) — editable; click-to-call/email; Open in GHL */}
+            <div className="rounded-lg border border-border p-3 bg-muted/30 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold">{deal.seller_name || "Seller Contact"}</h3>
+                {deal.ghl_contact_id && deal.ghl_location_id && (
+                  <a
+                    href={`https://app.gohighlevel.com/v2/location/${deal.ghl_location_id}/contacts/detail/${deal.ghl_contact_id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Open in GHL ↗
+                  </a>
+                )}
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                <Field label="Seller Name" value={deal.seller_name ?? ""} onSave={(v) => saveField("seller_name", v || null)} />
+                <Field label="Phone" value={deal.seller_phone ?? ""} onSave={(v) => saveField("seller_phone", v || null)} />
+                <Field label="Email" value={deal.seller_email ?? ""} onSave={(v) => saveField("seller_email", v || null)} />
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs">
+                {deal.seller_phone && (
+                  <a href={`tel:${deal.seller_phone}`} className="px-2 py-1 rounded bg-primary/10 text-primary hover:bg-primary/20">
+                    Call {deal.seller_phone}
+                  </a>
+                )}
+                {deal.seller_email && (
+                  <a href={`mailto:${deal.seller_email}`} className="px-2 py-1 rounded bg-primary/10 text-primary hover:bg-primary/20">
+                    Email {deal.seller_email}
+                  </a>
+                )}
+              </div>
+            </div>
 
             <DealBuyerMatch dealId={dealId} buyerId={deal.buyer_id} onChange={(id) => setDeal({ ...deal, buyer_id: id })} />
 
