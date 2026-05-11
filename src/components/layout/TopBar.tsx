@@ -2,6 +2,7 @@ import { HelpCircle, ChevronDown, LogOut, Building2, ShieldCheck, UserCog } from
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveLocation } from "@/contexts/LocationContext";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { CreditsPill } from "@/components/credits/CreditsPill";
 import { Link } from "react-router-dom";
 import {
   DropdownMenu,
@@ -55,6 +56,7 @@ export function TopBar() {
           Admin
         </Link>
       )}
+      <CreditsPill />
       <button className="h-9 w-9 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted">
         <HelpCircle className="h-4 w-4" />
       </button>
