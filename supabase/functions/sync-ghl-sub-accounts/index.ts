@@ -19,6 +19,7 @@ Deno.serve(async (req) => {
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    { auth: { persistSession: false, autoRefreshToken: false } },
   );
 
   const logInstall = async (entry: {
@@ -54,7 +55,7 @@ Deno.serve(async (req) => {
     // Find any existing token to authenticate against GHL.
     let tokenQuery = admin
       .from("ghl_location_tokens")
-      .select("ghl_location_id, ghl_company_id, access_token, refresh_token, expires_at")
+      .select("id, ghl_location_id, ghl_company_id, access_token, refresh_token, expires_at")
       .order("updated_at", { ascending: false })
       .limit(1);
     if (companyId) tokenQuery = tokenQuery.eq("ghl_company_id", companyId);
@@ -96,13 +97,18 @@ Deno.serve(async (req) => {
         const rJson = JSON.parse(rText);
         seedAccessToken = rJson.access_token;
         const newExpiresAt = new Date(Date.now() + (Number(rJson.expires_in) || 0) * 1000).toISOString();
-        await admin.from("ghl_location_tokens").update({
+        const { error: seedUpdateErr } = await admin.from("ghl_location_tokens").update({
           access_token: rJson.access_token,
           refresh_token: rJson.refresh_token ?? seed.refresh_token,
           expires_at: newExpiresAt,
           ghl_company_id: rJson.companyId ?? rJson.company_id ?? seed.ghl_company_id,
           updated_at: new Date().toISOString(),
-        }).eq("ghl_location_id", seed.ghl_location_id);
+        }).eq("id", seed.id);
+        if (seedUpdateErr) {
+          console.error("ghl_location_tokens seed refresh update failed", seedUpdateErr);
+          await logInstall({ company_id: companyId, location_id: seed.ghl_location_id, error: seedUpdateErr.message });
+          return json({ error: seedUpdateErr.message }, 500);
+        }
         await logInstall({ company_id: companyId, location_id: seed.ghl_location_id, payload: { refreshed: true } });
       } catch (e: any) {
         await logInstall({ company_id: companyId, location_id: seed.ghl_location_id, error: `refresh threw: ${e?.message ?? "err"}` });
@@ -159,18 +165,16 @@ Deno.serve(async (req) => {
         }
         const mintJson = JSON.parse(mintText);
         const expiresAt = new Date(Date.now() + (Number(mintJson.expires_in) || 0) * 1000).toISOString();
-        const { error: upErr } = await admin.from("ghl_location_tokens").upsert(
-          {
-            ghl_location_id: locId,
-            ghl_company_id: companyId,
-            access_token: mintJson.access_token,
-            refresh_token: mintJson.refresh_token ?? mintJson.access_token,
-            expires_at: expiresAt,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "ghl_location_id" },
-        );
+        const { error: upErr } = await persistLocationToken(admin, {
+          ghl_location_id: locId,
+          ghl_company_id: companyId,
+          access_token: mintJson.access_token,
+          refresh_token: mintJson.refresh_token ?? mintJson.access_token,
+          expires_at: expiresAt,
+          updated_at: new Date().toISOString(),
+        });
         if (upErr) {
+          console.error("ghl_location_tokens upsert failed", { locationId: locId, error: upErr });
           await logInstall({ company_id: companyId, location_id: locId, error: `upsert: ${upErr.message}`, payload: mintJson });
           errors.push({ locationId: locId, error: upErr.message });
         } else {
@@ -183,18 +187,41 @@ Deno.serve(async (req) => {
       }
     }
 
+    const firstError = errors[0]?.error ?? null;
     return json({
       companyId,
       total: locations.length,
       minted_count: minted.length,
       minted,
       errors,
+      first_error: firstError,
+      error: locations.length > 0 && minted.length === 0 && firstError ? firstError : undefined,
     });
   } catch (err: any) {
     console.error("sync-ghl-sub-accounts unhandled", err);
     return json({ error: err?.message ?? "unexpected_error" }, 500);
   }
 });
+
+async function persistLocationToken(admin: any, row: {
+  ghl_location_id: string;
+  ghl_company_id: string | null;
+  access_token: string;
+  refresh_token: string;
+  expires_at: string;
+  updated_at: string;
+}) {
+  const { data: existing, error: selErr } = await admin
+    .from("ghl_location_tokens")
+    .select("id")
+    .eq("ghl_location_id", row.ghl_location_id)
+    .maybeSingle();
+  if (selErr) return { error: selErr };
+  if (existing?.id) {
+    return await admin.from("ghl_location_tokens").update(row).eq("id", existing.id);
+  }
+  return await admin.from("ghl_location_tokens").insert(row);
+}
 
 function json(o: unknown, status = 200) {
   return new Response(JSON.stringify(o), {

@@ -72,6 +72,7 @@ Deno.serve(async (req) => {
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false, autoRefreshToken: false } },
     );
 
     // Best-effort: log every token-exchange payload we get from GHL so we can
@@ -98,17 +99,14 @@ Deno.serve(async (req) => {
 
     // Sub-account install: single upsert.
     if (locationId) {
-      const { error: upErr } = await admin.from("ghl_location_tokens").upsert(
-        {
-          ghl_location_id: locationId,
-          ghl_company_id: companyId,
-          access_token: parsed.access_token,
-          refresh_token: parsed.refresh_token,
-          expires_at: expiresAt(parsed.expires_in),
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "ghl_location_id" },
-      );
+      const { error: upErr } = await persistLocationToken(admin, {
+        ghl_location_id: locationId,
+        ghl_company_id: companyId,
+        access_token: parsed.access_token,
+        refresh_token: parsed.refresh_token,
+        expires_at: expiresAt(parsed.expires_in),
+        updated_at: new Date().toISOString(),
+      });
       if (upErr) {
         console.error("ghl_location_tokens upsert failed (location)", upErr);
         errors.push(`location upsert: ${upErr.message}`);
@@ -207,17 +205,14 @@ Deno.serve(async (req) => {
                   continue;
                 }
                 const mintJson = JSON.parse(mintText);
-                const { error: upErr } = await admin.from("ghl_location_tokens").upsert(
-                  {
-                    ghl_location_id: locId,
-                    ghl_company_id: companyId,
-                    access_token: mintJson.access_token,
-                    refresh_token: mintJson.refresh_token ?? mintJson.access_token,
-                    expires_at: expiresAt(mintJson.expires_in),
-                    updated_at: new Date().toISOString(),
-                  },
-                  { onConflict: "ghl_location_id" },
-                );
+                const { error: upErr } = await persistLocationToken(admin, {
+                  ghl_location_id: locId,
+                  ghl_company_id: companyId,
+                  access_token: mintJson.access_token,
+                  refresh_token: mintJson.refresh_token ?? mintJson.access_token,
+                  expires_at: expiresAt(mintJson.expires_in),
+                  updated_at: new Date().toISOString(),
+                });
                 if (upErr) {
                   console.error(`upsert failed for ${locId}`, upErr);
                   errors.push(`upsert ${locId}: ${upErr.message}`);
@@ -245,11 +240,13 @@ Deno.serve(async (req) => {
       errors: errors.length,
     });
 
+    const firstPersistError = errors[0] ?? null;
     return json(
       {
         ...parsed,
         _persisted_locations: upsertedLocations,
         _persist_errors: errors.length ? errors : undefined,
+        _first_persist_error: firstPersistError,
       },
       200,
     );
@@ -258,6 +255,26 @@ Deno.serve(async (req) => {
     return json({ error: err?.message ?? "unexpected_error" }, 500);
   }
 });
+
+async function persistLocationToken(admin: any, row: {
+  ghl_location_id: string;
+  ghl_company_id: string | null;
+  access_token: string;
+  refresh_token: string;
+  expires_at: string;
+  updated_at: string;
+}) {
+  const { data: existing, error: selErr } = await admin
+    .from("ghl_location_tokens")
+    .select("id")
+    .eq("ghl_location_id", row.ghl_location_id)
+    .maybeSingle();
+  if (selErr) return { error: selErr };
+  if (existing?.id) {
+    return await admin.from("ghl_location_tokens").update(row).eq("id", existing.id);
+  }
+  return await admin.from("ghl_location_tokens").insert(row);
+}
 
 function json(o: unknown, status = 200) {
   return new Response(JSON.stringify(o), {
