@@ -127,7 +127,10 @@ export default function PipelineMapping() {
               This location isn't synced yet — contact your agency admin.
             </div>
           ) : (
-            locations.map((l) => <LocationMapper key={l.ghl_location_id} location={l} />)
+            <>
+              {locations.map((l) => <LocationMapper key={l.ghl_location_id} location={l} />)}
+              <ClearUnmappedButton locationId={activeLocation.locationId} />
+            </>
           )
         ) : (
           <>
@@ -323,5 +326,50 @@ function LocationMapper({ location }: { location: InstalledLocation }) {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function ClearUnmappedButton({ locationId }: { locationId: string }) {
+  const [busy, setBusy] = useState(false);
+
+  async function handleClick() {
+    setBusy(true);
+    try {
+      const { data: dry, error: dryErr } = await supabase.functions.invoke("clear-unmapped-deals", {
+        body: { locationId, dryRun: true },
+      });
+      if (dryErr || (dry as any)?.error) {
+        toast.error((dry as any)?.error ?? dryErr?.message ?? "Failed to count");
+        return;
+      }
+      const count = (dry as any)?.count ?? 0;
+      if (count === 0) {
+        toast.success("No unmapped imported deals to clear.");
+        return;
+      }
+      const ok = window.confirm(
+        `Delete ${count} imported deal${count === 1 ? "" : "s"} whose GHL stage is not mapped?\n\nThis cannot be undone.`,
+      );
+      if (!ok) return;
+      const { data, error } = await supabase.functions.invoke("clear-unmapped-deals", {
+        body: { locationId },
+      });
+      if (error || (data as any)?.error) {
+        toast.error((data as any)?.error ?? error?.message ?? "Delete failed");
+        return;
+      }
+      toast.success(`Deleted ${(data as any)?.deleted ?? 0} unmapped deal(s).`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex justify-end">
+      <Button variant="outline" onClick={handleClick} disabled={busy}>
+        {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+        Clear unmapped imported deals
+      </Button>
+    </div>
   );
 }

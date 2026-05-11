@@ -87,14 +87,20 @@ Deno.serve(async (req) => {
       return j({ ok: true, skipped: "no_stage_id" }, 200);
     }
 
-    // Mapping is OPTIONAL: when absent, we still ingest the opportunity as a "lead"
-    // so the Pipeline kanban shows it instead of silently dropping it.
+    // Mapping is REQUIRED. If the location admin hasn't explicitly mapped this
+    // GHL stage in Pipeline Mapping, do NOT create a deal — otherwise every
+    // opportunity in every installed sub-account would be ingested uninvited.
     const { data: mapping } = await admin
       .from("ghl_dispo_stage_mappings")
       .select("ghl_pipeline_id, ghl_pipeline_name, ghl_stage_name, workspace_owner_user_id")
       .eq("ghl_location_id", locationId)
       .eq("ghl_stage_id", stageId)
       .maybeSingle();
+
+    if (!mapping) {
+      console.log(`skipped: no mapping for location=${locationId} stage=${stageId}`);
+      return j({ ok: true, skipped: "no_mapping", locationId, stageId }, 200);
+    }
 
     // SECURITY: never attribute a GHL-imported deal to a Lovable workspace user.
     // Store the GHL identity (assignedTo) in a dedicated column instead.
@@ -135,6 +141,7 @@ Deno.serve(async (req) => {
       if (sellerEmail) patch.seller_email = sellerEmail;
       if (ghlContactId) patch.ghl_contact_id = ghlContactId;
       if (ghlAssignedUserId) patch.ghl_assigned_user_id = ghlAssignedUserId;
+      if (stageId) patch.ghl_pipeline_stage_id = stageId;
       if (Object.keys(patch).length > 0) {
         const { error: updErr } = await admin.from("deals").update(patch).eq("id", existing.id);
         if (updErr) {
@@ -154,13 +161,12 @@ Deno.serve(async (req) => {
           lead_source: "ghl",
           ghl_opportunity_id: opportunityId,
           ghl_location_id: locationId,
+          ghl_pipeline_stage_id: stageId,
           ghl_contact_id: ghlContactId,
           seller_name: sellerName,
           seller_phone: sellerPhone,
           seller_email: sellerEmail,
-          notes: mapping
-            ? `Imported from GHL stage "${mapping.ghl_stage_name ?? stageId}"`
-            : `Imported from GHL (stage ${stageId} not yet mapped — defaulted to Lead)`,
+          notes: `Imported from GHL stage "${mapping.ghl_stage_name ?? stageId}"`,
         });
       if (insErr) {
         console.error("deal insert failed", insErr);
