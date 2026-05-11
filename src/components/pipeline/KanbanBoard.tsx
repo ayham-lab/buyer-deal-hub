@@ -2,6 +2,7 @@ import { DndContext, DragEndEvent, useDraggable, useDroppable, PointerSensor, us
 import { Deal, DealStatus } from "@/pages/Pipeline";
 import { STATUS_COLS, ipBadge } from "./utils";
 import { cn } from "@/lib/utils";
+import { ExternalLink } from "lucide-react";
 
 export function KanbanBoard({ deals, onStatusChange, onSelect, locationNames }: {
   deals: Deal[]; onStatusChange: (id: string, s: DealStatus) => void; onSelect: (id: string) => void;
@@ -74,8 +75,25 @@ function Card({ deal, onSelect, locationNames }: { deal: Deal; onSelect: (id: st
         {ip && <span className={cn("text-[10px] px-1.5 py-0.5 rounded font-medium", ip.cls)}>{ip.label}</span>}
       </div>
       {deal.lead_source && <div className="mt-2 text-[10px] text-muted-foreground uppercase tracking-wider">{deal.lead_source}</div>}
-      {sourceName && (
-        <div className="mt-1 text-[10px] text-muted-foreground/80 truncate">From: {sourceName}</div>
+      {(sourceName || deal.ghl_contact_id) && (
+        <div className="mt-1 flex items-center justify-between gap-2">
+          {sourceName ? (
+            <div className="text-[10px] text-muted-foreground/80 truncate">From: {sourceName}</div>
+          ) : <span />}
+          {deal.ghl_contact_id && deal.ghl_location_id && (
+            <a
+              href={`https://app.gohighlevel.com/v2/location/${deal.ghl_location_id}/contacts/detail/${deal.ghl_contact_id}`}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              title="Open contact in GHL"
+              className="inline-flex items-center gap-1 text-[10px] text-primary hover:underline shrink-0"
+            >
+              GHL <ExternalLink className="h-3 w-3" />
+            </a>
+          )}
+        </div>
       )}
     </div>
   );
