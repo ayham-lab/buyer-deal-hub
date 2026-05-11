@@ -16,13 +16,14 @@ interface AuthCtx {
   session: Session | null;
   profile: Profile | null;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
   refreshRoles: () => Promise<void>;
 }
 
 const Ctx = createContext<AuthCtx>({
-  user: null, session: null, profile: null, isAdmin: false, loading: true,
+  user: null, session: null, profile: null, isAdmin: false, isSuperAdmin: false, loading: true,
   signOut: async () => {},
   refreshRoles: async () => {},
 });
