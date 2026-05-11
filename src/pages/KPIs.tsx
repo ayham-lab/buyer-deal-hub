@@ -159,15 +159,19 @@ export default function KPIs() {
         title="KPI Dashboard"
         actions={
           <div className="flex items-center gap-2">
-            <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-              <SelectTrigger className="w-48"><SelectValue placeholder="All Owners" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Owners</SelectItem>
-                {owners.map((o) => (
-                  <SelectItem key={o.user_id} value={o.user_id}>{o.name || o.email || o.user_id.slice(0, 8)}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Owners dropdown is HIDDEN in iframe — sourcing it from the cross-tenant
+                Lovable profiles table leaks workspace users from other tenants. */}
+            {!isIframed && (
+              <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+                <SelectTrigger className="w-48"><SelectValue placeholder="All Owners" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Owners</SelectItem>
+                  {owners.map((o) => (
+                    <SelectItem key={o.user_id} value={o.user_id}>{o.name || o.email || o.user_id.slice(0, 8)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <Select value={range} onValueChange={setRange}>
               <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
               <SelectContent>
