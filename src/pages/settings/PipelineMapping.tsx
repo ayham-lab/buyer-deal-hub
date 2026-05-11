@@ -102,6 +102,12 @@ export default function PipelineMapping() {
     await loadLocations();
   }
 
+  // IFRAME BRANCH: never render the agency Sync button or the agency empty state.
+  // Render the per-location mapping form directly for the iframe's activeLocation.
+  const isIframed = (() => {
+    try { return window.self !== window.top; } catch { return true; }
+  })();
+
   return (
     <AppLayout>
       <PageHeader
@@ -109,22 +115,40 @@ export default function PipelineMapping() {
         subtitle="Choose which GoHighLevel pipeline stages should sync deals into Dispo Pro."
       />
       <div className="p-6 lg:p-8 max-w-4xl space-y-6">
-        <div className="flex justify-end">
-          <Button variant="outline" onClick={syncSubAccounts} disabled={syncing}>
-            {syncing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Sync sub-accounts
-          </Button>
-        </div>
-        {loading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : error ? (
-          <div className="text-sm text-destructive">Error: {error}</div>
-        ) : locations.length === 0 ? (
-          <div className="text-sm text-muted-foreground p-6 border border-dashed rounded-md">
-            No GHL locations have installed the app yet. Click "Sync sub-accounts" if you've installed at the agency level.
-          </div>
+        {isIframed ? (
+          loading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : !activeLocation?.locationId ? (
+            <div className="text-sm text-muted-foreground p-6 border border-dashed rounded-md">
+              Waiting for GHL to send active sub-account…
+            </div>
+          ) : locations.length === 0 ? (
+            <div className="text-sm text-muted-foreground p-6 border border-dashed rounded-md">
+              This location isn't synced yet — contact your agency admin.
+            </div>
+          ) : (
+            locations.map((l) => <LocationMapper key={l.ghl_location_id} location={l} />)
+          )
         ) : (
-          locations.map((l) => <LocationMapper key={l.ghl_location_id} location={l} />)
+          <>
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={syncSubAccounts} disabled={syncing}>
+                {syncing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Sync sub-accounts
+              </Button>
+            </div>
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : error ? (
+              <div className="text-sm text-destructive">Error: {error}</div>
+            ) : locations.length === 0 ? (
+              <div className="text-sm text-muted-foreground p-6 border border-dashed rounded-md">
+                No GHL locations have installed the app yet. Click "Sync sub-accounts" if you've installed at the agency level.
+              </div>
+            ) : (
+              locations.map((l) => <LocationMapper key={l.ghl_location_id} location={l} />)
+            )}
+          </>
         )}
       </div>
     </AppLayout>
