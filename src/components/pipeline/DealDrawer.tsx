@@ -21,6 +21,7 @@ import { format } from "date-fns";
 
 export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | null; onClose: () => void; onUpdated: () => void }) {
   const { user } = useAuth();
+  const { isIframed, activeLocation } = useActiveLocation();
   const [deal, setDeal] = useState<any>(null);
   const [checklist, setChecklist] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
@@ -33,17 +34,23 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
   useEffect(() => {
     if (!dealId) { setDeal(null); return; }
     (async () => {
-      const [{ data: d }, { data: c }, { data: t }, { data: tc }, { data: ow }, { data: tm }] = await Promise.all([
+      // SECURITY: in iframe mode we MUST NOT query the Lovable `profiles` table for the
+      // owners dropdown — it leaks workspace users from other tenants. The owner Select
+      // is hidden below in iframe mode; we render GHL identity (ghl_assigned_user_id /
+      // activeLocation.userName) read-only instead.
+      const [{ data: d }, { data: c }, { data: t }, { data: tc }, ownRes, { data: tm }] = await Promise.all([
         supabase.from("deals").select("*").eq("id", dealId).single(),
         supabase.from("deal_checklist").select("*").eq("deal_id", dealId).order("sort_order"),
         supabase.from("tasks").select("*").eq("deal_id", dealId).order("created_at", { ascending: false }),
         user ? scopeToLocation(supabase.from("title_companies").select("id,name").eq("user_id", user.id).order("name")) : Promise.resolve({ data: [] as any }),
-        supabase.from("profiles").select("user_id,name,email").order("name"),
+        isIframed
+          ? Promise.resolve({ data: [] as any })
+          : supabase.from("profiles").select("user_id,name,email").order("name"),
         user ? scopeToLocation(supabase.from("team_members").select("id,name,role").eq("user_id", user.id).order("name")) : Promise.resolve({ data: [] as any }),
       ]);
-      setDeal(d); setChecklist(c || []); setTasks(t || []); setTitleCos((tc as any) || []); setOwners((ow as any) || []); setTeam((tm as any) || []);
+      setDeal(d); setChecklist(c || []); setTasks(t || []); setTitleCos((tc as any) || []); setOwners(((ownRes as any)?.data as any) || []); setTeam((tm as any) || []);
     })();
-  }, [dealId, user]);
+  }, [dealId, user, isIframed]);
 
   if (!dealId || !deal) return null;
 
