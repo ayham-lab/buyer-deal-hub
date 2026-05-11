@@ -99,17 +99,14 @@ Deno.serve(async (req) => {
 
     // Sub-account install: single upsert.
     if (locationId) {
-      const { error: upErr } = await admin.from("ghl_location_tokens").upsert(
-        {
-          ghl_location_id: locationId,
-          ghl_company_id: companyId,
-          access_token: parsed.access_token,
-          refresh_token: parsed.refresh_token,
-          expires_at: expiresAt(parsed.expires_in),
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "ghl_location_id" },
-      );
+      const { error: upErr } = await persistLocationToken(admin, {
+        ghl_location_id: locationId,
+        ghl_company_id: companyId,
+        access_token: parsed.access_token,
+        refresh_token: parsed.refresh_token,
+        expires_at: expiresAt(parsed.expires_in),
+        updated_at: new Date().toISOString(),
+      });
       if (upErr) {
         console.error("ghl_location_tokens upsert failed (location)", upErr);
         errors.push(`location upsert: ${upErr.message}`);
@@ -208,17 +205,14 @@ Deno.serve(async (req) => {
                   continue;
                 }
                 const mintJson = JSON.parse(mintText);
-                const { error: upErr } = await admin.from("ghl_location_tokens").upsert(
-                  {
-                    ghl_location_id: locId,
-                    ghl_company_id: companyId,
-                    access_token: mintJson.access_token,
-                    refresh_token: mintJson.refresh_token ?? mintJson.access_token,
-                    expires_at: expiresAt(mintJson.expires_in),
-                    updated_at: new Date().toISOString(),
-                  },
-                  { onConflict: "ghl_location_id" },
-                );
+                const { error: upErr } = await persistLocationToken(admin, {
+                  ghl_location_id: locId,
+                  ghl_company_id: companyId,
+                  access_token: mintJson.access_token,
+                  refresh_token: mintJson.refresh_token ?? mintJson.access_token,
+                  expires_at: expiresAt(mintJson.expires_in),
+                  updated_at: new Date().toISOString(),
+                });
                 if (upErr) {
                   console.error(`upsert failed for ${locId}`, upErr);
                   errors.push(`upsert ${locId}: ${upErr.message}`);
