@@ -149,17 +149,30 @@ export default function Login() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (mode === "signup" && !phoneValid) {
+      toast.error("Enter a valid 10-digit US phone number");
+      return;
+    }
     setBusy(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const canonicalPhone = `+1${phoneDigits}`;
+        const { data: signUpData, error } = await supabase.auth.signUp({
           email, password,
           options: {
             emailRedirectTo: `${window.location.origin}/buyers`,
-            data: { name },
+            data: { name, phone_number: canonicalPhone },
           },
         });
         if (error) throw error;
+        // Persist phone on profile (handle_new_user trigger creates the row)
+        const newUserId = signUpData.user?.id;
+        if (newUserId) {
+          await supabase
+            .from("profiles")
+            .update({ phone_number: canonicalPhone })
+            .eq("user_id", newUserId);
+        }
         toast.success("Account created", { description: "Check your email to confirm." });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
