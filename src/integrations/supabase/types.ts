@@ -509,6 +509,7 @@ export type Database = {
           ghl_contact_id: string | null
           ghl_location_id: string | null
           ghl_opportunity_id: string | null
+          ghl_pipeline_id: string | null
           ghl_pipeline_stage_id: string | null
           id: string
           ip_expiry_date: string | null
@@ -552,6 +553,7 @@ export type Database = {
           ghl_contact_id?: string | null
           ghl_location_id?: string | null
           ghl_opportunity_id?: string | null
+          ghl_pipeline_id?: string | null
           ghl_pipeline_stage_id?: string | null
           id?: string
           ip_expiry_date?: string | null
@@ -595,6 +597,7 @@ export type Database = {
           ghl_contact_id?: string | null
           ghl_location_id?: string | null
           ghl_opportunity_id?: string | null
+          ghl_pipeline_id?: string | null
           ghl_pipeline_stage_id?: string | null
           id?: string
           ip_expiry_date?: string | null

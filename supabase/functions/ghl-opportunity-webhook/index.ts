@@ -83,8 +83,8 @@ Deno.serve(async (req) => {
     const pipelineId = body.pipelineId || opp.pipelineId;
     console.log("ghl-opportunity-webhook locationId:", locationId, "stageId:", stageId, "pipelineId:", pipelineId);
 
-    if (!stageId) {
-      return j({ ok: true, skipped: "no_stage_id" }, 200);
+    if (!stageId || !pipelineId) {
+      return j({ ok: true, skipped: "missing_pipeline_or_stage", pipelineId: pipelineId ?? null, stageId: stageId ?? null }, 200);
     }
 
     // Mapping is REQUIRED. If the location admin hasn't explicitly mapped this
@@ -94,12 +94,13 @@ Deno.serve(async (req) => {
       .from("ghl_dispo_stage_mappings")
       .select("ghl_pipeline_id, ghl_pipeline_name, ghl_stage_name, workspace_owner_user_id")
       .eq("ghl_location_id", locationId)
+      .eq("ghl_pipeline_id", pipelineId)
       .eq("ghl_stage_id", stageId)
       .maybeSingle();
 
     if (!mapping) {
-      console.log(`skipped: no mapping for location=${locationId} stage=${stageId}`);
-      return j({ ok: true, skipped: "no_mapping", locationId, stageId }, 200);
+      console.log(`skipped: no mapping for location=${locationId} pipeline=${pipelineId} stage=${stageId}`);
+      return j({ ok: true, skipped: "no_mapping", locationId, pipelineId, stageId }, 200);
     }
 
     // SECURITY: never attribute a GHL-imported deal to a Lovable workspace user.
@@ -128,6 +129,7 @@ Deno.serve(async (req) => {
       .from("deals")
       .select("id, seller_name, seller_phone, seller_email, ghl_contact_id")
       .eq("ghl_opportunity_id", opportunityId)
+      .eq("ghl_location_id", locationId)
       .maybeSingle();
 
     if (selErr) {
@@ -141,6 +143,7 @@ Deno.serve(async (req) => {
       if (sellerEmail) patch.seller_email = sellerEmail;
       if (ghlContactId) patch.ghl_contact_id = ghlContactId;
       if (ghlAssignedUserId) patch.ghl_assigned_user_id = ghlAssignedUserId;
+      patch.ghl_pipeline_id = pipelineId;
       if (stageId) patch.ghl_pipeline_stage_id = stageId;
       if (Object.keys(patch).length > 0) {
         const { error: updErr } = await admin.from("deals").update(patch).eq("id", existing.id);
@@ -161,6 +164,7 @@ Deno.serve(async (req) => {
           lead_source: "ghl",
           ghl_opportunity_id: opportunityId,
           ghl_location_id: locationId,
+          ghl_pipeline_id: pipelineId,
           ghl_pipeline_stage_id: stageId,
           ghl_contact_id: ghlContactId,
           seller_name: sellerName,

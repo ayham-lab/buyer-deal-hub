@@ -23,37 +23,30 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Mapped stage IDs for this location.
+    // Mapped pipeline/stage pairs for this location.
     const { data: maps, error: mapErr } = await admin
       .from("ghl_dispo_stage_mappings")
-      .select("ghl_stage_id")
+      .select("ghl_pipeline_id, ghl_stage_id")
       .eq("ghl_location_id", locationId);
     if (mapErr) return j({ error: mapErr.message }, 500);
-    const mappedStageIds = (maps ?? []).map((m: any) => m.ghl_stage_id);
+    const mappedPairs = new Set((maps ?? []).map((m: any) => `${m.ghl_pipeline_id}:${m.ghl_stage_id}`));
 
-    // Candidate deals: GHL-imported in this location whose stage is NOT mapped
-    // (includes deals with NULL stage ids — older imports before we tracked it).
-    let q = admin
+    // Candidate deals: GHL-imported in this location whose pipeline/stage pair is NOT mapped
+    // (includes deals with NULL pipeline/stage ids — older imports before we tracked them).
+    const { data: candidates, error: selErr } = await admin
       .from("deals")
-      .select("id, ghl_pipeline_stage_id", { count: "exact" })
+      .select("id, ghl_pipeline_id, ghl_pipeline_stage_id")
       .eq("ghl_location_id", locationId)
       .not("ghl_opportunity_id", "is", null);
-    if (mappedStageIds.length > 0) {
-      // exclude rows whose stage is mapped
-      q = q.or(
-        `ghl_pipeline_stage_id.is.null,ghl_pipeline_stage_id.not.in.(${mappedStageIds
-          .map((s) => `"${s}"`)
-          .join(",")})`,
-      );
-    }
-    const { data: candidates, error: selErr, count } = await q;
     if (selErr) return j({ error: selErr.message }, 500);
+    const ids = ((candidates ?? []) as any[])
+      .filter((d) => !d.ghl_pipeline_id || !d.ghl_pipeline_stage_id || !mappedPairs.has(`${d.ghl_pipeline_id}:${d.ghl_pipeline_stage_id}`))
+      .map((d) => d.id);
 
     if (dryRun) {
-      return j({ ok: true, count: count ?? candidates?.length ?? 0 });
+      return j({ ok: true, count: ids.length });
     }
 
-    const ids = (candidates ?? []).map((d: any) => d.id);
     if (ids.length === 0) return j({ ok: true, deleted: 0 });
 
     const { error: delErr } = await admin.from("deals").delete().in("id", ids);
