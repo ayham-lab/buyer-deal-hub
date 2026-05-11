@@ -24,6 +24,7 @@ Deno.serve(async (req) => {
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    { auth: { persistSession: false, autoRefreshToken: false } },
   );
 
   // Refresh anything expiring in the next 2 hours.
