@@ -16,9 +16,18 @@ export function KanbanBoard({ deals, onStatusChange, onSelect }: {
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-4">
-        {STATUS_COLS.map((col) => (
-          <Column key={col.id} id={col.id} label={col.label} deals={deals.filter((d) => d.status === col.id)} onSelect={onSelect} />
-        ))}
+        {STATUS_COLS.map((col) => {
+          // Fallback: deals with NULL/unknown status (e.g. webhook-imported before mapping was set)
+          // render into the Lead column so they're visible instead of silently dropped.
+          const knownStatuses = new Set(STATUS_COLS.map((c) => c.id));
+          const colDeals =
+            col.id === "lead"
+              ? deals.filter((d) => d.status === "lead" || !d.status || !knownStatuses.has(d.status as any))
+              : deals.filter((d) => d.status === col.id);
+          return (
+            <Column key={col.id} id={col.id} label={col.label} deals={colDeals} onSelect={onSelect} />
+          );
+        })}
       </div>
     </DndContext>
   );

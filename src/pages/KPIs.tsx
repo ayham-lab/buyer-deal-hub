@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { scopeToLocation } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
+import { useActiveLocation } from "@/contexts/LocationContext";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { TrendingUp, DollarSign, Briefcase, Target } from "lucide-react";
@@ -18,6 +19,7 @@ const COLORS = ["#CC0000", "#FF1A1A", "#FF6B6B", "#FFA07A", "#FFD93D", "#6BCB77"
 
 export default function KPIs() {
   const { user } = useAuth();
+  const { isIframed, activeLocation } = useActiveLocation();
   const [deals, setDeals] = useState<any[]>([]);
   const [buyers, setBuyers] = useState<any[]>([]);
   const [owners, setOwners] = useState<{ user_id: string; name: string | null; email: string | null }[]>([]);
@@ -30,12 +32,30 @@ export default function KPIs() {
 
   useEffect(() => {
     if (!user) return;
-    Promise.all([
-      scopeToLocation(supabase.from("deals").select("*").eq("user_id", user.id)),
-      scopeToLocation(supabase.from("buyers").select("id, created_at").eq("user_id", user.id)),
-      supabase.from("profiles").select("user_id,name,email").order("name"),
-    ]).then(([d, b, o]) => { setDeals(d.data || []); setBuyers(b.data || []); setOwners((o.data as any) || []); });
-  }, [user]);
+    // In iframe, scope deals/buyers to the location (RLS allows seeing all per-location rows
+    // including webhook-imported ones with user_id=NULL). Standalone scopes by owner.
+    const dealsQ = isIframed
+      ? supabase.from("deals").select("*")
+      : supabase.from("deals").select("*").eq("user_id", user.id);
+    const buyersQ = isIframed
+      ? supabase.from("buyers").select("id, created_at")
+      : supabase.from("buyers").select("id, created_at").eq("user_id", user.id);
+    const promises: any[] = [
+      scopeToLocation(dealsQ),
+      scopeToLocation(buyersQ),
+    ];
+    // SECURITY: never source the iframe owners dropdown from the Lovable `profiles` table —
+    // it can leak workspace users from other tenants. In iframe mode we leave owners empty
+    // and hide the dropdown; identity comes from GHL (ghl_assigned_user_id / activeLocation.userName).
+    if (!isIframed) {
+      promises.push(supabase.from("profiles").select("user_id,name,email").order("name"));
+    }
+    Promise.all(promises).then(([d, b, o]) => {
+      setDeals(d.data || []);
+      setBuyers(b.data || []);
+      setOwners(isIframed ? [] : ((o?.data as any) || []));
+    });
+  }, [user, isIframed]);
 
   const { from, to } = useMemo(() => {
     const n = new Date();
@@ -103,7 +123,18 @@ export default function KPIs() {
   }, [deals]);
 
   // By owner (dispo manager)
-  const ownerName = (id: string | null) => {
+  // In iframe mode, NEVER show users.email/name from the Lovable profiles table —
+  // those leak across tenants. Use GHL identity from the deal (ghl_assigned_user_id)
+  // or the active location's userName. Owner badges fall back to "GHL user" / "Unassigned".
+  const ownerName = (id: string | null, deal?: any) => {
+    if (isIframed) {
+      const ghlId = deal?.ghl_assigned_user_id;
+      if (ghlId) {
+        if (activeLocation?.userName && ghlId === (activeLocation as any).userId) return activeLocation.userName;
+        return `GHL: ${String(ghlId).slice(0, 8)}`;
+      }
+      return "Unassigned";
+    }
     if (!id) return "Unassigned";
     const o = owners.find((x) => x.user_id === id);
     return o?.name || o?.email || id.slice(0, 8);
@@ -111,8 +142,8 @@ export default function KPIs() {
   const byOwner = useMemo(() => {
     const m: Record<string, { name: string; deals: number; closed: number; revenue: number }> = {};
     ownerScoped.forEach((d) => {
-      const key = d.owner_id || "unassigned";
-      m[key] = m[key] || { name: ownerName(d.owner_id), deals: 0, closed: 0, revenue: 0 };
+      const key = (isIframed ? d.ghl_assigned_user_id : d.owner_id) || "unassigned";
+      m[key] = m[key] || { name: ownerName(d.owner_id, d), deals: 0, closed: 0, revenue: 0 };
       m[key].deals += 1;
       if (d.status === "closed") {
         m[key].closed += 1;
@@ -120,7 +151,7 @@ export default function KPIs() {
       }
     });
     return Object.values(m).sort((a, b) => b.revenue - a.revenue);
-  }, [ownerScoped, owners]);
+  }, [ownerScoped, owners, isIframed, activeLocation]);
 
   return (
     <AppLayout>
@@ -128,15 +159,19 @@ export default function KPIs() {
         title="KPI Dashboard"
         actions={
           <div className="flex items-center gap-2">
-            <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-              <SelectTrigger className="w-48"><SelectValue placeholder="All Owners" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Owners</SelectItem>
-                {owners.map((o) => (
-                  <SelectItem key={o.user_id} value={o.user_id}>{o.name || o.email || o.user_id.slice(0, 8)}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Owners dropdown is HIDDEN in iframe — sourcing it from the cross-tenant
+                Lovable profiles table leaks workspace users from other tenants. */}
+            {!isIframed && (
+              <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+                <SelectTrigger className="w-48"><SelectValue placeholder="All Owners" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Owners</SelectItem>
+                  {owners.map((o) => (
+                    <SelectItem key={o.user_id} value={o.user_id}>{o.name || o.email || o.user_id.slice(0, 8)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <Select value={range} onValueChange={setRange}>
               <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
               <SelectContent>

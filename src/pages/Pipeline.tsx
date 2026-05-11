@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { scopeToLocation } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
+import { useActiveLocation } from "@/contexts/LocationContext";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Plus, LayoutGrid, List, Download } from "lucide-react";
@@ -35,6 +36,7 @@ export interface Deal {
 
 export default function Pipeline() {
   const { user } = useAuth();
+  const { isIframed } = useActiveLocation();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -43,7 +45,11 @@ export default function Pipeline() {
   async function load() {
     if (!user) return;
     setLoading(true);
-    const { data } = await scopeToLocation(supabase.from("deals").select("*").eq("user_id", user.id).order("created_at", { ascending: false }));
+    // In iframe mode, show ALL deals scoped to the active GHL location (incl. webhook-imported
+    // deals where user_id IS NULL). RLS already gates by location. In standalone mode, scope to owner.
+    const base = supabase.from("deals").select("*").order("created_at", { ascending: false });
+    const query = isIframed ? base : base.eq("user_id", user.id);
+    const { data } = await scopeToLocation(query);
     setDeals((data as any) || []);
     setLoading(false);
   }

@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
+import { useActiveLocation } from "@/contexts/LocationContext";
 import { DealFiles } from "./DealFiles";
 import { DealBuyerMatch } from "./DealBuyerMatch";
 import { DealAssignees } from "./DealAssignees";
@@ -20,6 +21,7 @@ import { format } from "date-fns";
 
 export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | null; onClose: () => void; onUpdated: () => void }) {
   const { user } = useAuth();
+  const { isIframed, activeLocation } = useActiveLocation();
   const [deal, setDeal] = useState<any>(null);
   const [checklist, setChecklist] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
@@ -32,17 +34,23 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
   useEffect(() => {
     if (!dealId) { setDeal(null); return; }
     (async () => {
-      const [{ data: d }, { data: c }, { data: t }, { data: tc }, { data: ow }, { data: tm }] = await Promise.all([
+      // SECURITY: in iframe mode we MUST NOT query the Lovable `profiles` table for the
+      // owners dropdown — it leaks workspace users from other tenants. The owner Select
+      // is hidden below in iframe mode; we render GHL identity (ghl_assigned_user_id /
+      // activeLocation.userName) read-only instead.
+      const [{ data: d }, { data: c }, { data: t }, { data: tc }, ownRes, { data: tm }] = await Promise.all([
         supabase.from("deals").select("*").eq("id", dealId).single(),
         supabase.from("deal_checklist").select("*").eq("deal_id", dealId).order("sort_order"),
         supabase.from("tasks").select("*").eq("deal_id", dealId).order("created_at", { ascending: false }),
         user ? scopeToLocation(supabase.from("title_companies").select("id,name").eq("user_id", user.id).order("name")) : Promise.resolve({ data: [] as any }),
-        supabase.from("profiles").select("user_id,name,email").order("name"),
+        isIframed
+          ? Promise.resolve({ data: [] as any })
+          : supabase.from("profiles").select("user_id,name,email").order("name"),
         user ? scopeToLocation(supabase.from("team_members").select("id,name,role").eq("user_id", user.id).order("name")) : Promise.resolve({ data: [] as any }),
       ]);
-      setDeal(d); setChecklist(c || []); setTasks(t || []); setTitleCos((tc as any) || []); setOwners((ow as any) || []); setTeam((tm as any) || []);
+      setDeal(d); setChecklist(c || []); setTasks(t || []); setTitleCos((tc as any) || []); setOwners(((ownRes as any)?.data as any) || []); setTeam((tm as any) || []);
     })();
-  }, [dealId, user]);
+  }, [dealId, user, isIframed]);
 
   if (!dealId || !deal) return null;
 
@@ -132,18 +140,30 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
             </div>
             <div>
               <label className="text-[11px] uppercase tracking-wider text-muted-foreground">Deal Owner (Dispo Manager)</label>
-              <Select
-                value={deal.owner_id || "none"}
-                onValueChange={(v) => saveField("owner_id", v === "none" ? null : v)}
-              >
-                <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Unassigned</SelectItem>
-                  {owners.map((o) => (
-                    <SelectItem key={o.user_id} value={o.user_id}>{o.name || o.email || o.user_id.slice(0, 8)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {isIframed ? (
+                // SECURITY: in iframe mode the owner select is READ-ONLY and shows GHL identity
+                // only — never users.email/users.name from the cross-tenant Lovable profiles table.
+                <div className="border border-border rounded-md px-3 py-2 text-sm bg-muted/30">
+                  {deal.ghl_assigned_user_id
+                    ? (activeLocation?.userName && (deal.ghl_assigned_user_id === (activeLocation as any).userId)
+                        ? activeLocation.userName
+                        : `GHL: ${String(deal.ghl_assigned_user_id).slice(0, 8)}`)
+                    : "Unassigned"}
+                </div>
+              ) : (
+                <Select
+                  value={deal.owner_id || "none"}
+                  onValueChange={(v) => saveField("owner_id", v === "none" ? null : v)}
+                >
+                  <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Unassigned</SelectItem>
+                    {owners.map((o) => (
+                      <SelectItem key={o.user_id} value={o.user_id}>{o.name || o.email || o.user_id.slice(0, 8)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
