@@ -222,11 +222,34 @@ export default function Login() {
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
+            {mode === "signup" && (
+              <div>
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel-national"
+                  placeholder="(555) 555-5555"
+                  value={formatPhoneMask(phone)}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                  aria-invalid={phone.length > 0 && !phoneValid}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Required — used to contact you about your account.
+                </p>
+              </div>
+            )}
             <div>
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
             </div>
-            <Button type="submit" disabled={busy} className="w-full bg-primary hover:bg-primary-hover">
+            <Button
+              type="submit"
+              disabled={busy || (mode === "signup" && !phoneValid)}
+              className="w-full bg-primary hover:bg-primary-hover"
+            >
               {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {mode === "login" ? "Sign in" : "Create account"}
             </Button>
