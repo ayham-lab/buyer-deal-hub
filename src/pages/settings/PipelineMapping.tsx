@@ -127,7 +127,10 @@ export default function PipelineMapping() {
               This location isn't synced yet — contact your agency admin.
             </div>
           ) : (
-            locations.map((l) => <LocationMapper key={l.ghl_location_id} location={l} />)
+            <>
+              {locations.map((l) => <LocationMapper key={l.ghl_location_id} location={l} />)}
+              <ClearUnmappedButton locationId={activeLocation.locationId} />
+            </>
           )
         ) : (
           <>
