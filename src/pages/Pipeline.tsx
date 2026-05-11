@@ -31,6 +31,7 @@ export interface Deal {
   jv_partner_id: string | null;
   buyer_id: string | null;
   notes: string | null;
+  ghl_location_id?: string | null;
   created_at: string;
 }
 
