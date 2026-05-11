@@ -168,6 +168,7 @@ Deno.serve(async (req) => {
         const { error: upErr } = await persistLocationToken(admin, {
           ghl_location_id: locId,
           ghl_company_id: companyId,
+          location_name: loc.name ?? loc.businessName ?? null,
           access_token: mintJson.access_token,
           refresh_token: mintJson.refresh_token ?? mintJson.access_token,
           expires_at: expiresAt,
@@ -206,6 +207,7 @@ Deno.serve(async (req) => {
 async function persistLocationToken(admin: any, row: {
   ghl_location_id: string;
   ghl_company_id: string | null;
+  location_name?: string | null;
   access_token: string;
   refresh_token: string;
   expires_at: string;
