@@ -2,6 +2,7 @@ import { DndContext, DragEndEvent, useDraggable, useDroppable, PointerSensor, us
 import { Deal, DealStatus } from "@/pages/Pipeline";
 import { STATUS_COLS, ipBadge } from "./utils";
 import { cn } from "@/lib/utils";
+import { ExternalLink } from "lucide-react";
 
 export function KanbanBoard({ deals, onStatusChange, onSelect, locationNames }: {
   deals: Deal[]; onStatusChange: (id: string, s: DealStatus) => void; onSelect: (id: string) => void;
