@@ -256,6 +256,26 @@ Deno.serve(async (req) => {
   }
 });
 
+async function persistLocationToken(admin: any, row: {
+  ghl_location_id: string;
+  ghl_company_id: string | null;
+  access_token: string;
+  refresh_token: string;
+  expires_at: string;
+  updated_at: string;
+}) {
+  const { data: existing, error: selErr } = await admin
+    .from("ghl_location_tokens")
+    .select("id")
+    .eq("ghl_location_id", row.ghl_location_id)
+    .maybeSingle();
+  if (selErr) return { error: selErr };
+  if (existing?.id) {
+    return await admin.from("ghl_location_tokens").update(row).eq("id", existing.id);
+  }
+  return await admin.from("ghl_location_tokens").insert(row);
+}
+
 function json(o: unknown, status = 200) {
   return new Response(JSON.stringify(o), {
     status,
