@@ -28,16 +28,13 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
   const [titleCos, setTitleCos] = useState<{ id: string; name: string }[]>([]);
   const [owners, setOwners] = useState<{ user_id: string; name: string | null; email: string | null }[]>([]);
   const [team, setTeam] = useState<{ id: string; name: string; role: string }[]>([]);
+  const [locationName, setLocationName] = useState<string | null>(null);
   const [newTask, setNewTask] = useState("");
   const [newCheck, setNewCheck] = useState("");
 
   useEffect(() => {
     if (!dealId) { setDeal(null); return; }
     (async () => {
-      // SECURITY: in iframe mode we MUST NOT query the Lovable `profiles` table for the
-      // owners dropdown — it leaks workspace users from other tenants. The owner Select
-      // is hidden below in iframe mode; we render GHL identity (ghl_assigned_user_id /
-      // activeLocation.userName) read-only instead.
       const [{ data: d }, { data: c }, { data: t }, { data: tc }, ownRes, { data: tm }] = await Promise.all([
         supabase.from("deals").select("*").eq("id", dealId).single(),
         supabase.from("deal_checklist").select("*").eq("deal_id", dealId).order("sort_order"),
@@ -49,6 +46,18 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
         user ? scopeToLocation(supabase.from("team_members").select("id,name,role").eq("user_id", user.id).order("name")) : Promise.resolve({ data: [] as any }),
       ]);
       setDeal(d); setChecklist(c || []); setTasks(t || []); setTitleCos((tc as any) || []); setOwners(((ownRes as any)?.data as any) || []); setTeam((tm as any) || []);
+
+      // Source location name
+      if (d?.ghl_location_id) {
+        const { data: loc } = await supabase
+          .from("ghl_location_tokens")
+          .select("location_name")
+          .eq("ghl_location_id", d.ghl_location_id)
+          .maybeSingle();
+        setLocationName((loc as any)?.location_name || null);
+      } else {
+        setLocationName(null);
+      }
     })();
   }, [dealId, user, isIframed]);
 
