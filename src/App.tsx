@@ -25,6 +25,8 @@ import PipelineMapping from "./pages/settings/PipelineMapping";
 import TitleCompanies from "./pages/TitleCompanies";
 import Team from "./pages/Team";
 import Tasks from "./pages/Tasks";
+import AcceptInvite from "./pages/AcceptInvite";
+import NoAccess from "./pages/NoAccess";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -45,6 +47,8 @@ const App = () => (
                 <Route path="/login" element={wrap(<Login />)} />
                 <Route path="/signup" element={<Navigate to="/login" replace />} />
                 <Route path="/reset-password" element={wrap(<ResetPassword />)} />
+                <Route path="/accept-invite" element={wrap(<AcceptInvite />)} />
+                <Route path="/no-access" element={wrap(<NoAccess />)} />
                 <Route path="/oauth/consent" element={wrap(<OAuthConsent />)} />
                 <Route path="/oauth/callback" element={wrap(<OAuthCallback />)} />
                 <Route path="/embed" element={wrap(<Embed />)} />
