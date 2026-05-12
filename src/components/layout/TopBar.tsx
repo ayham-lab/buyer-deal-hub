@@ -1,9 +1,11 @@
-import { HelpCircle, ChevronDown, LogOut, Building2, ShieldCheck, UserCog } from "lucide-react";
+import { HelpCircle, ChevronDown, LogOut, Building2, ShieldCheck, UserCog, Check, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveLocation } from "@/contexts/LocationContext";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { CreditsPill } from "@/components/credits/CreditsPill";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +14,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+interface MembershipOption {
+  location_id: string;
+  location_name: string | null;
+  is_owner: boolean;
+}
 
 export function TopBar() {
   const { profile, signOut, isAdmin } = useAuth();
