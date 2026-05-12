@@ -145,9 +145,59 @@ export default function Login() {
         return;
       }
       const next = params.get("next");
-      nav(next ? decodeURIComponent(next) : "/buyers", { replace: true });
+      // If a deep-link target is requested (e.g. /accept-invite?token=…) honor it
+      // without doing a membership pre-check; that page handles its own flow.
+      if (next) {
+        nav(decodeURIComponent(next), { replace: true });
+        return;
+      }
+      // Otherwise: route by membership count.
+      // 0 → /no-access, 1 → set active location and go home, >1 → show switcher.
+      (async () => {
+        const { data } = await supabase
+          .from("location_memberships")
+          .select("location_id, is_owner")
+          .eq("user_id", user.id);
+        const rows = data ?? [];
+        if (rows.length === 0) {
+          nav("/no-access", { replace: true });
+          return;
+        }
+        if (rows.length === 1) {
+          try {
+            sessionStorage.setItem(
+              "ghl_active_location",
+              JSON.stringify({ locationId: rows[0].location_id, companyId: null }),
+            );
+          } catch {}
+          nav("/buyers", { replace: true });
+          return;
+        }
+        // Multi-location → show switcher.
+        const ids = rows.map((r) => r.location_id);
+        const { data: tokens } = await supabase
+          .from("ghl_location_tokens")
+          .select("ghl_location_id, location_name")
+          .in("ghl_location_id", ids);
+        const nameById = new Map((tokens ?? []).map((t: any) => [t.ghl_location_id, t.location_name]));
+        setLocOptions(
+          rows.map((r) => ({
+            location_id: r.location_id,
+            location_name: nameById.get(r.location_id) ?? null,
+            is_owner: r.is_owner,
+          })),
+        );
+      })();
     }
   }, [user, authLoading, nav, params]);
+
+  function pickLocation(locationId: string) {
+    try {
+      sessionStorage.setItem("ghl_active_location", JSON.stringify({ locationId, companyId: null }));
+    } catch {}
+    setLocOptions(null);
+    nav("/buyers", { replace: true });
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
