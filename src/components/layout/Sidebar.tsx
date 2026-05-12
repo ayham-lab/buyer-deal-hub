@@ -15,7 +15,6 @@ const items = [
   { to: "/archive", label: "Archive", icon: Lock },
   { to: "/tasks", label: "Tasks", icon: CheckSquare },
   { to: "/title-companies", label: "Title Companies", icon: Building2 },
-  { to: "/team", label: "Team", icon: UsersRound },
   { to: "/settings/pipelines", label: "Pipeline Mapping", icon: GitBranch },
   { to: "/settings", label: "Settings", icon: SettingsIcon, exact: true },
 ];
