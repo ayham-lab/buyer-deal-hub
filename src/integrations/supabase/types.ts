@@ -841,6 +841,36 @@ export type Database = {
         }
         Relationships: []
       }
+      location_memberships: {
+        Row: {
+          created_at: string
+          id: string
+          is_owner: boolean
+          joined_at: string
+          location_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_owner?: boolean
+          joined_at?: string
+          location_id: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_owner?: boolean
+          joined_at?: string
+          location_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string | null
@@ -1003,6 +1033,39 @@ export type Database = {
           location_id?: string | null
           payload?: Json | null
           source?: string
+        }
+        Relationships: []
+      }
+      pending_invites: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by_user_id: string
+          location_id: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by_user_id: string
+          location_id: string
+          token: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by_user_id?: string
+          location_id?: string
+          token?: string
         }
         Relationships: []
       }
@@ -1275,6 +1338,14 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_location_member: {
+        Args: { _location_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_location_owner: {
+        Args: { _location_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       reveal_archive_buyer: {
         Args: { p_buyer_id: string; p_location: string }
