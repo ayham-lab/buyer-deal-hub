@@ -151,6 +151,15 @@ export default function Login() {
         nav(decodeURIComponent(next), { replace: true });
         return;
       }
+      // Iframe mode: GHL SSO is the source of truth for access. Skip the
+      // membership gate entirely and let LocationProvider redirect to /embed
+      // for the postMessage handshake.
+      let iframed = false;
+      try { iframed = window.self !== window.top; } catch { iframed = true; }
+      if (iframed) {
+        nav("/embed", { replace: true });
+        return;
+      }
       // Otherwise: route by membership count.
       // 0 → /no-access, 1 → set active location and go home, >1 → show switcher.
       (async () => {
