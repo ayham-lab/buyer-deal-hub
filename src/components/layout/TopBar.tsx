@@ -19,16 +19,15 @@ interface MembershipOption {
   location_id: string;
   location_name: string | null;
   is_owner: boolean;
+  admin_only?: boolean;
 }
 
 export function TopBar() {
-  const { profile, signOut, isAdmin, user } = useAuth();
+  const { profile, signOut, isAdmin, isSuperAdmin, user } = useAuth();
   const { activeLocation, isIframed } = useActiveLocation();
   const [memberships, setMemberships] = useState<MembershipOption[] | null>(null);
   const [loadingMemberships, setLoadingMemberships] = useState(false);
 
-  // In iframe mode the identity comes from the GHL SSO payload, never the
-  // Lovable workspace user. Standalone keeps the Lovable user.
   const ghlName = activeLocation?.userName || null;
   const ghlEmail = activeLocation?.email || null;
   const ghlRole = activeLocation?.role || null;
@@ -49,38 +48,72 @@ export function TopBar() {
       || (activeLocationId ? `Loc ${activeLocationId.slice(0, 8)}` : "Select workspace");
 
   async function loadMemberships() {
-    if (isIframed || !user || memberships !== null) return;
+    if (isIframed || !user) return;
     setLoadingMemberships(true);
     const { data: rows } = await supabase
       .from("location_memberships")
       .select("location_id, is_owner")
       .eq("user_id", user.id)
       .order("is_owner", { ascending: false });
-    const list = rows ?? [];
-    let opts: MembershipOption[] = list.map((r) => ({
-      location_id: r.location_id,
-      location_name: null,
-      is_owner: r.is_owner,
-    }));
-    if (opts.length) {
+    const byId = new Map<string, MembershipOption>();
+    (rows ?? []).forEach((r: any) => {
+      byId.set(r.location_id, { location_id: r.location_id, location_name: null, is_owner: r.is_owner });
+    });
+    // Super-admins see every connected location, even if not a member.
+    if (isSuperAdmin) {
+      const { data: allTokens } = await supabase
+        .from("ghl_location_tokens")
+        .select("ghl_location_id, location_name");
+      (allTokens ?? []).forEach((t: any) => {
+        if (!t.ghl_location_id) return;
+        const existing = byId.get(t.ghl_location_id);
+        if (existing) {
+          existing.location_name = existing.location_name ?? t.location_name ?? null;
+        } else {
+          byId.set(t.ghl_location_id, {
+            location_id: t.ghl_location_id,
+            location_name: t.location_name ?? null,
+            is_owner: false,
+            admin_only: true,
+          });
+        }
+      });
+    }
+    // Backfill names for the membership-only entries.
+    const missingNames = Array.from(byId.values()).filter((o) => !o.location_name).map((o) => o.location_id);
+    if (missingNames.length) {
       const { data: tokens } = await supabase
         .from("ghl_location_tokens")
         .select("ghl_location_id, location_name")
-        .in("ghl_location_id", opts.map((o) => o.location_id));
-      const nameById = new Map((tokens ?? []).map((t: any) => [t.ghl_location_id, t.location_name]));
-      opts = opts.map((o) => ({ ...o, location_name: nameById.get(o.location_id) ?? null }));
+        .in("ghl_location_id", missingNames);
+      (tokens ?? []).forEach((t: any) => {
+        const e = byId.get(t.ghl_location_id);
+        if (e) e.location_name = t.location_name ?? null;
+      });
     }
+    const opts = Array.from(byId.values()).sort((a, b) => Number(b.is_owner) - Number(a.is_owner));
     setMemberships(opts);
     setLoadingMemberships(false);
+
+    // Don't get stuck with no active location: standalone users with at least
+    // one workspace get auto-switched to their first one.
+    if (!activeLocationId && opts.length > 0) {
+      try {
+        sessionStorage.setItem(
+          "ghl_active_location",
+          JSON.stringify({ locationId: opts[0].location_id, companyId: null }),
+        );
+      } catch {}
+      window.location.reload();
+    }
   }
 
-  // Preload memberships once so the trigger label can render the friendly name.
   useEffect(() => {
     if (!isIframed && user && memberships === null) {
       loadMemberships();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, isIframed]);
+  }, [user, isIframed, isSuperAdmin]);
 
   function pickLocation(locationId: string) {
     if (locationId === activeLocationId) return;
@@ -90,8 +123,6 @@ export function TopBar() {
         JSON.stringify({ locationId, companyId: null }),
       );
     } catch {}
-    // Hard reload so LocationContext (which reads sessionStorage on mount)
-    // and every page-level data fetch picks up the new active location.
     window.location.reload();
   }
 
