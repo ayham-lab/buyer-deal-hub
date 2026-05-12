@@ -64,7 +64,7 @@ const App = () => (
                 <Route path="/settings" element={wrap(<Settings />)} />
                 <Route path="/settings/pipelines" element={wrap(<PipelineMapping />)} />
                 <Route path="/title-companies" element={wrap(<TitleCompanies />)} />
-                <Route path="/team" element={wrap(<Team />)} />
+                <Route path="/team" element={<Navigate to="/settings?tab=team" replace />} />
                 <Route path="*" element={wrap(<NotFound />)} />
               </Routes>
             </ErrorBoundary>
