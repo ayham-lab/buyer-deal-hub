@@ -33,6 +33,16 @@ export default function Login() {
   }
   const [ssoBusy, setSsoBusy] = useState(false);
 
+  // If we're rendered inside the GHL iframe, never show the standalone login
+  // form — third-party cookie restrictions mean Supabase auth typically
+  // isn't available here. Bounce to /embed so LocationProvider runs the
+  // postMessage SSO handshake and AppLayout uses GHL identity instead.
+  useEffect(() => {
+    let iframed = false;
+    try { iframed = window.self !== window.top; } catch { iframed = true; }
+    if (iframed) nav("/embed", { replace: true });
+  }, [nav]);
+
   // GHL SSO flow
   useEffect(() => {
     const sso = params.get("sso");
