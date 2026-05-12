@@ -54,9 +54,16 @@ export default function TeamMembersTab() {
         .eq("user_id", user.id)
         .order("is_owner", { ascending: false })
         .limit(1);
-      if (data?.[0]) setLocationId(data[0].location_id);
+      if (data?.[0]) { setLocationId(data[0].location_id); return; }
+      if (isSuperAdmin) {
+        const { data: t } = await supabase
+          .from("ghl_location_tokens")
+          .select("ghl_location_id")
+          .limit(1);
+        if (t?.[0]?.ghl_location_id) setLocationId(t[0].ghl_location_id);
+      }
     })();
-  }, [user, activeLocation]);
+  }, [user, activeLocation, isSuperAdmin]);
 
   async function load() {
     if (!locationId || !user) return;
