@@ -270,10 +270,37 @@ async function persistLocationToken(admin: any, row: {
     .eq("ghl_location_id", row.ghl_location_id)
     .maybeSingle();
   if (selErr) return { error: selErr };
+
+  // After token persist, ensure a workspace owner exists in
+  // location_memberships so the new install has a clear owner who can invite
+  // the rest of the team. We map ownership to ghl_location_links.workspace_owner_user_id
+  // (set during the SSO/install flow) — never to ghl_location_tokens (no user_id).
+  await ensureOwnerMembership(admin, row.ghl_location_id);
+
   if (existing?.id) {
     return await admin.from("ghl_location_tokens").update(row).eq("id", existing.id);
   }
   return await admin.from("ghl_location_tokens").insert(row);
+}
+
+async function ensureOwnerMembership(admin: any, locationId: string) {
+  try {
+    const { data: link } = await admin
+      .from("ghl_location_links")
+      .select("workspace_owner_user_id")
+      .eq("ghl_location_id", locationId)
+      .not("workspace_owner_user_id", "is", null)
+      .limit(1)
+      .maybeSingle();
+    const ownerId = link?.workspace_owner_user_id;
+    if (!ownerId) return; // no SSO link yet — first user to SSO will become owner via trigger-less flow
+    await admin.from("location_memberships").upsert(
+      { location_id: locationId, user_id: ownerId, role: "owner", is_owner: true },
+      { onConflict: "location_id,user_id" },
+    );
+  } catch (e) {
+    console.error("ensureOwnerMembership failed", e);
+  }
 }
 
 function json(o: unknown, status = 200) {
