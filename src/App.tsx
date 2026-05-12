@@ -23,7 +23,7 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import PipelineMapping from "./pages/settings/PipelineMapping";
 import TitleCompanies from "./pages/TitleCompanies";
-import Team from "./pages/Team";
+
 import Tasks from "./pages/Tasks";
 import AcceptInvite from "./pages/AcceptInvite";
 import NoAccess from "./pages/NoAccess";
