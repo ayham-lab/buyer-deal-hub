@@ -84,7 +84,7 @@ export default function TeamMembersTab() {
     }
     setMembers(list);
     const me = list.find((x) => x.user_id === user.id);
-    setIsOwner(!!me?.is_owner);
+    setIsOwner(!!me?.is_owner || isSuperAdmin);
 
     const { data: inv } = await supabase
       .from("pending_invites")
