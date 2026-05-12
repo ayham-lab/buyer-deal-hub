@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,6 +27,13 @@ export default function AcceptInvite() {
 
   useEffect(() => {
     if (!token) { setError("Missing invite token."); setLoading(false); return; }
+    // Defense-in-depth: stash so the global SIGNED_IN handler can recover
+    // even if Supabase's confirm-email redirect drops the URL param.
+    try {
+      const stash: any = { token };
+      if (user?.email) stash.email = user.email.toLowerCase();
+      localStorage.setItem("pending_invite", JSON.stringify(stash));
+    } catch {}
     (async () => {
       const { data, error } = await supabase.functions.invoke("lookup-invite", {
         body: { token },
@@ -38,7 +45,7 @@ export default function AcceptInvite() {
       }
       setLoading(false);
     })();
-  }, [token]);
+  }, [token, user?.email]);
 
   async function accept() {
     if (!user || !token) return;
@@ -54,10 +61,24 @@ export default function AcceptInvite() {
     const locId = (data as any).location_id as string;
     try {
       sessionStorage.setItem("ghl_active_location", JSON.stringify({ locationId: locId, companyId: null }));
+      localStorage.removeItem("pending_invite");
     } catch {}
     toast.success("You're in!");
     nav("/", { replace: true });
   }
+
+  // Auto-accept when signed-in user matches the invite email — covers both
+  // "already signed in in another tab" and "just confirmed email and landed
+  // back here with token still in URL".
+  const autoFired = useRef(false);
+  useEffect(() => {
+    if (autoFired.current) return;
+    if (!user || !invite || invite.expired || invite.accepted || busy) return;
+    if ((user.email ?? "").toLowerCase() !== invite.email.toLowerCase()) return;
+    autoFired.current = true;
+    accept();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, invite]);
 
   if (loading || authLoading) {
     return <Centered><Loader2 className="h-5 w-5 animate-spin" /></Centered>;
