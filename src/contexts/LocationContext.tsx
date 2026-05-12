@@ -116,12 +116,23 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         const { data: { session } } = await supabase.auth.getSession();
         const user = session?.user;
         if (user) {
+          // Resolve existing workspace owner for this location so that a
+          // secondary user joining via iframe SSO doesn't accidentally claim
+          // ownership. First user to install becomes the owner.
+          const { data: existingLink } = await supabase
+            .from("ghl_location_links")
+            .select("workspace_owner_user_id")
+            .eq("ghl_location_id", locationId)
+            .limit(1)
+            .maybeSingle();
+          const ownerId = existingLink?.workspace_owner_user_id ?? user.id;
+
           const { error: upErr } = await supabase
             .from("ghl_location_links")
             .upsert(
               {
                 user_id: user.id,
-                workspace_owner_user_id: user.id,
+                workspace_owner_user_id: ownerId,
                 linked_by_user_id: user.id,
                 ghl_location_id: locationId,
                 ghl_company_id: companyId,
@@ -130,34 +141,8 @@ export function LocationProvider({ children }: { children: ReactNode }) {
               { onConflict: "user_id,ghl_location_id", ignoreDuplicates: true },
             );
           if (upErr) console.error("LocationProvider link upsert failed", upErr);
-
-          // Iframe SSO is proof of GHL sub-account access. Ensure a
-          // location_memberships row exists so the user shows up in the Team
-          // tab and passes the standalone membership gate next time too.
-          // Owner if they're the workspace owner per ghl_location_links,
-          // otherwise plain member.
-          try {
-            const { data: link } = await supabase
-              .from("ghl_location_links")
-              .select("workspace_owner_user_id")
-              .eq("ghl_location_id", locationId)
-              .limit(1)
-              .maybeSingle();
-            const isOwner = link?.workspace_owner_user_id === user.id;
-            await supabase
-              .from("location_memberships")
-              .upsert(
-                {
-                  location_id: locationId,
-                  user_id: user.id,
-                  role: isOwner ? "owner" : "member",
-                  is_owner: isOwner,
-                },
-                { onConflict: "location_id,user_id", ignoreDuplicates: true },
-              );
-          } catch (e) {
-            console.error("LocationProvider membership upsert failed", e);
-          }
+          // location_memberships row is auto-created by the
+          // sync_membership_from_ghl_link trigger on ghl_location_links INSERT.
         } else {
           sessionStorage.setItem(
             "ghl_marketplace_pending_install",
