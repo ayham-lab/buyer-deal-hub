@@ -228,10 +228,24 @@ export default function Login() {
     try {
       if (mode === "signup") {
         const canonicalPhone = `+1${phoneDigits}`;
+        const nextParam = params.get("next");
+        const redirectPath = nextParam ? decodeURIComponent(nextParam) : "/buyers";
+        // Defense-in-depth: if signing up via an invite link, stash the token
+        // so a global SIGNED_IN handler can still consume it even if the
+        // post-confirm redirect drops the URL param.
+        try {
+          const m = redirectPath.match(/\/accept-invite\?.*token=([^&]+)/);
+          if (m) {
+            localStorage.setItem(
+              "pending_invite",
+              JSON.stringify({ token: decodeURIComponent(m[1]), email: email.toLowerCase() }),
+            );
+          }
+        } catch {}
         const { data: signUpData, error } = await supabase.auth.signUp({
           email, password,
           options: {
-            emailRedirectTo: `${window.location.origin}/buyers`,
+            emailRedirectTo: `${window.location.origin}${redirectPath}`,
             data: { name, phone_number: canonicalPhone },
           },
         });
