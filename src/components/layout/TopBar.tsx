@@ -22,8 +22,10 @@ interface MembershipOption {
 }
 
 export function TopBar() {
-  const { profile, signOut, isAdmin } = useAuth();
+  const { profile, signOut, isAdmin, user } = useAuth();
   const { activeLocation, isIframed } = useActiveLocation();
+  const [memberships, setMemberships] = useState<MembershipOption[] | null>(null);
+  const [loadingMemberships, setLoadingMemberships] = useState(false);
 
   // In iframe mode the identity comes from the GHL SSO payload, never the
   // Lovable workspace user. Standalone keeps the Lovable user.
@@ -39,18 +41,120 @@ export function TopBar() {
   const showAdminUI = !isIframed && isAdmin;
   const initial = (displayName || displayEmail || "?").slice(0, 1).toUpperCase();
 
+  const activeLocationId = activeLocation?.locationId ?? null;
+  const activeMembership = memberships?.find((m) => m.location_id === activeLocationId) ?? null;
   const locationLabel = isIframed
     ? (activeLocation ? `Loc ${activeLocation.locationId.slice(0, 8)}` : "GHL")
-    : (profile?.ghl_location_id ? `Loc ${profile.ghl_location_id.slice(0, 8)}` : "Standalone");
+    : activeMembership?.location_name
+      || (activeLocationId ? `Loc ${activeLocationId.slice(0, 8)}` : "Select workspace");
+
+  async function loadMemberships() {
+    if (isIframed || !user || memberships !== null) return;
+    setLoadingMemberships(true);
+    const { data: rows } = await supabase
+      .from("location_memberships")
+      .select("location_id, is_owner")
+      .eq("user_id", user.id)
+      .order("is_owner", { ascending: false });
+    const list = rows ?? [];
+    let opts: MembershipOption[] = list.map((r) => ({
+      location_id: r.location_id,
+      location_name: null,
+      is_owner: r.is_owner,
+    }));
+    if (opts.length) {
+      const { data: tokens } = await supabase
+        .from("ghl_location_tokens")
+        .select("ghl_location_id, location_name")
+        .in("ghl_location_id", opts.map((o) => o.location_id));
+      const nameById = new Map((tokens ?? []).map((t: any) => [t.ghl_location_id, t.location_name]));
+      opts = opts.map((o) => ({ ...o, location_name: nameById.get(o.location_id) ?? null }));
+    }
+    setMemberships(opts);
+    setLoadingMemberships(false);
+  }
+
+  // Preload memberships once so the trigger label can render the friendly name.
+  useEffect(() => {
+    if (!isIframed && user && memberships === null) {
+      loadMemberships();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, isIframed]);
+
+  function pickLocation(locationId: string) {
+    if (locationId === activeLocationId) return;
+    try {
+      sessionStorage.setItem(
+        "ghl_active_location",
+        JSON.stringify({ locationId, companyId: null }),
+      );
+    } catch {}
+    // Hard reload so LocationContext (which reads sessionStorage on mount)
+    // and every page-level data fetch picks up the new active location.
+    window.location.reload();
+  }
 
   return (
     <header className="h-14 bg-card border-b border-border flex items-center px-4 gap-3 sticky top-0 z-20">
       {/* Location switcher */}
-      <button className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-md border border-border bg-background hover:bg-muted text-sm transition-colors">
-        <Building2 className="h-4 w-4 text-muted-foreground" />
-        <span className="font-medium truncate max-w-[160px]">{locationLabel}</span>
-        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-      </button>
+      {isIframed ? (
+        <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-md border border-border bg-background text-sm">
+          <Building2 className="h-4 w-4 text-muted-foreground" />
+          <span className="font-medium truncate max-w-[160px]">{locationLabel}</span>
+        </div>
+      ) : (
+        <DropdownMenu onOpenChange={(o) => { if (o) loadMemberships(); }}>
+          <DropdownMenuTrigger asChild>
+            <button className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-md border border-border bg-background hover:bg-muted text-sm transition-colors">
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium truncate max-w-[200px]">{locationLabel}</span>
+              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-72">
+            <DropdownMenuLabel>Switch workspace</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {loadingMemberships && (
+              <div className="px-2 py-3 flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
+              </div>
+            )}
+            {!loadingMemberships && memberships && memberships.length === 0 && (
+              <div className="px-2 py-3 text-xs text-muted-foreground">
+                You're not a member of any workspace yet.
+              </div>
+            )}
+            {!loadingMemberships && memberships?.map((m) => {
+              const active = m.location_id === activeLocationId;
+              return (
+                <DropdownMenuItem
+                  key={m.location_id}
+                  onClick={() => pickLocation(m.location_id)}
+                  className="cursor-pointer"
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">
+                        {m.location_name ?? "GHL Location"}
+                        {m.is_owner && (
+                          <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-primary">
+                            Owner
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[10px] font-mono text-muted-foreground truncate">
+                        {m.location_id}
+                      </div>
+                    </div>
+                    {active && <Check className="h-4 w-4 text-primary shrink-0" />}
+                  </div>
+                </DropdownMenuItem>
+              );
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
 
       <div className="flex-1" />
 
