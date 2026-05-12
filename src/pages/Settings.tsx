@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -15,18 +16,21 @@ import TeamMembersTab from "@/pages/settings/TeamMembersTab";
 export default function Settings() {
   const { isIframed } = useActiveLocation();
   const { isAdmin } = useAuth();
-  // GATE: Profile + GHL Connections are workspace-owner concerns.
-  // Inside a GHL iframe we MUST hide them entirely — Profile would let an iframe
-  // user edit another tenant's Lovable workspace user; GHL Connections would let
-  // them disconnect another tenant's OAuth install.
+  const [params, setParams] = useSearchParams();
   const showProfile = !isIframed;
   const showGhl = !isIframed && isAdmin;
-  const defaultTab = showProfile ? "profile" : "checklist";
+  const initialTab = params.get("tab") || (showProfile ? "profile" : "checklist");
+  const [tab, setTab] = useState(initialTab);
+  useEffect(() => {
+    const t = params.get("tab");
+    if (t && t !== tab) setTab(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
   return (
     <AppLayout>
       <PageHeader title="Settings" subtitle="Manage your account and integrations" />
       <div className="p-6 lg:p-8 max-w-3xl">
-        <Tabs defaultValue={defaultTab}>
+        <Tabs value={tab} onValueChange={(v) => { setTab(v); setParams({ tab: v }, { replace: true }); }}>
           <TabsList>
             {showProfile && <TabsTrigger value="profile">Profile</TabsTrigger>}
             <TabsTrigger value="checklist">Checklist</TabsTrigger>

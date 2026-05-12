@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    // Owner check (server-side, never trust client).
+    // Owner OR super_admin (server-side, never trust client).
     const { data: ownerRow } = await admin
       .from("location_memberships")
       .select("id")
@@ -44,7 +44,17 @@ Deno.serve(async (req) => {
       .eq("user_id", user.id)
       .eq("is_owner", true)
       .maybeSingle();
-    if (!ownerRow) return json({ error: "forbidden_not_owner" }, 403);
+    let allowed = !!ownerRow;
+    if (!allowed) {
+      const { data: roleRow } = await admin
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("role", "super_admin")
+        .maybeSingle();
+      allowed = !!roleRow;
+    }
+    if (!allowed) return json({ error: "forbidden_not_owner" }, 403);
 
     // Generate token
     const tokenBytes = new Uint8Array(32);
