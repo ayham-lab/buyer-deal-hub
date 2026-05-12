@@ -239,6 +239,11 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <LocationSwitcherModal
+        open={!!locOptions && locOptions.length > 1}
+        options={locOptions ?? []}
+        onPick={pickLocation}
+      />
       <div className="w-full max-w-md">
         <div className="flex items-center gap-3 mb-8 justify-center">
           <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
