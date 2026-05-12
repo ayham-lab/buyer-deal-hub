@@ -32,11 +32,13 @@ export default function Dashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
 
   useEffect(() => {
-    if (!user) return;
-    // In iframe mode, wait for the SSO handshake to resolve before firing
-    // any queries — otherwise they go without x-ghl-location-id and RLS
-    // (which is admin-permissive when no header is set) returns cross-tenant rows.
-    if (!handshakeReady) return;
+    // In iframe mode, GHL SSO (not Supabase auth) is the source of truth.
+    // Wait for the SSO handshake; in standalone, require a Supabase user.
+    if (isIframed) {
+      if (!handshakeReady) return;
+    } else {
+      if (!user) return;
+    }
     (async () => {
       const today = new Date();
       const weekFromNow = addDays(today, 7);
