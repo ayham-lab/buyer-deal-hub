@@ -173,6 +173,11 @@ export function TopBar() {
                             Owner
                           </span>
                         )}
+                        {m.admin_only && !m.is_owner && (
+                          <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                            Admin
+                          </span>
+                        )}
                       </div>
                       <div className="text-[10px] font-mono text-muted-foreground truncate">
                         {m.location_id}
