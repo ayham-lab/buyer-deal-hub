@@ -1,11 +1,19 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { ShieldCheck } from "lucide-react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function NoAccess() {
   const { user, signOut } = useAuth();
   const nav = useNavigate();
+  // Iframe users always have access via GHL SSO — never show the no-access
+  // wall to them. Bounce to /embed so LocationProvider can run the handshake.
+  useEffect(() => {
+    let iframed = false;
+    try { iframed = window.self !== window.top; } catch { iframed = true; }
+    if (iframed) nav("/embed", { replace: true });
+  }, [nav]);
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
