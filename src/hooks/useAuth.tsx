@@ -49,12 +49,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
       userIdRef.current = s?.user?.id ?? null;
       if (s?.user) {
         setTimeout(() => loadProfile(s.user.id), 0);
+        // Defense-in-depth: if there's a pending invite stashed and the
+        // signed-in user's email matches, consume it now. Covers the case
+        // where Supabase's confirm-email redirect drops the ?token= param.
+        if (event === "SIGNED_IN") {
+          setTimeout(async () => {
+            try {
+              const raw = localStorage.getItem("pending_invite");
+              if (!raw) return;
+              const { token, email } = JSON.parse(raw);
+              if (!token) { localStorage.removeItem("pending_invite"); return; }
+              if (email && (s.user.email ?? "").toLowerCase() !== String(email).toLowerCase()) return;
+              const { data, error } = await supabase.functions.invoke("accept-invite", { body: { token } });
+              if (error || (data as any)?.error) return;
+              const locId = (data as any)?.location_id as string | undefined;
+              if (locId) {
+                try {
+                  sessionStorage.setItem("ghl_active_location", JSON.stringify({ locationId: locId, companyId: null }));
+                } catch {}
+              }
+              localStorage.removeItem("pending_invite");
+              if (window.location.pathname !== "/") window.location.replace("/");
+            } catch {}
+          }, 0);
+        }
       } else {
         setProfile(null);
         setIsAdmin(false);
