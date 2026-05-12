@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, ShieldCheck } from "lucide-react";
+import { LocationSwitcherModal, type LocationOption } from "@/components/team/LocationSwitcherModal";
 
 export default function Login() {
   const nav = useNavigate();
@@ -18,6 +19,7 @@ export default function Login() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
+  const [locOptions, setLocOptions] = useState<LocationOption[] | null>(null);
 
   // US phone helpers — strip to digits, validate 10, mask as (555) 555-5555
   const phoneDigits = phone.replace(/\D/g, "").slice(0, 10);
