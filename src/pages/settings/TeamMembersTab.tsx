@@ -28,7 +28,7 @@ interface InviteRow {
 }
 
 export default function TeamMembersTab() {
-  const { user } = useAuth();
+  const { user, isSuperAdmin } = useAuth();
   const { activeLocation } = useActiveLocation();
   const [locationId, setLocationId] = useState<string | null>(null);
   const [members, setMembers] = useState<MemberRow[]>([]);
