@@ -45,13 +45,9 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
-        {items.filter((it) => {
-          // In iframe, hide all /settings routes EXCEPT /settings/pipelines
-          // (Pipeline Mapping is per-location and safe for tenant members).
-          if (!isIframed) return true;
-          if (it.to === "/settings/pipelines") return true;
-          return !it.to.startsWith("/settings");
-        }).map((it) => {
+        {items.map((it) => {
+          // Settings is now visible in iframe too — Settings.tsx filters tabs
+          // (hides Profile + GHL Connections, shows Checklist/Team/Notifs).
           const active = it.exact ? pathname === it.to : pathname.startsWith(it.to);
           return (
             <NavLink
