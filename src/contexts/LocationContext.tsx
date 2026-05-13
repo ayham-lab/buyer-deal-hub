@@ -13,14 +13,17 @@ interface ActiveLocation {
 interface LocationContextValue {
   activeLocation: ActiveLocation | null;
   isIframed: boolean;
-  /** True when standalone, OR when iframed AND the SSO handshake has resolved. */
+  /** True when standalone, OR when iframed AND the SSO handshake + iframe-signin have resolved. */
   handshakeReady: boolean;
+  /** True while iframe-signin is in flight (prevents flash of standalone login). */
+  iframeSigninPending: boolean;
 }
 
 const LocationContext = createContext<LocationContextValue>({
   activeLocation: null,
   isIframed: false,
   handshakeReady: true,
+  iframeSigninPending: false,
 });
 
 export function useActiveLocation() {
