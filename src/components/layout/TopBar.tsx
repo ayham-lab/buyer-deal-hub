@@ -19,7 +19,6 @@ interface MembershipOption {
   location_id: string;
   location_name: string | null;
   is_owner: boolean;
-  admin_only?: boolean;
 }
 
 export function TopBar() {
