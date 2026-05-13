@@ -46,11 +46,16 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   });
   const [debugMessages, setDebugMessages] = useState<string[]>([]);
   const [debugStatus, setDebugStatus] = useState<string>("waiting for postMessage…");
+  const [iframeSigninPending, setIframeSigninPending] = useState(false);
+  const [iframeSigninDone, setIframeSigninDone] = useState(false);
   const isIframed = (() => {
     try { return window.self !== window.top; } catch { return true; }
   })();
-  // Standalone is always "ready". Iframed is ready once activeLocation is set.
-  const handshakeReady = !isIframed || activeLocation !== null;
+  // Standalone is always "ready". Iframed: ready once activeLocation is set
+  // AND the iframe-signin step has completed (or finished failing) so we
+  // don't flash the standalone login form mid-handshake.
+  const handshakeReady =
+    !isIframed || (activeLocation !== null && !iframeSigninPending && iframeSigninDone);
   const handledRef = useRef(false);
   const navigate = useNavigate();
 
