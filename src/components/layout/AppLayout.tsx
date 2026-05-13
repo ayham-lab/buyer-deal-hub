@@ -16,21 +16,19 @@ export function AppLayout({
   standaloneOnly?: boolean;
 }) {
   const { user, loading, isAdmin } = useAuth();
-  const { isIframed } = useActiveLocation();
+  const { isIframed, handshakeReady } = useActiveLocation();
 
-  if (loading) {
+  if (loading || (isIframed && !handshakeReady)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
   }
-  // Tenant pages (Dashboard / Buyers / Pipeline / Tasks / Settings tabs) all
-  // depend on a Supabase session because their RLS policies match
-  // auth.uid() = user_id. localStorage-backed Supabase sessions carry into
-  // the GHL iframe at the same origin, so requiring `user` here works in
-  // both standalone AND iframe. Bouncing to /login is safe: Login.tsx
-  // detects iframe and redirects to /embed for the SSO handshake.
+  // Tenant pages depend on a Supabase session because RLS matches
+  // auth.uid() = user_id. In iframes, LocationProvider mints a session via
+  // the iframe-signin edge function (handshakeReady gates this above).
+  // Standalone falls through to /login as normal.
   if (!user) return <Navigate to="/login" replace />;
   // Account/workspace settings are for the standalone Lovable session only.
   if (standaloneOnly && isIframed) return <Navigate to="/" replace />;
