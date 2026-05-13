@@ -20,10 +20,13 @@ const items = [
 ];
 
 export function Sidebar() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isSuperAdmin } = useAuth();
   const { isIframed } = useActiveLocation();
   const { pathname } = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  // Super-admins land in the Admin Console when they click the brand logo;
+  // everyone else goes to the dashboard root.
+  const homeHref = isSuperAdmin && !isIframed ? "/admin" : "/";
 
   return (
     <aside
