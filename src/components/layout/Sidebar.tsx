@@ -36,7 +36,7 @@ export function Sidebar() {
       )}
     >
       {/* Logo */}
-      <div className="h-14 flex items-center gap-3 px-4 border-b border-sidebar-border">
+      <Link to={homeHref} className="h-14 flex items-center gap-3 px-4 border-b border-sidebar-border hover:bg-sidebar-accent/40 transition-colors">
         <img src={logo} alt="Logo" className="h-8 w-8 rounded-md shrink-0 object-contain" />
         {!collapsed && (
           <div className="min-w-0">
@@ -44,7 +44,7 @@ export function Sidebar() {
             <div className="text-[10px] text-sidebar-foreground/70 uppercase tracking-wider">AcquiredCRM</div>
           </div>
         )}
-      </div>
+      </Link>
 
       {/* Nav */}
       <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
