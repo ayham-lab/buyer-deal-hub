@@ -44,7 +44,9 @@ export function TopBar() {
   const locationLabel = isIframed
     ? (activeLocation ? `Loc ${activeLocation.locationId.slice(0, 8)}` : "GHL")
     : activeMembership?.location_name
-      || (activeLocationId ? `Loc ${activeLocationId.slice(0, 8)}` : "Select workspace");
+      || (activeLocationId
+        ? `Loc ${activeLocationId.slice(0, 8)}`
+        : (isSuperAdmin ? "Admin view" : "Select workspace"));
 
   async function loadMemberships() {
     if (isIframed || !user) return;
