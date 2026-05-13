@@ -170,6 +170,12 @@ export default function Login() {
         nav("/embed", { replace: true });
         return;
       }
+      // Super-admins land in the Admin Console by default — no workspace
+      // selection required. They can pick one later from the TopBar switcher.
+      if (isSuperAdmin) {
+        nav("/admin", { replace: true });
+        return;
+      }
       // Otherwise: route by membership count.
       // 0 → /no-access, 1 → set active location and go home, >1 → show switcher.
       (async () => {
