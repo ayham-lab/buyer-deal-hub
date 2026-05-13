@@ -214,7 +214,7 @@ export default function Login() {
         );
       })();
     }
-  }, [user, authLoading, nav, params]);
+  }, [user, authLoading, isSuperAdmin, nav, params]);
 
   function pickLocation(locationId: string) {
     try {
