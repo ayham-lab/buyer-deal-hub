@@ -165,21 +165,23 @@ export function TopBar() {
                   <div className="flex items-center gap-2 w-full">
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate">
-                        {m.location_name ?? "GHL Location"}
+                        {m.location_name ?? `Loc ${m.location_id.slice(0, 8)}`}
                         {m.is_owner && (
                           <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-primary">
                             Owner
                           </span>
                         )}
-                        {m.admin_only && !m.is_owner && (
-                          <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        {!m.is_owner && isSuperAdmin && (
+                          <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-blue-500">
                             Admin
                           </span>
                         )}
                       </div>
-                      <div className="text-[10px] font-mono text-muted-foreground truncate">
-                        {m.location_id}
-                      </div>
+                      {m.location_name && (
+                        <div className="text-[10px] font-mono text-muted-foreground truncate">
+                          {m.location_id}
+                        </div>
+                      )}
                     </div>
                     {active && <Check className="h-4 w-4 text-primary shrink-0" />}
                   </div>
