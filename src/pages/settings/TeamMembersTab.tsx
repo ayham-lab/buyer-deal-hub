@@ -27,20 +27,32 @@ interface InviteRow {
   created_at: string;
 }
 
+// Adds the iframe SSO header so edge functions can authenticate the GHL user
+// without a Supabase session cookie. No-op in standalone.
+function iframeHeaders(): Record<string, string> {
+  try {
+    const blob = sessionStorage.getItem("ghl_sso_blob");
+    return blob ? { "x-ghl-sso": blob } : {};
+  } catch {
+    return {};
+  }
+}
+
 export default function TeamMembersTab() {
   const { user, isSuperAdmin } = useAuth();
-  const { activeLocation } = useActiveLocation();
+  const { activeLocation, isIframed } = useActiveLocation();
   const [locationId, setLocationId] = useState<string | null>(null);
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [invites, setInvites] = useState<InviteRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [isOwner, setIsOwner] = useState(false);
+  const [viewerUserId, setViewerUserId] = useState<string | null>(null);
   const [inviteEmail, setInviteEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [lastLink, setLastLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  // Resolve active location: iframe → from context, standalone → first owned location.
+  // Resolve active location: iframe → from SSO context, standalone → first owned.
   useEffect(() => {
     (async () => {
       if (activeLocation?.locationId) {
@@ -66,44 +78,24 @@ export default function TeamMembersTab() {
   }, [user, activeLocation, isSuperAdmin]);
 
   async function load() {
-    if (!locationId || !user) return;
+    if (!locationId) return;
     setLoading(true);
-
-    const { data: m } = await supabase
-      .from("location_memberships")
-      .select("id, user_id, role, is_owner, joined_at")
-      .eq("location_id", locationId)
-      .order("is_owner", { ascending: false });
-
-    const list = (m ?? []) as MemberRow[];
-    const userIds = list.map((x) => x.user_id);
-    if (userIds.length) {
-      const { data: profs } = await supabase
-        .from("profiles")
-        .select("user_id, email, name")
-        .in("user_id", userIds);
-      const byId = new Map((profs ?? []).map((p: any) => [p.user_id, p]));
-      list.forEach((x) => {
-        const p = byId.get(x.user_id);
-        x.email = p?.email ?? null;
-        x.name = p?.name ?? null;
-      });
-    }
-    setMembers(list);
-    const me = list.find((x) => x.user_id === user.id);
-    setIsOwner(!!me?.is_owner || isSuperAdmin);
-
-    const { data: inv } = await supabase
-      .from("pending_invites")
-      .select("id, email, expires_at, accepted_at, created_at")
-      .eq("location_id", locationId)
-      .is("accepted_at", null)
-      .order("created_at", { ascending: false });
-    setInvites((inv ?? []) as InviteRow[]);
-
+    const { data, error } = await supabase.functions.invoke("team-admin", {
+      body: { action: "list", location_id: locationId },
+      headers: iframeHeaders(),
+    });
     setLoading(false);
+    if (error || (data as any)?.error) {
+      toast.error((data as any)?.error || error?.message || "Failed to load team");
+      return;
+    }
+    const d = data as any;
+    setMembers((d.members ?? []) as MemberRow[]);
+    setInvites((d.invites ?? []) as InviteRow[]);
+    setIsOwner(!!d.viewer_is_owner);
+    setViewerUserId(d.viewer_user_id ?? null);
   }
-  useEffect(() => { load(); }, [locationId, user]);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [locationId]);
 
   async function sendInvite() {
     if (!locationId || !inviteEmail.trim()) return;
@@ -111,6 +103,7 @@ export default function TeamMembersTab() {
     setLastLink(null);
     const { data, error } = await supabase.functions.invoke("invite-team-member", {
       body: { location_id: locationId, email: inviteEmail.trim().toLowerCase() },
+      headers: iframeHeaders(),
     });
     setBusy(false);
     if (error || (data as any)?.error) {
@@ -132,21 +125,31 @@ export default function TeamMembersTab() {
 
   async function removeMember(m: MemberRow) {
     if (!confirm(`Remove ${m.email ?? "this member"} from the workspace?`)) return;
-    const { error } = await supabase.from("location_memberships").delete().eq("id", m.id);
-    if (error) toast.error(error.message);
-    else { toast.success("Removed"); load(); }
+    const { data, error } = await supabase.functions.invoke("team-admin", {
+      body: { action: "remove_member", location_id: locationId, member_id: m.id },
+      headers: iframeHeaders(),
+    });
+    if (error || (data as any)?.error) {
+      toast.error((data as any)?.error || error?.message || "Failed to remove");
+    } else { toast.success("Removed"); load(); }
   }
 
   async function revokeInvite(id: string) {
-    const { error } = await supabase.from("pending_invites").delete().eq("id", id);
-    if (error) toast.error(error.message);
-    else { toast.success("Invite revoked"); load(); }
+    const { data, error } = await supabase.functions.invoke("team-admin", {
+      body: { action: "revoke_invite", location_id: locationId, invite_id: id },
+      headers: iframeHeaders(),
+    });
+    if (error || (data as any)?.error) {
+      toast.error((data as any)?.error || error?.message || "Failed to revoke");
+    } else { toast.success("Invite revoked"); load(); }
   }
 
   if (!locationId) {
-    return <p className="text-sm text-muted-foreground mt-6">No workspace selected.</p>;
+    return <p className="text-sm text-muted-foreground mt-6">Select a workspace to manage its team.</p>;
   }
   if (loading) return <Loader2 className="h-4 w-4 animate-spin mt-6" />;
+
+  const meId = user?.id ?? viewerUserId;
 
   return (
     <div className="space-y-6 mt-6">
@@ -159,7 +162,7 @@ export default function TeamMembersTab() {
                 <div className="text-sm font-medium">
                   {m.name ?? m.email ?? m.user_id}
                   {m.is_owner && <Badge className="ml-2 bg-primary/15 text-primary border-0">Owner</Badge>}
-                  {m.user_id === user?.id && <Badge variant="secondary" className="ml-2">You</Badge>}
+                  {meId && m.user_id === meId && <Badge variant="secondary" className="ml-2">You</Badge>}
                 </div>
                 <div className="text-xs text-muted-foreground">{m.email}</div>
               </div>
