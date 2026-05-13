@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, Link } from "react-router-dom";
 import { Users, Search, LayoutGrid, BarChart3, ShieldCheck, ChevronsLeft, ChevronsRight, Building2, UsersRound, Home, CheckSquare, Settings as SettingsIcon, GitBranch, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveLocation } from "@/contexts/LocationContext";
@@ -20,10 +20,13 @@ const items = [
 ];
 
 export function Sidebar() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isSuperAdmin } = useAuth();
   const { isIframed } = useActiveLocation();
   const { pathname } = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  // Super-admins land in the Admin Console when they click the brand logo;
+  // everyone else goes to the dashboard root.
+  const homeHref = isSuperAdmin && !isIframed ? "/admin" : "/";
 
   return (
     <aside
@@ -33,7 +36,7 @@ export function Sidebar() {
       )}
     >
       {/* Logo */}
-      <div className="h-14 flex items-center gap-3 px-4 border-b border-sidebar-border">
+      <Link to={homeHref} className="h-14 flex items-center gap-3 px-4 border-b border-sidebar-border hover:bg-sidebar-accent/40 transition-colors">
         <img src={logo} alt="Logo" className="h-8 w-8 rounded-md shrink-0 object-contain" />
         {!collapsed && (
           <div className="min-w-0">
@@ -41,17 +44,13 @@ export function Sidebar() {
             <div className="text-[10px] text-sidebar-foreground/70 uppercase tracking-wider">AcquiredCRM</div>
           </div>
         )}
-      </div>
+      </Link>
 
       {/* Nav */}
       <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
-        {items.filter((it) => {
-          // In iframe, hide all /settings routes EXCEPT /settings/pipelines
-          // (Pipeline Mapping is per-location and safe for tenant members).
-          if (!isIframed) return true;
-          if (it.to === "/settings/pipelines") return true;
-          return !it.to.startsWith("/settings");
-        }).map((it) => {
+        {items.map((it) => {
+          // Settings is now visible in iframe too — Settings.tsx filters tabs
+          // (hides Profile + GHL Connections, shows Checklist/Team/Notifs).
           const active = it.exact ? pathname === it.to : pathname.startsWith(it.to);
           return (
             <NavLink

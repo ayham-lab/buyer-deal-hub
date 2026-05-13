@@ -44,7 +44,9 @@ export function TopBar() {
   const locationLabel = isIframed
     ? (activeLocation ? `Loc ${activeLocation.locationId.slice(0, 8)}` : "GHL")
     : activeMembership?.location_name
-      || (activeLocationId ? `Loc ${activeLocationId.slice(0, 8)}` : "Select workspace");
+      || (activeLocationId
+        ? `Loc ${activeLocationId.slice(0, 8)}`
+        : (isSuperAdmin ? "Admin view" : "Select workspace"));
 
   async function loadMemberships() {
     if (isIframed || !user) return;
@@ -93,9 +95,11 @@ export function TopBar() {
     setMemberships(opts);
     setLoadingMemberships(false);
 
-    // Don't get stuck with no active location: standalone users with at least
-    // one workspace get auto-switched to their first one.
-    if (!activeLocationId && opts.length > 0) {
+    // Don't get stuck with no active location: standalone non-super-admin
+    // users with at least one workspace get auto-switched to their first one.
+    // Super-admins are intentionally allowed a "no active location" state
+    // (Admin view) so they can land on /admin without picking a workspace.
+    if (!activeLocationId && opts.length > 0 && !isSuperAdmin) {
       try {
         sessionStorage.setItem(
           "ghl_active_location",
@@ -124,6 +128,12 @@ export function TopBar() {
     window.location.reload();
   }
 
+  function pickAdminView() {
+    try { sessionStorage.removeItem("ghl_active_location"); } catch {}
+    // Hard nav so LocationContext re-initializes with no active location.
+    window.location.href = "/admin";
+  }
+
   return (
     <header className="h-14 bg-card border-b border-border flex items-center px-4 gap-3 sticky top-0 z-20">
       {/* Location switcher */}
@@ -144,6 +154,28 @@ export function TopBar() {
           <DropdownMenuContent align="start" className="w-72">
             <DropdownMenuLabel>Switch workspace</DropdownMenuLabel>
             <DropdownMenuSeparator />
+            {isSuperAdmin && (
+              <>
+                <DropdownMenuItem onClick={pickAdminView} className="cursor-pointer">
+                  <div className="flex items-center gap-2 w-full">
+                    <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium">
+                        Admin view
+                        <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-blue-500">
+                          All workspaces
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        Cross-tenant Admin Console
+                      </div>
+                    </div>
+                    {!activeLocationId && <Check className="h-4 w-4 text-primary shrink-0" />}
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
             {loadingMemberships && (
               <div className="px-2 py-3 flex items-center gap-2 text-xs text-muted-foreground">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…

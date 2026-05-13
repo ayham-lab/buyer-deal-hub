@@ -12,7 +12,7 @@ import { LocationSwitcherModal, type LocationOption } from "@/components/team/Lo
 export default function Login() {
   const nav = useNavigate();
   const [params] = useSearchParams();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isSuperAdmin } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -170,6 +170,12 @@ export default function Login() {
         nav("/embed", { replace: true });
         return;
       }
+      // Super-admins land in the Admin Console by default — no workspace
+      // selection required. They can pick one later from the TopBar switcher.
+      if (isSuperAdmin) {
+        nav("/admin", { replace: true });
+        return;
+      }
       // Otherwise: route by membership count.
       // 0 → /no-access, 1 → set active location and go home, >1 → show switcher.
       (async () => {
@@ -208,7 +214,7 @@ export default function Login() {
         );
       })();
     }
-  }, [user, authLoading, nav, params]);
+  }, [user, authLoading, isSuperAdmin, nav, params]);
 
   function pickLocation(locationId: string) {
     try {

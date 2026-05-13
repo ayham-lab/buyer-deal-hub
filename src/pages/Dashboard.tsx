@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { scopeToLocation } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,9 +28,14 @@ interface Stats {
 }
 
 export default function Dashboard() {
-  const { user, profile } = useAuth();
+  const { user, profile, isSuperAdmin, loading: authLoading } = useAuth();
   const { activeLocation, isIframed, handshakeReady } = useActiveLocation();
   const [stats, setStats] = useState<Stats | null>(null);
+
+  // Super-admins land on /admin by default. They can pick a workspace later.
+  if (!isIframed && !authLoading && isSuperAdmin && !activeLocation) {
+    return <Navigate to="/admin" replace />;
+  }
 
   useEffect(() => {
     // In iframe mode, GHL SSO (not Supabase auth) is the source of truth.
