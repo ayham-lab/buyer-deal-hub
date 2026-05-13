@@ -154,6 +154,28 @@ export function TopBar() {
           <DropdownMenuContent align="start" className="w-72">
             <DropdownMenuLabel>Switch workspace</DropdownMenuLabel>
             <DropdownMenuSeparator />
+            {isSuperAdmin && (
+              <>
+                <DropdownMenuItem onClick={pickAdminView} className="cursor-pointer">
+                  <div className="flex items-center gap-2 w-full">
+                    <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium">
+                        Admin view
+                        <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-blue-500">
+                          All workspaces
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        Cross-tenant Admin Console
+                      </div>
+                    </div>
+                    {!activeLocationId && <Check className="h-4 w-4 text-primary shrink-0" />}
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
             {loadingMemberships && (
               <div className="px-2 py-3 flex items-center gap-2 text-xs text-muted-foreground">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
