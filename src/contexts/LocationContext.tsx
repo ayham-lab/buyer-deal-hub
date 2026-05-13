@@ -298,7 +298,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <LocationContext.Provider value={{ activeLocation, isIframed, handshakeReady }}>
+    <LocationContext.Provider value={{ activeLocation, isIframed, handshakeReady, iframeSigninPending }}>
       {children}
       <DebugOverlay
         status={debugStatus}
