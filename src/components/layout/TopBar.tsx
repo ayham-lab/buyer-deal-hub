@@ -124,6 +124,12 @@ export function TopBar() {
     window.location.reload();
   }
 
+  function pickAdminView() {
+    try { sessionStorage.removeItem("ghl_active_location"); } catch {}
+    // Hard nav so LocationContext re-initializes with no active location.
+    window.location.href = "/admin";
+  }
+
   return (
     <header className="h-14 bg-card border-b border-border flex items-center px-4 gap-3 sticky top-0 z-20">
       {/* Location switcher */}
