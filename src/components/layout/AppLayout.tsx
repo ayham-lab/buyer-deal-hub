@@ -16,7 +16,7 @@ export function AppLayout({
   standaloneOnly?: boolean;
 }) {
   const { user, loading, isAdmin } = useAuth();
-  const { isIframed, activeLocation } = useActiveLocation();
+  const { isIframed } = useActiveLocation();
 
   if (loading) {
     return (
@@ -25,11 +25,13 @@ export function AppLayout({
       </div>
     );
   }
-  // In iframe mode, GHL SSO (decrypted via LocationProvider) is the source of
-  // truth for access — third-party cookie restrictions mean a Supabase session
-  // typically won't exist here. Allow render as long as the SSO handshake
-  // resolved (activeLocation set). RLS scopes everything by x-ghl-location-id.
-  if (!user && !(isIframed && activeLocation)) return <Navigate to="/login" replace />;
+  // Tenant pages (Dashboard / Buyers / Pipeline / Tasks / Settings tabs) all
+  // depend on a Supabase session because their RLS policies match
+  // auth.uid() = user_id. localStorage-backed Supabase sessions carry into
+  // the GHL iframe at the same origin, so requiring `user` here works in
+  // both standalone AND iframe. Bouncing to /login is safe: Login.tsx
+  // detects iframe and redirects to /embed for the SSO handshake.
+  if (!user) return <Navigate to="/login" replace />;
   // Account/workspace settings are for the standalone Lovable session only.
   if (standaloneOnly && isIframed) return <Navigate to="/" replace />;
   // Admin Console is a cross-tenant tool — never expose it inside a GHL iframe.
