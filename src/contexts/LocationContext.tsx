@@ -122,7 +122,45 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         setDebugStatus("active");
 
         const { data: { session } } = await supabase.auth.getSession();
-        const user = session?.user;
+        let user = session?.user ?? null;
+
+        // Iframe-only: when there's no Supabase session (storage partitioned
+        // away from standalone), mint one server-side using the SSO blob.
+        // The edge function creates the auth user FIRST (if needed), then
+        // upserts profile + ghl_location_links so downstream user_id refs
+        // are consistent. Standalone never enters this branch.
+        if (!user && isIframed) {
+          let ssoBlob: string | null = null;
+          try { ssoBlob = sessionStorage.getItem("ghl_sso_blob"); } catch {}
+          if (ssoBlob) {
+            setIframeSigninPending(true);
+            try {
+              const { data: signin, error: signinErr } = await supabase.functions.invoke(
+                "iframe-signin",
+                { body: { sso: ssoBlob } },
+              );
+              if (signinErr || !signin?.access_token || !signin?.refresh_token) {
+                pushDebug(`iframe-signin failed: ${signinErr?.message ?? (signin as any)?.error ?? "unknown"}`);
+              } else {
+                const { data: setData, error: setErr } = await supabase.auth.setSession({
+                  access_token: signin.access_token,
+                  refresh_token: signin.refresh_token,
+                });
+                if (setErr) {
+                  pushDebug(`setSession failed: ${setErr.message}`);
+                } else {
+                  user = setData.session?.user ?? null;
+                  pushDebug(`iframe-signin ok: ${user?.id?.slice(0, 8) ?? "—"}`);
+                }
+              }
+            } catch (e: any) {
+              pushDebug(`iframe-signin threw: ${e?.message ?? e}`);
+            } finally {
+              setIframeSigninPending(false);
+            }
+          }
+        }
+
         if (user) {
           // Resolve existing workspace owner for this location so that a
           // secondary user joining via iframe SSO doesn't accidentally claim
@@ -151,12 +189,15 @@ export function LocationProvider({ children }: { children: ReactNode }) {
           if (upErr) console.error("LocationProvider link upsert failed", upErr);
           // location_memberships row is auto-created by the
           // sync_membership_from_ghl_link trigger on ghl_location_links INSERT.
-        } else {
+        } else if (!isIframed) {
           sessionStorage.setItem(
             "ghl_marketplace_pending_install",
             JSON.stringify({ locationId, companyId }),
           );
         }
+        // Mark iframe handshake fully complete (success or graceful fail) so
+        // AppLayout stops showing the loading state. Standalone ignores this.
+        setIframeSigninDone(true);
       } catch (e) {
         console.error("LocationProvider sso processing failed", e);
       }
