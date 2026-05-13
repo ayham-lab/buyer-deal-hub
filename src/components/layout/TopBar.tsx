@@ -77,13 +77,13 @@ export function TopBar() {
         }
       });
     }
-    // Backfill names for the membership-only entries.
-    const missingNames = Array.from(byId.values()).filter((o) => !o.location_name).map((o) => o.location_id);
-    if (missingNames.length) {
+    // Single query to fetch all friendly names
+    const ids = Array.from(byId.keys());
+    if (ids.length > 0) {
       const { data: tokens } = await supabase
         .from("ghl_location_tokens")
         .select("ghl_location_id, location_name")
-        .in("ghl_location_id", missingNames);
+        .in("ghl_location_id", ids);
       (tokens ?? []).forEach((t: any) => {
         const e = byId.get(t.ghl_location_id);
         if (e) e.location_name = t.location_name ?? null;
