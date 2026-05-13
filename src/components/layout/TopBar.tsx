@@ -73,7 +73,6 @@ export function TopBar() {
             location_id: t.ghl_location_id,
             location_name: t.location_name ?? null,
             is_owner: false,
-            admin_only: true,
           });
         }
       });
