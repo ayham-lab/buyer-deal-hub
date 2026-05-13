@@ -179,6 +179,10 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       if (ssoBlob) {
         pushDebug("→ SSO blob, decrypting…");
         setDebugStatus("decrypting SSO");
+        // Stash the raw encrypted blob so iframe-mode edge function calls
+        // (e.g. team-admin / invite-team-member) can re-decrypt server-side
+        // to authenticate the GHL user without a Supabase session cookie.
+        try { sessionStorage.setItem("ghl_sso_blob", ssoBlob); } catch {}
         processBlob(ssoBlob);
         return;
       }
