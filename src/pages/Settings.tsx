@@ -9,12 +9,12 @@ import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, Infinity as InfinityIcon, ExternalLink } from "lucide-react";
 import { useActiveLocation } from "@/contexts/LocationContext";
 import TeamMembersTab from "@/pages/settings/TeamMembersTab";
 
 export default function Settings() {
-  const { isIframed } = useActiveLocation();
+  const { isIframed, activeLocation } = useActiveLocation();
   const { isAdmin } = useAuth();
   const [params, setParams] = useSearchParams();
   const showProfile = !isIframed;
@@ -35,12 +35,14 @@ export default function Settings() {
             {showProfile && <TabsTrigger value="profile">Profile</TabsTrigger>}
             <TabsTrigger value="checklist">Checklist</TabsTrigger>
             <TabsTrigger value="team">Team</TabsTrigger>
+            {isIframed && <TabsTrigger value="billing">Billing</TabsTrigger>}
             {showGhl && <TabsTrigger value="ghl">GHL Connections</TabsTrigger>}
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
           </TabsList>
           {showProfile && <TabsContent value="profile"><ProfileTab /></TabsContent>}
           <TabsContent value="checklist"><ChecklistTab /></TabsContent>
           <TabsContent value="team"><TeamMembersTab /></TabsContent>
+          {isIframed && <TabsContent value="billing"><BillingTab locationId={activeLocation?.locationId ?? null} /></TabsContent>}
           {showGhl && <TabsContent value="ghl"><GhlTab /></TabsContent>}
           <TabsContent value="notifications"><NotificationsTab /></TabsContent>
         </Tabs>
@@ -245,6 +247,86 @@ function NotificationsTab() {
         <Switch checked={inApp} onCheckedChange={setInApp} />
       </div>
       <Button onClick={save}>Save</Button>
+    </div>
+  );
+}
+
+function BillingTab({ locationId }: { locationId: string | null }) {
+  const [loading, setLoading] = useState(true);
+  const [opening, setOpening] = useState(false);
+  const [sub, setSub] = useState<any>(null);
+
+  useEffect(() => {
+    if (!locationId) { setLoading(false); return; }
+    supabase
+      .from("subscriptions")
+      .select("subscription_status,current_period_end,stripe_customer_id,stripe_subscription_id")
+      .eq("ghl_location_id", locationId)
+      .maybeSingle()
+      .then(({ data }) => { setSub(data); setLoading(false); });
+  }, [locationId]);
+
+  const isActive = sub?.subscription_status === "active" &&
+    (!sub?.current_period_end || new Date(sub.current_period_end) > new Date());
+
+  async function openPortal() {
+    if (!locationId) return;
+    setOpening(true);
+    const { data, error } = await supabase.functions.invoke("create-billing-portal-session", {
+      body: { ghl_location_id: locationId },
+    });
+    setOpening(false);
+    if (error || (data as any)?.error) {
+      toast.error((data as any)?.error || error?.message || "Could not open billing portal");
+      return;
+    }
+    const url = (data as any)?.url;
+    if (!url) return;
+    let isIframed = false;
+    try { isIframed = window.self !== window.top; } catch { isIframed = true; }
+    if (isIframed) {
+      const w = window.open(url, "_blank");
+      if (!w) toast.error("Popup blocked — allow popups and try again");
+    } else {
+      window.location.href = url;
+    }
+  }
+
+  if (loading) return <Loader2 className="h-4 w-4 animate-spin mt-6" />;
+
+  return (
+    <div className="space-y-4 mt-6">
+      <div className="border rounded-md p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm font-semibold flex items-center gap-2">
+              {isActive ? (
+                <>
+                  <InfinityIcon className="h-4 w-4 text-primary" />
+                  Unlimited subscription active
+                </>
+              ) : (
+                "No active subscription"
+              )}
+            </div>
+            {sub?.current_period_end && (
+              <div className="text-xs text-muted-foreground mt-1">
+                {isActive ? "Renews" : "Ended"} {new Date(sub.current_period_end).toLocaleDateString()}
+              </div>
+            )}
+          </div>
+        </div>
+        {sub?.stripe_customer_id ? (
+          <Button onClick={openPortal} disabled={opening} size="sm">
+            {opening ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ExternalLink className="h-4 w-4 mr-2" />}
+            Manage Subscription
+          </Button>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Subscribe from the credits widget to manage billing here.
+          </p>
+        )}
+      </div>
     </div>
   );
 }
