@@ -90,22 +90,8 @@ export default function Finder() {
     }
   }
 
-  async function addToMine(b: Match, fromArchive: boolean) {
+  async function addToMine(b: Match) {
     if (!user) return;
-    // State 2 (credits): adding from archive deducts reveal cost.
-    if (fromArchive && results?.archive_state === "credits" && activeLocation?.locationId) {
-      const { data, error } = await supabase.rpc("reveal_archive_buyer", {
-        p_location: activeLocation.locationId,
-        p_buyer_id: b.id,
-      });
-      if (error) { toast.error(error.message); return; }
-      const r = data as any;
-      if (!r?.success) {
-        if (r?.error === "insufficient_credits") setBuyOpen(true);
-        toast.error(r?.error === "insufficient_credits" ? "Not enough credits" : "Reveal failed");
-        return;
-      }
-    }
     const { error } = await supabase.from("buyers").insert(withLocation({
       user_id: user.id,
       name: b.name,
@@ -115,10 +101,44 @@ export default function Finder() {
       property_types: b.property_types,
       price_min: b.price_min,
       price_max: b.price_max,
-      source: b.source,
+      source: b.source ?? undefined,
     }));
     if (error) toast.error(error.message);
     else toast.success(`${b.name} added to your buyers`);
+  }
+
+  async function revealArchiveBuyer(b: Match) {
+    if (!activeLocation?.locationId || !results) return;
+    const { data, error } = await supabase.rpc("reveal_archive_buyer", {
+      p_location: activeLocation.locationId,
+      p_buyer_id: b.id,
+    });
+    if (error) { toast.error(error.message); return; }
+    const r = data as any;
+    if (!r?.success) {
+      if (r?.error === "insufficient_credits") {
+        toast.error("Not enough credits — buy a pack to continue");
+        setBuyOpen(true);
+      } else {
+        toast.error("Reveal failed");
+      }
+      return;
+    }
+    const { data: row } = await supabase
+      .from("archive_buyers")
+      .select("email, phone")
+      .eq("id", b.id)
+      .maybeSingle();
+    setResults({
+      ...results,
+      archive: results.archive.map((m) =>
+        m.id === b.id
+          ? { ...m, revealed: true, email: row?.email ?? null, phone: row?.phone ?? null }
+          : m,
+      ),
+      archive_credit_balance: Math.max(0, (results.archive_credit_balance ?? 0) - results.archive_reveal_cost),
+    });
+    toast.success(`Revealed ${b.name}`);
   }
 
   return (
