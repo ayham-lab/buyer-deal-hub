@@ -213,11 +213,6 @@ export default function Admin() {
             <BuyersTab buyers={buyers} users={users} onOpenUser={setOpenUserId} />
           </TabsContent>
 
-          {/* ARCHIVE */}
-          <TabsContent value="archive">
-            <ArchiveTab archive={archive} onChanged={load} />
-          </TabsContent>
-
           {/* ROLES */}
           <TabsContent value="roles">
             <RoleManager users={usersWithRoles} onChanged={load} />
