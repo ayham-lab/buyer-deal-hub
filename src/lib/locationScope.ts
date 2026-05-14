@@ -10,6 +10,11 @@
 // and the user sees all of their data across locations (agency-owner view).
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const GLOBAL_ADMIN_REST_TABLES = [
+  "credit_packs",
+  "subscription_plans",
+  "credit_action_costs",
+];
 
 export function getActiveLocationId(): string | null {
   try {
@@ -97,6 +102,15 @@ export function installLocationHeader() {
     // would force a CORS preflight that the functions don't whitelist,
     // silently breaking every functions.invoke() call from the browser.
     if (url.includes("/functions/v1/")) {
+      return originalFetch(input, init);
+    }
+
+    // Pricing configuration tables are global, not workspace-scoped. If an
+    // admin has a workspace selected in standalone mode, forwarding the active
+    // location header makes RLS see current_ghl_location() and the admin update
+    // policy intentionally matches zero rows. Leave these requests unscoped so
+    // pricing edits persist after refresh.
+    if (GLOBAL_ADMIN_REST_TABLES.some((table) => url.includes(`/rest/v1/${table}`))) {
       return originalFetch(input, init);
     }
 
