@@ -41,13 +41,24 @@ Deno.serve(async (req) => {
             .limit(300)
         : Promise.resolve({ data: [] as any[] }),
       admin
-        .from("buyer_archive")
-        .select("id, name, email, phone, markets, property_types, price_min, price_max, source")
+        .from("archive_buyers")
+        .select("id, full_name, first_name, last_name, email, phone, preferred_markets, property_types, price_min, price_max, sources, is_active")
+        .eq("is_active", true)
         .limit(500),
     ]);
 
     const rolodex = rolodexResp.data || [];
-    const archive = archiveResp.data || [];
+    const archive = (archiveResp.data || []).map((r: any) => ({
+      id: r.id,
+      name: r.full_name || [r.first_name, r.last_name].filter(Boolean).join(" ") || "—",
+      email: r.email,
+      phone: r.phone,
+      markets: r.preferred_markets || [],
+      property_types: r.property_types || [],
+      price_min: r.price_min,
+      price_max: r.price_max,
+      source: Array.isArray(r.sources) && r.sources.length ? `${r.sources.length} tenant(s)` : null,
+    }));
 
     const [rolodexMatches, archiveMatches] = await Promise.all([
       rankWithAI(rolodex, address, ctx, propertyType, priceHint, LOVABLE_API_KEY),
