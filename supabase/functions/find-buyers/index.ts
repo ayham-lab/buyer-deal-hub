@@ -129,17 +129,29 @@ Deno.serve(async (req) => {
 
 async function countArchiveMatches(admin: any, ctx: { city?: string; state?: string; zip?: string }): Promise<number> {
   try {
-    const tokens: string[] = [];
-    if (ctx.state) tokens.push(`State:${ctx.state}`);
-    if (ctx.city && ctx.state) tokens.push(`City:${ctx.city}, ${ctx.state}`);
-    if (ctx.zip) tokens.push(`Zip:${ctx.zip}`);
-    if (tokens.length === 0) return 0;
-    const { count } = await admin
+    const stateLc = (ctx.state || "").toLowerCase().trim();
+    const cityLc = (ctx.city || "").toLowerCase().trim();
+    const zipLc = (ctx.zip || "").toLowerCase().trim();
+    if (!stateLc && !cityLc && !zipLc) return 0;
+    // Pull active rows and match in JS — preferred_markets is small and tokens
+    // are inconsistently cased ("City:philadelphia, PA" vs "City:Philadelphia, PA").
+    const { data } = await admin
       .from("archive_buyers")
-      .select("id", { count: "exact", head: true })
+      .select("preferred_markets")
       .eq("is_active", true)
-      .overlaps("preferred_markets", tokens);
-    return count || 0;
+      .limit(2000);
+    if (!Array.isArray(data)) return 0;
+    let n = 0;
+    for (const row of data) {
+      const markets = (row.preferred_markets || []).map((m: string) => String(m).toLowerCase());
+      const hit =
+        (cityLc && markets.some((m) => m.includes(`city:${cityLc}`))) ||
+        (stateLc && markets.some((m) => m.includes(`state:${stateLc}`))) ||
+        (zipLc && markets.some((m) => m.includes(`zip:${zipLc}`))) ||
+        (stateLc && markets.some((m) => m.includes(`, ${stateLc}`)));
+      if (hit) n++;
+    }
+    return n;
   } catch (e) {
     console.error("countArchiveMatches", e);
     return 0;
@@ -218,17 +230,53 @@ Return the top 5 matches with a 1-sentence reason each and a fit score 0-100.`;
     }),
   });
 
-  if (!aiResp.ok) {
-    console.error("AI error", aiResp.status, await aiResp.text());
-    return [];
+  let aiMatches: any[] = [];
+  try {
+    if (aiResp.ok) {
+      const aiJson = await aiResp.json();
+      const toolCall = aiJson.choices?.[0]?.message?.tool_calls?.[0];
+      const args = toolCall ? JSON.parse(toolCall.function.arguments) : { matches: [] };
+      aiMatches = args.matches || [];
+    } else {
+      console.error("AI error", aiResp.status, await aiResp.text());
+    }
+  } catch (e) {
+    console.error("AI parse error", e);
   }
-  const aiJson = await aiResp.json();
-  const toolCall = aiJson.choices?.[0]?.message?.tool_calls?.[0];
-  const args = toolCall ? JSON.parse(toolCall.function.arguments) : { matches: [] };
   const byId = new Map(candidates.map((c) => [c.id, c]));
-  return (args.matches || [])
+  let mapped = aiMatches
     .map((m: any) => ({ ...byId.get(m.buyer_id), score: m.score, reason: m.reason }))
     .filter((m: any) => m.id);
+
+  // Fallback: AI returned nothing (failure or empty). Build a deterministic
+  // ranking from token overlap so paid users never see an empty archive when
+  // candidates exist.
+  if (mapped.length === 0 && candidates.length > 0) {
+    const stateLc = (ctx.state || "").toLowerCase().trim();
+    const cityLc = (ctx.city || "").toLowerCase().trim();
+    const zipLc = (ctx.zip || "").toLowerCase().trim();
+    const scored = candidates.map((c: any) => {
+      const markets = (c.markets || []).map((m: string) => String(m).toLowerCase());
+      let score = 0;
+      const reasons: string[] = [];
+      if (cityLc && markets.some((m) => m.includes(`city:${cityLc}`))) {
+        score += 70; reasons.push(`city ${ctx.city}`);
+      }
+      if (stateLc && markets.some((m) => m.includes(`state:${stateLc}`))) {
+        score += 40; reasons.push(`state ${ctx.state}`);
+      }
+      if (zipLc && markets.some((m) => m.includes(`zip:${zipLc}`))) {
+        score += 30; reasons.push(`zip ${ctx.zip}`);
+      }
+      if (stateLc && markets.some((m) => m.includes(`, ${stateLc}`))) {
+        score += 15; reasons.push(`region in ${ctx.state}`);
+      }
+      if (markets.length === 0) { score += 10; reasons.push("no market restrictions"); }
+      return { ...c, score, reason: reasons.length ? `Match on ${reasons.join(", ")}.` : "Generalist buyer." };
+    });
+    mapped = scored.sort((a, b) => b.score - a.score).slice(0, 5);
+  }
+  return mapped;
 }
 
 function json(body: unknown, status = 200) {
