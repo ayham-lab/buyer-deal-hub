@@ -98,7 +98,7 @@ export function PricingTab() {
   }
 
   async function savePlan(p: Plan) {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("subscription_plans")
       .update({
         name: p.name,
@@ -108,9 +108,15 @@ export function PricingTab() {
         is_active: p.is_active,
         sort_order: Number(p.sort_order),
       })
-      .eq("id", p.id);
-    if (error) toast.error(error.message);
-    else toast.success("Plan saved");
+      .eq("id", p.id)
+      .select();
+    if (error) return toast.error(`Save failed: ${error.message}`);
+    if (!data || data.length === 0) {
+      return toast.error(
+        "Save blocked by permissions. Open the admin in standalone mode (outside the GHL iframe) to edit pricing.",
+      );
+    }
+    toast.success("Plan saved");
   }
 
   async function deletePlan(id: string) {
@@ -131,12 +137,18 @@ export function PricingTab() {
   }
 
   async function saveCost(c: Cost) {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("credit_action_costs")
       .update({ credits: Number(c.credits), is_active: c.is_active })
-      .eq("id", c.id);
-    if (error) toast.error(error.message);
-    else toast.success("Cost saved");
+      .eq("id", c.id)
+      .select();
+    if (error) return toast.error(`Save failed: ${error.message}`);
+    if (!data || data.length === 0) {
+      return toast.error(
+        "Save blocked by permissions. Open the admin in standalone mode (outside the GHL iframe) to edit pricing.",
+      );
+    }
+    toast.success("Cost saved");
   }
 
   if (loading) {
