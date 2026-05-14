@@ -80,7 +80,18 @@ export function BuyCreditsModal({ open, onOpenChange, ghlLocationId }: Props) {
       return;
     }
     const url = (data as any)?.url;
-    if (url) window.location.href = url;
+    if (url) openCheckout(url);
+  }
+
+  function openCheckout(url: string) {
+    let isIframed = false;
+    try { isIframed = window.self !== window.top; } catch { isIframed = true; }
+    if (isIframed) {
+      const w = window.open(url, "_blank");
+      if (!w) toast.error("Popup blocked — allow popups and try again");
+    } else {
+      window.location.href = url;
+    }
   }
 
   return (
