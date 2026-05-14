@@ -54,7 +54,7 @@ const App = () => (
                 <Route path="/embed" element={wrap(<Embed />)} />
                 <Route path="/deal/:id" element={wrap(<PublicDeal />)} />
                 <Route path="/buyers" element={wrap(<Buyers />)} />
-                <Route path="/archive" element={wrap(<Archive />)} />
+                
                 <Route path="/finder" element={wrap(<Finder />)} />
                 <Route path="/pipeline" element={wrap(<Pipeline />)} />
                 <Route path="/kpis" element={wrap(<KPIs />)} />
