@@ -118,17 +118,24 @@ Deno.serve(async (req) => {
     // Count for teaser: prefer the AI-ranked matches when available, fall back to the rough query count.
     const archiveCount = Math.max(archiveMatches.length, archiveCountResp);
 
-    // STATE 3: suppress card details, return count + teaser metadata only.
-    const archiveLocked = archiveState === "locked";
-    const archivePayload = archiveLocked ? [] : archiveMatches;
+    // Auto-reveal everything for admin/subscription users; otherwise mask
+    // contact info per-card unless the buyer is already revealed for this loc.
+    const autoReveal = archiveState === "admin" || archiveState === "subscription";
+    const archivePayload = archiveMatches.map((m: any) => {
+      const revealed = autoReveal || revealedIds.has(m.id);
+      return revealed
+        ? { ...m, revealed: true }
+        : { ...m, email: null, phone: null, source: null, revealed: false };
+    });
 
     return json({
       rolodex: rolodexMatches,
       archive: archivePayload,
-      archive_locked: archiveLocked,
+      archive_locked: false,
       archive_count: archiveCount,
       archive_state: archiveState,
       archive_reveal_cost: REVEAL_COST,
+      archive_credit_balance: creditBalance,
       archive_location_label: [city, state].filter(Boolean).join(", "),
       public: [],
       public_available: false,
