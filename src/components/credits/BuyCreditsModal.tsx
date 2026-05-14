@@ -65,7 +65,7 @@ export function BuyCreditsModal({ open, onOpenChange, ghlLocationId }: Props) {
       return;
     }
     const url = (data as any)?.url;
-    if (url) window.location.href = url;
+    if (url) openCheckout(url);
   }
 
   async function subscribe(plan: Plan) {
