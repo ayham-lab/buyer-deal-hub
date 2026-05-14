@@ -2,13 +2,15 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { withLocation } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
+import { useActiveLocation } from "@/contexts/LocationContext";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { BuyCreditsModal } from "@/components/credits/BuyCreditsModal";
 
 const PROPERTY_TYPES = ["SFH", "MFH 2-4", "MFH 5+", "Commercial", "Land", "Mobile"];
-import { MapPin, Sparkles, Search, Loader2, Users, Archive, Globe } from "lucide-react";
+import { MapPin, Sparkles, Loader2, Users, Archive, Globe, Lock, Infinity as InfinityIcon, Coins } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
@@ -26,15 +28,23 @@ type Match = {
   reason: string;
 };
 
+type ArchiveState = "admin" | "subscription" | "credits" | "locked";
+
 type Results = {
   rolodex: Match[];
   archive: Match[];
+  archive_locked: boolean;
+  archive_count: number;
+  archive_state: ArchiveState;
+  archive_reveal_cost: number;
+  archive_location_label: string;
   public: Match[];
   public_available: boolean;
 };
 
 export default function Finder() {
   const { user } = useAuth();
+  const { activeLocation } = useActiveLocation();
   const [street, setStreet] = useState("");
   const [city, setCity] = useState("");
   const [stateCode, setStateCode] = useState("");
@@ -43,6 +53,7 @@ export default function Finder() {
   const [priceHint, setPriceHint] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<Results | null>(null);
+  const [buyOpen, setBuyOpen] = useState(false);
 
   async function findMatches() {
     if (!street.trim() || !city.trim() || !stateCode.trim()) {
@@ -62,13 +73,14 @@ export default function Finder() {
           zip: zip.trim(),
           propertyType,
           priceHint,
+          ghl_location_id: activeLocation?.locationId ?? null,
         },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       setResults(data as Results);
       const total = (data?.rolodex?.length || 0) + (data?.archive?.length || 0) + (data?.public?.length || 0);
-      if (!total) toast.info("No matches found.");
+      if (!total && !data?.archive_locked) toast.info("No matches found.");
     } catch (e: any) {
       toast.error(e.message || "Failed to find buyers");
     } finally {
@@ -76,8 +88,22 @@ export default function Finder() {
     }
   }
 
-  async function addToMine(b: Match) {
+  async function addToMine(b: Match, fromArchive: boolean) {
     if (!user) return;
+    // State 2 (credits): adding from archive deducts reveal cost.
+    if (fromArchive && results?.archive_state === "credits" && activeLocation?.locationId) {
+      const { data, error } = await supabase.rpc("reveal_archive_buyer", {
+        p_location: activeLocation.locationId,
+        p_buyer_id: b.id,
+      });
+      if (error) { toast.error(error.message); return; }
+      const r = data as any;
+      if (!r?.success) {
+        if (r?.error === "insufficient_credits") setBuyOpen(true);
+        toast.error(r?.error === "insufficient_credits" ? "Not enough credits" : "Reveal failed");
+        return;
+      }
+    }
     const { error } = await supabase.from("buyers").insert(withLocation({
       user_id: user.id,
       name: b.name,
@@ -144,20 +170,93 @@ export default function Finder() {
           </div>
         ) : (
           <div className="grid gap-6 lg:grid-cols-3">
-            <ResultGroup title="My Buyer Rolodex" icon={<Users className="h-4 w-4" />} matches={results.rolodex} canAdd={false} onAdd={addToMine} />
-            <ResultGroup title="Buyer Archive" icon={<Archive className="h-4 w-4" />} matches={results.archive} canAdd onAdd={addToMine} />
+            <ResultGroup
+              title="My Buyer Rolodex"
+              icon={<Users className="h-4 w-4" />}
+              matches={results.rolodex}
+              canAdd={false}
+              onAdd={(b) => addToMine(b, false)}
+            />
+            <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="text-primary"><Archive className="h-4 w-4" /></div>
+                <h3 className="font-semibold text-sm">Buyer Archive</h3>
+                <Badge variant="secondary" className="ml-auto text-[10px]">
+                  {results.archive_locked ? results.archive_count : results.archive.length}
+                </Badge>
+              </div>
+              {results.archive_locked ? (
+                <ArchiveTeaser
+                  count={results.archive_count}
+                  locationLabel={results.archive_location_label}
+                  onSubscribe={() => setBuyOpen(true)}
+                  onBuyCredits={() => setBuyOpen(true)}
+                />
+              ) : results.archive.length === 0 ? (
+                <p className="text-xs text-muted-foreground py-6 text-center">No matches in this source.</p>
+              ) : (
+                <div className="space-y-2">
+                  {results.archive_state === "credits" && (
+                    <div className="text-[11px] text-muted-foreground bg-muted/40 border border-border rounded-md px-2 py-1.5 mb-2">
+                      Adding a buyer from the Archive uses {results.archive_reveal_cost} credits.
+                    </div>
+                  )}
+                  {results.archive.map((b, i) => (
+                    <MatchCard key={b.id} b={b} i={i} canAdd onAdd={() => addToMine(b, true)} />
+                  ))}
+                </div>
+              )}
+            </div>
             <ResultGroup
               title="Public Data Buyers"
               icon={<Globe className="h-4 w-4" />}
               matches={results.public}
               canAdd
-              onAdd={addToMine}
+              onAdd={(b) => addToMine(b, false)}
               emptyHint={!results.public_available ? "Public data source not connected yet." : undefined}
             />
           </div>
         )}
       </div>
+      <BuyCreditsModal
+        open={buyOpen}
+        onOpenChange={setBuyOpen}
+        ghlLocationId={activeLocation?.locationId ?? null}
+      />
     </AppLayout>
+  );
+}
+
+function ArchiveTeaser({
+  count, locationLabel, onSubscribe, onBuyCredits,
+}: { count: number; locationLabel: string; onSubscribe: () => void; onBuyCredits: () => void }) {
+  return (
+    <div className="text-center py-8 px-3 space-y-4 bg-gradient-to-b from-primary/5 to-transparent border-2 border-dashed border-primary/40 rounded-lg">
+      <div className="mx-auto h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+        <Lock className="h-6 w-6 text-primary" />
+      </div>
+      <div className="space-y-1">
+        <div className="text-3xl font-bold text-foreground">
+          {count.toLocaleString()} {count === 1 ? "buyer" : "buyers"}
+        </div>
+        <p className="text-sm text-muted-foreground">
+          matching this property{locationLabel ? ` in ${locationLabel}` : ""}
+        </p>
+      </div>
+      <p className="text-sm font-medium text-foreground px-2">
+        Subscribe to Unlimited or buy credits to see them.
+      </p>
+      <div className="flex flex-col gap-2 pt-1">
+        <Button onClick={onSubscribe} className="w-full bg-primary hover:bg-primary-hover text-primary-foreground">
+          <InfinityIcon className="h-4 w-4 mr-2" />
+          Subscribe to Unlimited ($297/mo)
+        </Button>
+        <Button onClick={onBuyCredits} variant="outline" className="w-full">
+          <Coins className="h-4 w-4 mr-2" />
+          Buy Credits
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -181,26 +280,34 @@ function ResultGroup({
       ) : (
         <div className="space-y-2">
           {matches.map((b, i) => (
-            <div key={b.id} className="border border-border rounded-lg p-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground w-4">#{i + 1}</span>
-                <span className="font-medium text-sm flex-1 truncate">{b.name}</span>
-                <Badge variant="outline" className="text-[10px]">{Math.round(b.score)}</Badge>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">{b.reason}</p>
-              <div className="flex flex-wrap gap-1 mt-2">
-                {b.markets?.slice(0, 2).map((m) => (
-                  <Badge key={m} variant="outline" className="text-[10px]">{m}</Badge>
-                ))}
-              </div>
-              {canAdd && (
-                <Button size="sm" variant="outline" onClick={() => onAdd(b)} className="mt-2 h-7 text-xs w-full">
-                  Add to Rolodex
-                </Button>
-              )}
-            </div>
+            <MatchCard key={b.id} b={b} i={i} canAdd={canAdd} onAdd={() => onAdd(b)} />
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+function MatchCard({
+  b, i, canAdd, onAdd,
+}: { b: Match; i: number; canAdd: boolean; onAdd: () => void }) {
+  return (
+    <div className="border border-border rounded-lg p-3">
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground w-4">#{i + 1}</span>
+        <span className="font-medium text-sm flex-1 truncate">{b.name}</span>
+        <Badge variant="outline" className="text-[10px]">{Math.round(b.score)}</Badge>
+      </div>
+      <p className="text-xs text-muted-foreground mt-1">{b.reason}</p>
+      <div className="flex flex-wrap gap-1 mt-2">
+        {b.markets?.slice(0, 2).map((m) => (
+          <Badge key={m} variant="outline" className="text-[10px]">{m}</Badge>
+        ))}
+      </div>
+      {canAdd && (
+        <Button size="sm" variant="outline" onClick={onAdd} className="mt-2 h-7 text-xs w-full">
+          Add to Rolodex
+        </Button>
       )}
     </div>
   );
