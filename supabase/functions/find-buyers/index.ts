@@ -35,9 +35,11 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
-    // ── Determine paywall state for the Buyer Archive column ─────────────
-    // Order: admin > active subscription > credit balance >= cost > locked
-    let archiveState: "admin" | "subscription" | "credits" | "locked" = "locked";
+    // ── Determine paywall state ─────────────
+    // admin / subscription => all archive contacts auto-revealed.
+    // Otherwise => per-buyer pay-to-reveal (100 credits each via reveal_archive_buyer RPC).
+    let archiveState: "admin" | "subscription" | "pay_per_reveal" = "pay_per_reveal";
+    let creditBalance = 0;
     if (userId) {
       const { data: roles } = await admin
         .from("user_roles").select("role").eq("user_id", userId);
@@ -54,14 +56,24 @@ Deno.serve(async (req) => {
       const subActive = sub?.subscription_status === "active" &&
         (!sub?.current_period_end || new Date(sub.current_period_end) > new Date());
       if (subActive) archiveState = "subscription";
-      else {
-        const { data: bal } = await admin
-          .from("credit_balances")
-          .select("balance")
-          .eq("ghl_location_id", ghl_location_id)
-          .maybeSingle();
-        if ((bal?.balance ?? 0) >= REVEAL_COST) archiveState = "credits";
-      }
+    }
+    if (ghl_location_id) {
+      const { data: bal } = await admin
+        .from("credit_balances")
+        .select("balance")
+        .eq("ghl_location_id", ghl_location_id)
+        .maybeSingle();
+      creditBalance = bal?.balance ?? 0;
+    }
+
+    // Already-revealed buyer ids for this location (sticky reveals)
+    const revealedIds = new Set<string>();
+    if (ghl_location_id) {
+      const { data: reveals } = await admin
+        .from("archive_buyer_reveals")
+        .select("buyer_id")
+        .eq("ghl_location_id", ghl_location_id);
+      for (const r of reveals || []) revealedIds.add(r.buyer_id);
     }
 
     // Pull two pools in parallel
