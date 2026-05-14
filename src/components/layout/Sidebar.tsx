@@ -12,7 +12,6 @@ const items = [
   { to: "/finder", label: "Buyer Finder", icon: Search },
   { to: "/pipeline", label: "Deal Pipeline", icon: LayoutGrid },
   { to: "/buyers", label: "Buyer Rolodex", icon: Users },
-  { to: "/archive", label: "Archive", icon: Lock },
   { to: "/tasks", label: "Tasks", icon: CheckSquare },
   { to: "/title-companies", label: "Title Companies", icon: Building2 },
   { to: "/settings/pipelines", label: "Pipeline Mapping", icon: GitBranch },
