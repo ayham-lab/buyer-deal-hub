@@ -58,7 +58,7 @@ export function PricingTab() {
   useEffect(() => { load(); }, []);
 
   async function savePack(p: Pack) {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("credit_packs")
       .update({
         name: p.name,
@@ -69,9 +69,15 @@ export function PricingTab() {
         is_featured: p.is_featured,
         sort_order: Number(p.sort_order),
       })
-      .eq("id", p.id);
-    if (error) toast.error(error.message);
-    else toast.success("Pack saved");
+      .eq("id", p.id)
+      .select();
+    if (error) return toast.error(`Save failed: ${error.message}`);
+    if (!data || data.length === 0) {
+      return toast.error(
+        "Save blocked by permissions. Open the admin in standalone mode (outside the GHL iframe) to edit pricing.",
+      );
+    }
+    toast.success("Pack saved");
   }
 
   async function deletePack(id: string) {
