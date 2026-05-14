@@ -2,15 +2,20 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-ghl-location-id",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+const REVEAL_COST = 100;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { address, street, city, state, zip, propertyType, priceHint } = await req.json();
+    const body = await req.json();
+    const { address, street, city, state, zip, propertyType, priceHint } = body;
+    const ghl_location_id: string | null =
+      body.ghl_location_id || req.headers.get("x-ghl-location-id") || null;
     if (!address || typeof address !== "string") {
       return json({ error: "address is required" }, 400);
     }
@@ -30,8 +35,37 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
+    // ── Determine paywall state for the Buyer Archive column ─────────────
+    // Order: admin > active subscription > credit balance >= cost > locked
+    let archiveState: "admin" | "subscription" | "credits" | "locked" = "locked";
+    if (userId) {
+      const { data: roles } = await admin
+        .from("user_roles").select("role").eq("user_id", userId);
+      const isAdmin = (roles || []).some((r: any) =>
+        r.role === "admin" || r.role === "super_admin");
+      if (isAdmin) archiveState = "admin";
+    }
+    if (archiveState !== "admin" && ghl_location_id) {
+      const { data: sub } = await admin
+        .from("subscriptions")
+        .select("subscription_status, current_period_end")
+        .eq("ghl_location_id", ghl_location_id)
+        .maybeSingle();
+      const subActive = sub?.subscription_status === "active" &&
+        (!sub?.current_period_end || new Date(sub.current_period_end) > new Date());
+      if (subActive) archiveState = "subscription";
+      else {
+        const { data: bal } = await admin
+          .from("credit_balances")
+          .select("balance")
+          .eq("ghl_location_id", ghl_location_id)
+          .maybeSingle();
+        if ((bal?.balance ?? 0) >= REVEAL_COST) archiveState = "credits";
+      }
+    }
+
     // Pull two pools in parallel
-    const [rolodexResp, archiveResp] = await Promise.all([
+    const [rolodexResp, archiveResp, archiveCountResp] = await Promise.all([
       userId
         ? admin
             .from("buyers")
@@ -42,9 +76,11 @@ Deno.serve(async (req) => {
         : Promise.resolve({ data: [] as any[] }),
       admin
         .from("archive_buyers")
-        .select("id, full_name, first_name, last_name, email, phone, preferred_markets, property_types, price_min, price_max, sources, is_active")
+        .select("id, full_name, first_name, last_name, email, phone, preferred_markets, property_types, price_min, price_max, sources, is_active, city, state")
         .eq("is_active", true)
         .limit(500),
+      // Tighter count for the locked teaser — match preferred_markets to State/City/Zip tokens
+      countArchiveMatches(admin, ctx),
     ]);
 
     const rolodex = rolodexResp.data || [];
@@ -57,6 +93,8 @@ Deno.serve(async (req) => {
       property_types: r.property_types || [],
       price_min: r.price_min,
       price_max: r.price_max,
+      city: r.city,
+      state: r.state,
       source: Array.isArray(r.sources) && r.sources.length ? `${r.sources.length} tenant(s)` : null,
     }));
 
@@ -65,10 +103,21 @@ Deno.serve(async (req) => {
       rankWithAI(archive, address, ctx, propertyType, priceHint, LOVABLE_API_KEY),
     ]);
 
-    // Public data buyers: not connected yet — return empty group with a flag
+    // Count for teaser: prefer the AI-ranked matches when available, fall back to the rough query count.
+    const archiveCount = Math.max(archiveMatches.length, archiveCountResp);
+
+    // STATE 3: suppress card details, return count + teaser metadata only.
+    const archiveLocked = archiveState === "locked";
+    const archivePayload = archiveLocked ? [] : archiveMatches;
+
     return json({
       rolodex: rolodexMatches,
-      archive: archiveMatches,
+      archive: archivePayload,
+      archive_locked: archiveLocked,
+      archive_count: archiveCount,
+      archive_state: archiveState,
+      archive_reveal_cost: REVEAL_COST,
+      archive_location_label: [city, state].filter(Boolean).join(", "),
       public: [],
       public_available: false,
     });
@@ -77,6 +126,25 @@ Deno.serve(async (req) => {
     return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }
 });
+
+async function countArchiveMatches(admin: any, ctx: { city?: string; state?: string; zip?: string }): Promise<number> {
+  try {
+    const tokens: string[] = [];
+    if (ctx.state) tokens.push(`State:${ctx.state}`);
+    if (ctx.city && ctx.state) tokens.push(`City:${ctx.city}, ${ctx.state}`);
+    if (ctx.zip) tokens.push(`Zip:${ctx.zip}`);
+    if (tokens.length === 0) return 0;
+    const { count } = await admin
+      .from("archive_buyers")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true)
+      .overlaps("preferred_markets", tokens);
+    return count || 0;
+  } catch (e) {
+    console.error("countArchiveMatches", e);
+    return 0;
+  }
+}
 
 async function rankWithAI(
   candidates: any[],
