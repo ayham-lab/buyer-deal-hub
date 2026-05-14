@@ -235,6 +235,36 @@ Return the top 5 matches with a 1-sentence reason each and a fit score 0-100.`;
   let mapped = aiMatches
     .map((m: any) => ({ ...byId.get(m.buyer_id), score: m.score, reason: m.reason }))
     .filter((m: any) => m.id);
+
+  // Fallback: AI returned nothing (failure or empty). Build a deterministic
+  // ranking from token overlap so paid users never see an empty archive when
+  // candidates exist.
+  if (mapped.length === 0 && candidates.length > 0) {
+    const stateLc = (ctx.state || "").toLowerCase().trim();
+    const cityLc = (ctx.city || "").toLowerCase().trim();
+    const zipLc = (ctx.zip || "").toLowerCase().trim();
+    const scored = candidates.map((c: any) => {
+      const markets = (c.markets || []).map((m: string) => String(m).toLowerCase());
+      let score = 0;
+      const reasons: string[] = [];
+      if (cityLc && markets.some((m) => m.includes(`city:${cityLc}`))) {
+        score += 70; reasons.push(`city ${ctx.city}`);
+      }
+      if (stateLc && markets.some((m) => m.includes(`state:${stateLc}`))) {
+        score += 40; reasons.push(`state ${ctx.state}`);
+      }
+      if (zipLc && markets.some((m) => m.includes(`zip:${zipLc}`))) {
+        score += 30; reasons.push(`zip ${ctx.zip}`);
+      }
+      if (stateLc && markets.some((m) => m.includes(`, ${stateLc}`))) {
+        score += 15; reasons.push(`region in ${ctx.state}`);
+      }
+      if (markets.length === 0) { score += 10; reasons.push("no market restrictions"); }
+      return { ...c, score, reason: reasons.length ? `Match on ${reasons.join(", ")}.` : "Generalist buyer." };
+    });
+    mapped = scored.sort((a, b) => b.score - a.score).slice(0, 5);
+  }
+  return mapped;
 }
 
 function json(body: unknown, status = 200) {
