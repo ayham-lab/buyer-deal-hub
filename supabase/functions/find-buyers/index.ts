@@ -129,17 +129,29 @@ Deno.serve(async (req) => {
 
 async function countArchiveMatches(admin: any, ctx: { city?: string; state?: string; zip?: string }): Promise<number> {
   try {
-    const tokens: string[] = [];
-    if (ctx.state) tokens.push(`State:${ctx.state}`);
-    if (ctx.city && ctx.state) tokens.push(`City:${ctx.city}, ${ctx.state}`);
-    if (ctx.zip) tokens.push(`Zip:${ctx.zip}`);
-    if (tokens.length === 0) return 0;
-    const { count } = await admin
+    const stateLc = (ctx.state || "").toLowerCase().trim();
+    const cityLc = (ctx.city || "").toLowerCase().trim();
+    const zipLc = (ctx.zip || "").toLowerCase().trim();
+    if (!stateLc && !cityLc && !zipLc) return 0;
+    // Pull active rows and match in JS — preferred_markets is small and tokens
+    // are inconsistently cased ("City:philadelphia, PA" vs "City:Philadelphia, PA").
+    const { data } = await admin
       .from("archive_buyers")
-      .select("id", { count: "exact", head: true })
+      .select("preferred_markets")
       .eq("is_active", true)
-      .overlaps("preferred_markets", tokens);
-    return count || 0;
+      .limit(2000);
+    if (!Array.isArray(data)) return 0;
+    let n = 0;
+    for (const row of data) {
+      const markets = (row.preferred_markets || []).map((m: string) => String(m).toLowerCase());
+      const hit =
+        (cityLc && markets.some((m) => m.includes(`city:${cityLc}`))) ||
+        (stateLc && markets.some((m) => m.includes(`state:${stateLc}`))) ||
+        (zipLc && markets.some((m) => m.includes(`zip:${zipLc}`))) ||
+        (stateLc && markets.some((m) => m.includes(`, ${stateLc}`)));
+      if (hit) n++;
+    }
+    return n;
   } catch (e) {
     console.error("countArchiveMatches", e);
     return 0;
