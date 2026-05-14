@@ -1,5 +1,5 @@
 import { NavLink, useLocation, Link } from "react-router-dom";
-import { Users, Search, LayoutGrid, BarChart3, ShieldCheck, ChevronsLeft, ChevronsRight, Building2, UsersRound, Home, CheckSquare, Settings as SettingsIcon, GitBranch, Lock } from "lucide-react";
+import { Users, Search, LayoutGrid, BarChart3, ShieldCheck, ChevronsLeft, ChevronsRight, Building2, UsersRound, Home, CheckSquare, Settings as SettingsIcon, GitBranch } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveLocation } from "@/contexts/LocationContext";
 import { cn } from "@/lib/utils";
@@ -12,7 +12,6 @@ const items = [
   { to: "/finder", label: "Buyer Finder", icon: Search },
   { to: "/pipeline", label: "Deal Pipeline", icon: LayoutGrid },
   { to: "/buyers", label: "Buyer Rolodex", icon: Users },
-  { to: "/archive", label: "Archive", icon: Lock },
   { to: "/tasks", label: "Tasks", icon: CheckSquare },
   { to: "/title-companies", label: "Title Companies", icon: Building2 },
   { to: "/settings/pipelines", label: "Pipeline Mapping", icon: GitBranch },
