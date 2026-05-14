@@ -35,9 +35,11 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
-    // ── Determine paywall state for the Buyer Archive column ─────────────
-    // Order: admin > active subscription > credit balance >= cost > locked
-    let archiveState: "admin" | "subscription" | "credits" | "locked" = "locked";
+    // ── Determine paywall state ─────────────
+    // admin / subscription => all archive contacts auto-revealed.
+    // Otherwise => per-buyer pay-to-reveal (100 credits each via reveal_archive_buyer RPC).
+    let archiveState: "admin" | "subscription" | "pay_per_reveal" = "pay_per_reveal";
+    let creditBalance = 0;
     if (userId) {
       const { data: roles } = await admin
         .from("user_roles").select("role").eq("user_id", userId);
@@ -54,14 +56,24 @@ Deno.serve(async (req) => {
       const subActive = sub?.subscription_status === "active" &&
         (!sub?.current_period_end || new Date(sub.current_period_end) > new Date());
       if (subActive) archiveState = "subscription";
-      else {
-        const { data: bal } = await admin
-          .from("credit_balances")
-          .select("balance")
-          .eq("ghl_location_id", ghl_location_id)
-          .maybeSingle();
-        if ((bal?.balance ?? 0) >= REVEAL_COST) archiveState = "credits";
-      }
+    }
+    if (ghl_location_id) {
+      const { data: bal } = await admin
+        .from("credit_balances")
+        .select("balance")
+        .eq("ghl_location_id", ghl_location_id)
+        .maybeSingle();
+      creditBalance = bal?.balance ?? 0;
+    }
+
+    // Already-revealed buyer ids for this location (sticky reveals)
+    const revealedIds = new Set<string>();
+    if (ghl_location_id) {
+      const { data: reveals } = await admin
+        .from("archive_buyer_reveals")
+        .select("buyer_id")
+        .eq("ghl_location_id", ghl_location_id);
+      for (const r of reveals || []) revealedIds.add(r.buyer_id);
     }
 
     // Pull two pools in parallel
@@ -106,17 +118,24 @@ Deno.serve(async (req) => {
     // Count for teaser: prefer the AI-ranked matches when available, fall back to the rough query count.
     const archiveCount = Math.max(archiveMatches.length, archiveCountResp);
 
-    // STATE 3: suppress card details, return count + teaser metadata only.
-    const archiveLocked = archiveState === "locked";
-    const archivePayload = archiveLocked ? [] : archiveMatches;
+    // Auto-reveal everything for admin/subscription users; otherwise mask
+    // contact info per-card unless the buyer is already revealed for this loc.
+    const autoReveal = archiveState === "admin" || archiveState === "subscription";
+    const archivePayload = archiveMatches.map((m: any) => {
+      const revealed = autoReveal || revealedIds.has(m.id);
+      return revealed
+        ? { ...m, revealed: true }
+        : { ...m, email: null, phone: null, source: null, revealed: false };
+    });
 
     return json({
       rolodex: rolodexMatches,
       archive: archivePayload,
-      archive_locked: archiveLocked,
+      archive_locked: false,
       archive_count: archiveCount,
       archive_state: archiveState,
       archive_reveal_cost: REVEAL_COST,
+      archive_credit_balance: creditBalance,
       archive_location_label: [city, state].filter(Boolean).join(", "),
       public: [],
       public_available: false,

@@ -10,25 +10,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BuyCreditsModal } from "@/components/credits/BuyCreditsModal";
 
 const PROPERTY_TYPES = ["SFH", "MFH 2-4", "MFH 5+", "Commercial", "Land", "Mobile"];
-import { MapPin, Sparkles, Loader2, Users, Archive, Globe, Lock, Infinity as InfinityIcon, Coins } from "lucide-react";
+import { MapPin, Sparkles, Loader2, Users, Archive, Globe, Lock, Mail, Phone, Coins, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 type Match = {
   id: string;
   name: string;
-  email?: string;
-  phone?: string;
+  email?: string | null;
+  phone?: string | null;
   markets?: string[];
   property_types?: string[];
   price_min?: number;
   price_max?: number;
-  source?: string;
+  source?: string | null;
   score: number;
   reason: string;
+  revealed?: boolean;
 };
 
-type ArchiveState = "admin" | "subscription" | "credits" | "locked";
+type ArchiveState = "admin" | "subscription" | "pay_per_reveal";
 
 type Results = {
   rolodex: Match[];
@@ -37,6 +38,7 @@ type Results = {
   archive_count: number;
   archive_state: ArchiveState;
   archive_reveal_cost: number;
+  archive_credit_balance: number;
   archive_location_label: string;
   public: Match[];
   public_available: boolean;
@@ -88,22 +90,8 @@ export default function Finder() {
     }
   }
 
-  async function addToMine(b: Match, fromArchive: boolean) {
+  async function addToMine(b: Match) {
     if (!user) return;
-    // State 2 (credits): adding from archive deducts reveal cost.
-    if (fromArchive && results?.archive_state === "credits" && activeLocation?.locationId) {
-      const { data, error } = await supabase.rpc("reveal_archive_buyer", {
-        p_location: activeLocation.locationId,
-        p_buyer_id: b.id,
-      });
-      if (error) { toast.error(error.message); return; }
-      const r = data as any;
-      if (!r?.success) {
-        if (r?.error === "insufficient_credits") setBuyOpen(true);
-        toast.error(r?.error === "insufficient_credits" ? "Not enough credits" : "Reveal failed");
-        return;
-      }
-    }
     const { error } = await supabase.from("buyers").insert(withLocation({
       user_id: user.id,
       name: b.name,
@@ -113,10 +101,44 @@ export default function Finder() {
       property_types: b.property_types,
       price_min: b.price_min,
       price_max: b.price_max,
-      source: b.source,
+      source: b.source ?? undefined,
     }));
     if (error) toast.error(error.message);
     else toast.success(`${b.name} added to your buyers`);
+  }
+
+  async function revealArchiveBuyer(b: Match) {
+    if (!activeLocation?.locationId || !results) return;
+    const { data, error } = await supabase.rpc("reveal_archive_buyer", {
+      p_location: activeLocation.locationId,
+      p_buyer_id: b.id,
+    });
+    if (error) { toast.error(error.message); return; }
+    const r = data as any;
+    if (!r?.success) {
+      if (r?.error === "insufficient_credits") {
+        toast.error("Not enough credits — buy a pack to continue");
+        setBuyOpen(true);
+      } else {
+        toast.error("Reveal failed");
+      }
+      return;
+    }
+    const { data: row } = await supabase
+      .from("archive_buyers")
+      .select("email, phone")
+      .eq("id", b.id)
+      .maybeSingle();
+    setResults({
+      ...results,
+      archive: results.archive.map((m) =>
+        m.id === b.id
+          ? { ...m, revealed: true, email: row?.email ?? null, phone: row?.phone ?? null }
+          : m,
+      ),
+      archive_credit_balance: Math.max(0, (results.archive_credit_balance ?? 0) - results.archive_reveal_cost),
+    });
+    toast.success(`Revealed ${b.name}`);
   }
 
   return (
@@ -175,34 +197,35 @@ export default function Finder() {
               icon={<Users className="h-4 w-4" />}
               matches={results.rolodex}
               canAdd={false}
-              onAdd={(b) => addToMine(b, false)}
+              onAdd={(b) => addToMine(b)}
             />
             <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-3">
                 <div className="text-primary"><Archive className="h-4 w-4" /></div>
                 <h3 className="font-semibold text-sm">Buyer Archive</h3>
                 <Badge variant="secondary" className="ml-auto text-[10px]">
-                  {results.archive_locked ? results.archive_count : results.archive.length}
+                  {results.archive.length}
                 </Badge>
               </div>
-              {results.archive_locked ? (
-                <ArchiveTeaser
-                  count={results.archive_count}
-                  locationLabel={results.archive_location_label}
-                  onSubscribe={() => setBuyOpen(true)}
-                  onBuyCredits={() => setBuyOpen(true)}
-                />
-              ) : results.archive.length === 0 ? (
+              {results.archive.length === 0 ? (
                 <p className="text-xs text-muted-foreground py-6 text-center">No matches in this source.</p>
               ) : (
                 <div className="space-y-2">
-                  {results.archive_state === "credits" && (
+                  {results.archive_state === "pay_per_reveal" && (
                     <div className="text-[11px] text-muted-foreground bg-muted/40 border border-border rounded-md px-2 py-1.5 mb-2">
-                      Adding a buyer from the Archive uses {results.archive_reveal_cost} credits.
+                      Reveal a buyer's contact for {results.archive_reveal_cost} credits.
+                      Balance: <span className="font-semibold text-foreground">{results.archive_credit_balance}</span>
                     </div>
                   )}
                   {results.archive.map((b, i) => (
-                    <MatchCard key={b.id} b={b} i={i} canAdd onAdd={() => addToMine(b, true)} />
+                    <ArchiveCard
+                      key={b.id}
+                      b={b}
+                      i={i}
+                      revealCost={results.archive_reveal_cost}
+                      onReveal={() => revealArchiveBuyer(b)}
+                      onAdd={() => addToMine(b)}
+                    />
                   ))}
                 </div>
               )}
@@ -212,7 +235,7 @@ export default function Finder() {
               icon={<Globe className="h-4 w-4" />}
               matches={results.public}
               canAdd
-              onAdd={(b) => addToMine(b, false)}
+              onAdd={(b) => addToMine(b)}
               emptyHint={!results.public_available ? "Public data source not connected yet." : undefined}
             />
           </div>
@@ -224,39 +247,6 @@ export default function Finder() {
         ghlLocationId={activeLocation?.locationId ?? null}
       />
     </AppLayout>
-  );
-}
-
-function ArchiveTeaser({
-  count, locationLabel, onSubscribe, onBuyCredits,
-}: { count: number; locationLabel: string; onSubscribe: () => void; onBuyCredits: () => void }) {
-  return (
-    <div className="text-center py-8 px-3 space-y-4 bg-gradient-to-b from-primary/5 to-transparent border-2 border-dashed border-primary/40 rounded-lg">
-      <div className="mx-auto h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-        <Lock className="h-6 w-6 text-primary" />
-      </div>
-      <div className="space-y-1">
-        <div className="text-3xl font-bold text-foreground">
-          {count.toLocaleString()} {count === 1 ? "buyer" : "buyers"}
-        </div>
-        <p className="text-sm text-muted-foreground">
-          matching this property{locationLabel ? ` in ${locationLabel}` : ""}
-        </p>
-      </div>
-      <p className="text-sm font-medium text-foreground px-2">
-        Subscribe to Unlimited or buy credits to see them.
-      </p>
-      <div className="flex flex-col gap-2 pt-1">
-        <Button onClick={onSubscribe} className="w-full bg-primary hover:bg-primary-hover text-primary-foreground">
-          <InfinityIcon className="h-4 w-4 mr-2" />
-          Subscribe to Unlimited ($297/mo)
-        </Button>
-        <Button onClick={onBuyCredits} variant="outline" className="w-full">
-          <Coins className="h-4 w-4 mr-2" />
-          Buy Credits
-        </Button>
-      </div>
-    </div>
   );
 }
 
@@ -307,6 +297,65 @@ function MatchCard({
       {canAdd && (
         <Button size="sm" variant="outline" onClick={onAdd} className="mt-2 h-7 text-xs w-full">
           Add to Rolodex
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function ArchiveCard({
+  b, i, revealCost, onReveal, onAdd,
+}: { b: Match; i: number; revealCost: number; onReveal: () => void; onAdd: () => void }) {
+  const revealed = !!b.revealed;
+  return (
+    <div className="border border-border rounded-lg p-3">
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground w-4">#{i + 1}</span>
+        <span className="font-medium text-sm flex-1 truncate">{b.name}</span>
+        <Badge variant="outline" className="text-[10px]">{Math.round(b.score)}</Badge>
+      </div>
+      <p className="text-xs text-muted-foreground mt-1">{b.reason}</p>
+      <div className="flex flex-wrap gap-1 mt-2">
+        {b.markets?.slice(0, 2).map((m) => (
+          <Badge key={m} variant="outline" className="text-[10px]">{m}</Badge>
+        ))}
+      </div>
+
+      <div className="mt-2 space-y-1 text-xs">
+        <div className="flex items-center gap-1.5">
+          <Mail className="h-3 w-3 text-muted-foreground shrink-0" />
+          {revealed ? (
+            <span className="text-foreground truncate">{b.email || "—"}</span>
+          ) : (
+            <span className="select-none blur-sm text-muted-foreground tracking-wider">
+              •••••••@••••••.com
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Phone className="h-3 w-3 text-muted-foreground shrink-0" />
+          {revealed ? (
+            <span className="text-foreground">{b.phone || "—"}</span>
+          ) : (
+            <span className="select-none blur-sm text-muted-foreground tracking-wider">
+              (•••) •••-••••
+            </span>
+          )}
+        </div>
+      </div>
+
+      {revealed ? (
+        <Button size="sm" variant="outline" onClick={onAdd} className="mt-2 h-7 text-xs w-full">
+          <Check className="h-3 w-3 mr-1" /> Add to Rolodex
+        </Button>
+      ) : (
+        <Button
+          size="sm"
+          onClick={onReveal}
+          className="mt-2 h-7 text-xs w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+        >
+          <Lock className="h-3 w-3 mr-1" />
+          Reveal Contact ({revealCost} credits)
         </Button>
       )}
     </div>
