@@ -9,12 +9,12 @@ import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, Infinity as InfinityIcon, ExternalLink } from "lucide-react";
 import { useActiveLocation } from "@/contexts/LocationContext";
 import TeamMembersTab from "@/pages/settings/TeamMembersTab";
 
 export default function Settings() {
-  const { isIframed } = useActiveLocation();
+  const { isIframed, activeLocation } = useActiveLocation();
   const { isAdmin } = useAuth();
   const [params, setParams] = useSearchParams();
   const showProfile = !isIframed;
@@ -35,12 +35,14 @@ export default function Settings() {
             {showProfile && <TabsTrigger value="profile">Profile</TabsTrigger>}
             <TabsTrigger value="checklist">Checklist</TabsTrigger>
             <TabsTrigger value="team">Team</TabsTrigger>
+            {isIframed && <TabsTrigger value="billing">Billing</TabsTrigger>}
             {showGhl && <TabsTrigger value="ghl">GHL Connections</TabsTrigger>}
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
           </TabsList>
           {showProfile && <TabsContent value="profile"><ProfileTab /></TabsContent>}
           <TabsContent value="checklist"><ChecklistTab /></TabsContent>
           <TabsContent value="team"><TeamMembersTab /></TabsContent>
+          {isIframed && <TabsContent value="billing"><BillingTab locationId={activeLocation?.locationId ?? null} /></TabsContent>}
           {showGhl && <TabsContent value="ghl"><GhlTab /></TabsContent>}
           <TabsContent value="notifications"><NotificationsTab /></TabsContent>
         </Tabs>
