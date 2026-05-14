@@ -155,6 +155,7 @@ export default function Buyers() {
                   <th>Last Contact</th>
                   <th>Deals</th>
                   <th>Source</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -179,6 +180,22 @@ export default function Buyers() {
                     </td>
                     <td>{b.deal_count}</td>
                     <td className="text-muted-foreground">{b.source || "—"}</td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (!confirm(`Permanently delete buyer "${b.name}"? This cannot be undone.`)) return;
+                          const { error } = await supabase.from("buyers").delete().eq("id", b.id);
+                          if (error) { toast.error(error.message); return; }
+                          toast.success("Buyer deleted");
+                          load();
+                        }}
+                        className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition"
+                        title="Delete buyer"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
