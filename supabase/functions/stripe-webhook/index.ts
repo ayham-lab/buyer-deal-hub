@@ -53,9 +53,39 @@ async function handleCheckoutCompleted(event: Stripe.Event, supa: any) {
   const md = session.metadata || {};
   const ghl_location_id = md.ghl_location_id;
 
-  // Subscription checkout — subscription.created event will populate the row.
+  // Subscription checkout — fetch the subscription directly and upsert the row.
+  // We don't rely on customer.subscription.created being enabled in the webhook config.
   if (session.mode === "subscription") {
-    return new Response("ok (subscription checkout)", { status: 200 });
+    const sk = Deno.env.get("STRIPE_SECRET_KEY")!;
+    const stripe = new Stripe(sk, { apiVersion: "2024-06-20" });
+    const subId = typeof session.subscription === "string"
+      ? session.subscription
+      : session.subscription?.id;
+    if (!subId || !ghl_location_id) {
+      console.error("subscription checkout missing sub id or location", session.id);
+      return new Response("ok (missing data)", { status: 200 });
+    }
+    const sub = await stripe.subscriptions.retrieve(subId);
+    const period_end = sub.current_period_end
+      ? new Date(sub.current_period_end * 1000).toISOString()
+      : null;
+    const payload: any = {
+      ghl_location_id,
+      stripe_subscription_id: sub.id,
+      stripe_customer_id: typeof sub.customer === "string" ? sub.customer : sub.customer?.id,
+      subscription_status: sub.status,
+      current_period_end: period_end,
+      updated_at: new Date().toISOString(),
+    };
+    if (md.subscription_plan_id) payload.subscription_plan_id = md.subscription_plan_id;
+    const { error } = await supa
+      .from("subscriptions")
+      .upsert(payload, { onConflict: "ghl_location_id" });
+    if (error) {
+      console.error("subscription upsert (from checkout) failed", error);
+      return new Response("db error", { status: 500 });
+    }
+    return new Response("ok (subscription activated)", { status: 200 });
   }
 
   const credits = Number(md.credits || 0);
