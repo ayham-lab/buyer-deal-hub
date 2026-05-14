@@ -218,15 +218,21 @@ Return the top 5 matches with a 1-sentence reason each and a fit score 0-100.`;
     }),
   });
 
-  if (!aiResp.ok) {
-    console.error("AI error", aiResp.status, await aiResp.text());
-    return [];
+  let aiMatches: any[] = [];
+  try {
+    if (aiResp.ok) {
+      const aiJson = await aiResp.json();
+      const toolCall = aiJson.choices?.[0]?.message?.tool_calls?.[0];
+      const args = toolCall ? JSON.parse(toolCall.function.arguments) : { matches: [] };
+      aiMatches = args.matches || [];
+    } else {
+      console.error("AI error", aiResp.status, await aiResp.text());
+    }
+  } catch (e) {
+    console.error("AI parse error", e);
   }
-  const aiJson = await aiResp.json();
-  const toolCall = aiJson.choices?.[0]?.message?.tool_calls?.[0];
-  const args = toolCall ? JSON.parse(toolCall.function.arguments) : { matches: [] };
   const byId = new Map(candidates.map((c) => [c.id, c]));
-  return (args.matches || [])
+  let mapped = aiMatches
     .map((m: any) => ({ ...byId.get(m.buyer_id), score: m.score, reason: m.reason }))
     .filter((m: any) => m.id);
 }
