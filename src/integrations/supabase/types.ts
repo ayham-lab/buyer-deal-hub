@@ -53,6 +53,7 @@ export type Database = {
           price_max: number | null
           price_min: number | null
           property_types: string[]
+          sources: Json
           state: string | null
           updated_at: string
         }
@@ -73,6 +74,7 @@ export type Database = {
           price_max?: number | null
           price_min?: number | null
           property_types?: string[]
+          sources?: Json
           state?: string | null
           updated_at?: string
         }
@@ -93,6 +95,7 @@ export type Database = {
           price_max?: number | null
           price_min?: number | null
           property_types?: string[]
+          sources?: Json
           state?: string | null
           updated_at?: string
         }
