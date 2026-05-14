@@ -142,6 +142,9 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-2xl bg-card border-border max-h-[85vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Add Buyer</DialogTitle></DialogHeader>
+        <p className="text-xs text-muted-foreground -mt-1 mb-2">
+          Buyers you add become discoverable in the AcquiredCRM Archive. Other users can pay credits to view their contact details.
+        </p>
         <form onSubmit={submit} className="grid grid-cols-2 gap-4">
           <div><Label>First Name *</Label><Input required value={form.first_name} onChange={(e) => set("first_name", e.target.value)} /></div>
           <div><Label>Last Name</Label><Input value={form.last_name} onChange={(e) => set("last_name", e.target.value)} /></div>

@@ -112,7 +112,6 @@ export default function Admin() {
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="deals">Deals</TabsTrigger>
             <TabsTrigger value="buyers">Buyers</TabsTrigger>
-            <TabsTrigger value="archive">Archive</TabsTrigger>
             <TabsTrigger value="roles">Roles</TabsTrigger>
             {showPricing && <TabsTrigger value="pricing">Pricing</TabsTrigger>}
             {showArchiveBuyers && <TabsTrigger value="archive_buyers">Archive Buyers</TabsTrigger>}
@@ -212,11 +211,6 @@ export default function Admin() {
           {/* BUYERS */}
           <TabsContent value="buyers">
             <BuyersTab buyers={buyers} users={users} onOpenUser={setOpenUserId} />
-          </TabsContent>
-
-          {/* ARCHIVE */}
-          <TabsContent value="archive">
-            <ArchiveTab archive={archive} onChanged={load} />
           </TabsContent>
 
           {/* ROLES */}
