@@ -10,25 +10,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BuyCreditsModal } from "@/components/credits/BuyCreditsModal";
 
 const PROPERTY_TYPES = ["SFH", "MFH 2-4", "MFH 5+", "Commercial", "Land", "Mobile"];
-import { MapPin, Sparkles, Loader2, Users, Archive, Globe, Lock, Infinity as InfinityIcon, Coins } from "lucide-react";
+import { MapPin, Sparkles, Loader2, Users, Archive, Globe, Lock, Mail, Phone, Coins, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 type Match = {
   id: string;
   name: string;
-  email?: string;
-  phone?: string;
+  email?: string | null;
+  phone?: string | null;
   markets?: string[];
   property_types?: string[];
   price_min?: number;
   price_max?: number;
-  source?: string;
+  source?: string | null;
   score: number;
   reason: string;
+  revealed?: boolean;
 };
 
-type ArchiveState = "admin" | "subscription" | "credits" | "locked";
+type ArchiveState = "admin" | "subscription" | "pay_per_reveal";
 
 type Results = {
   rolodex: Match[];
@@ -37,6 +38,7 @@ type Results = {
   archive_count: number;
   archive_state: ArchiveState;
   archive_reveal_cost: number;
+  archive_credit_balance: number;
   archive_location_label: string;
   public: Match[];
   public_available: boolean;
