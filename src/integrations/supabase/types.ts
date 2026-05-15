@@ -1435,6 +1435,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _state_abbr_to_full: { Args: { p: string }; Returns: string }
+      _state_full_to_abbr: { Args: { p: string }; Returns: string }
       archive_buyer_distinct_sources: {
         Args: never
         Returns: {
@@ -1463,6 +1465,10 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      normalize_archive_buyer_markets: {
+        Args: { p_id: string }
+        Returns: undefined
+      }
       reveal_archive_buyer: {
         Args: { p_buyer_id: string; p_location: string }
         Returns: Json
