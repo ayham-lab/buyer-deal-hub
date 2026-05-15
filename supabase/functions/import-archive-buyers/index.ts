@@ -13,14 +13,22 @@ interface InRow {
   full_name?: string | null;
   email?: string | null;
   phone?: string | null;
+  phone_2?: string | null;
   city?: string | null;
   state?: string | null;
   preferred_markets?: string[];
+  preferred_zips?: string[];
   property_types?: string[];
   price_min?: number | null;
   price_max?: number | null;
+  budget_notes?: string | null;
+  exit_strategy?: string | null;
+  quality_tier?: string | null;
+  last_outcome?: string | null;
+  national?: boolean;
+  completed_transaction?: boolean;
   notes?: string | null;
-  source_tag?: string | null; // optional sources array entry
+  source_tag?: string | null;
 }
 
 function uniq(a: string[]): string[] {
