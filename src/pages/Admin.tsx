@@ -16,6 +16,7 @@ import { UserDrawer } from "@/components/admin/UserDrawer";
 import { RoleManager } from "@/components/admin/RoleManager";
 import { PricingTab } from "@/components/admin/PricingTab";
 import { ArchiveBuyersTab } from "@/components/admin/ArchiveBuyersTab";
+import { ImportBuyersTab } from "@/components/admin/ImportBuyersTab";
 import { useActiveLocation } from "@/contexts/LocationContext";
 import { useAuth } from "@/hooks/useAuth";
 
