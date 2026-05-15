@@ -16,6 +16,7 @@ import { UserDrawer } from "@/components/admin/UserDrawer";
 import { RoleManager } from "@/components/admin/RoleManager";
 import { PricingTab } from "@/components/admin/PricingTab";
 import { ArchiveBuyersTab } from "@/components/admin/ArchiveBuyersTab";
+import { ImportBuyersTab } from "@/components/admin/ImportBuyersTab";
 import { useActiveLocation } from "@/contexts/LocationContext";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -115,6 +116,7 @@ export default function Admin() {
             <TabsTrigger value="roles">Roles</TabsTrigger>
             {showPricing && <TabsTrigger value="pricing">Pricing</TabsTrigger>}
             {showArchiveBuyers && <TabsTrigger value="archive_buyers">Archive Buyers</TabsTrigger>}
+            {showArchiveBuyers && <TabsTrigger value="import_buyers">Import Buyers</TabsTrigger>}
           </TabsList>
 
           {/* OVERVIEW */}
@@ -223,6 +225,12 @@ export default function Admin() {
           {showArchiveBuyers && (
             <TabsContent value="archive_buyers">
               <ArchiveBuyersTab />
+            </TabsContent>
+          )}
+
+          {showArchiveBuyers && (
+            <TabsContent value="import_buyers">
+              <ImportBuyersTab />
             </TabsContent>
           )}
         </Tabs>
