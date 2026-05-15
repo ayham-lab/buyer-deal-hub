@@ -1435,6 +1435,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      archive_buyer_distinct_sources: {
+        Args: never
+        Returns: {
+          source: string
+        }[]
+      }
       consume_credits: {
         Args: { p_action: string; p_location: string; p_related_id?: string }
         Returns: boolean
@@ -1461,6 +1467,8 @@ export type Database = {
         Args: { p_buyer_id: string; p_location: string }
         Returns: Json
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       app_role: "admin" | "user" | "super_admin"
