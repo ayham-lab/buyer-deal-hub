@@ -83,13 +83,13 @@ Deno.serve(async (req) => {
     const existing: Array<{ id: string; email: string | null; phone: string | null; sources: any; preferred_markets: string[]; property_types: string[]; price_min: number | null; price_max: number | null }> = [];
     if (emails.length) {
       const { data } = await admin.from("archive_buyers")
-        .select("id,email,phone,sources,preferred_markets,property_types,price_min,price_max")
+        .select("id,email,phone,sources,preferred_markets,preferred_zips,property_types,price_min,price_max,notes,quality_tier,last_outcome,budget_notes,exit_strategy,national,completed_transaction")
         .in("email", emails);
       if (data) existing.push(...(data as any));
     }
     if (phones.length) {
       const { data } = await admin.from("archive_buyers")
-        .select("id,email,phone,sources,preferred_markets,property_types,price_min,price_max")
+        .select("id,email,phone,sources,preferred_markets,preferred_zips,property_types,price_min,price_max,notes,quality_tier,last_outcome,budget_notes,exit_strategy,national,completed_transaction")
         .in("phone", phones);
       if (data) {
         for (const row of data as any[]) {
@@ -98,8 +98,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    const byEmail = new Map<string, typeof existing[0]>();
-    const byPhone = new Map<string, typeof existing[0]>();
+    const byEmail = new Map<string, any>();
+    const byPhone = new Map<string, any>();
     for (const e of existing) {
       if (e.email) byEmail.set(e.email.toLowerCase(), e);
       if (e.phone && (!e.email || e.email === "")) byPhone.set(e.phone, e);
@@ -110,8 +110,7 @@ Deno.serve(async (req) => {
     let merged = 0;
     const toInsert: any[] = [];
 
-    // Track within-batch new inserts so duplicates inside same batch dedupe
-    const batchEmail = new Map<string, number>(); // index in toInsert
+    const batchEmail = new Map<string, number>();
     const batchPhone = new Map<string, number>();
 
     for (const r of rows) {
@@ -120,17 +119,26 @@ Deno.serve(async (req) => {
       const matchExisting = (emailKey && byEmail.get(emailKey)) || (phoneKey && byPhone.get(phoneKey)) || null;
 
       if (matchExisting) {
-        // Merge: append source, union markets/property types, fill missing prices
         const cur = matchExisting;
         const curSources: string[] = Array.isArray(cur.sources) ? cur.sources : [];
         const newSrc = r.source_tag ? [r.source_tag] : [];
         const sources = uniq([...curSources, ...newSrc]);
+        const curZips: string[] = Array.isArray(cur.preferred_zips) ? cur.preferred_zips : [];
+        const mergedNotes = [cur.notes, r.notes].filter(Boolean).join(" | ") || null;
         const update: any = {
           sources,
           preferred_markets: uniq([...(cur.preferred_markets || []), ...(r.preferred_markets || [])]),
+          preferred_zips: uniq([...curZips, ...(r.preferred_zips || [])]),
           property_types: uniq([...(cur.property_types || []), ...(r.property_types || [])]),
           price_min: cur.price_min ?? r.price_min ?? null,
           price_max: cur.price_max ?? r.price_max ?? null,
+          quality_tier: cur.quality_tier ?? r.quality_tier ?? null,
+          last_outcome: r.last_outcome ?? cur.last_outcome ?? null,
+          budget_notes: cur.budget_notes ?? r.budget_notes ?? null,
+          exit_strategy: cur.exit_strategy ?? r.exit_strategy ?? null,
+          national: cur.national || !!r.national,
+          completed_transaction: cur.completed_transaction || !!r.completed_transaction,
+          notes: mergedNotes,
           updated_at: new Date().toISOString(),
         };
         await admin.from("archive_buyers").update(update).eq("id", cur.id);
@@ -138,10 +146,10 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Within-batch dedup
       if (emailKey && batchEmail.has(emailKey)) {
         const idx = batchEmail.get(emailKey)!;
         toInsert[idx].preferred_markets = uniq([...toInsert[idx].preferred_markets, ...(r.preferred_markets || [])]);
+        toInsert[idx].preferred_zips = uniq([...toInsert[idx].preferred_zips, ...(r.preferred_zips || [])]);
         toInsert[idx].property_types = uniq([...toInsert[idx].property_types, ...(r.property_types || [])]);
         merged += 1;
         continue;
@@ -149,6 +157,7 @@ Deno.serve(async (req) => {
       if (!emailKey && phoneKey && batchPhone.has(phoneKey)) {
         const idx = batchPhone.get(phoneKey)!;
         toInsert[idx].preferred_markets = uniq([...toInsert[idx].preferred_markets, ...(r.preferred_markets || [])]);
+        toInsert[idx].preferred_zips = uniq([...toInsert[idx].preferred_zips, ...(r.preferred_zips || [])]);
         toInsert[idx].property_types = uniq([...toInsert[idx].property_types, ...(r.property_types || [])]);
         merged += 1;
         continue;
@@ -160,12 +169,20 @@ Deno.serve(async (req) => {
         full_name: r.full_name || [r.first_name, r.last_name].filter(Boolean).join(" ") || null,
         email: r.email || null,
         phone: r.phone || null,
+        phone_2: r.phone_2 || null,
         city: r.city || null,
         state: r.state || null,
         preferred_markets: r.preferred_markets || [],
+        preferred_zips: r.preferred_zips || [],
         property_types: r.property_types || [],
         price_min: r.price_min ?? null,
         price_max: r.price_max ?? null,
+        budget_notes: r.budget_notes || null,
+        exit_strategy: r.exit_strategy || null,
+        quality_tier: r.quality_tier || null,
+        last_outcome: r.last_outcome || null,
+        national: !!r.national,
+        completed_transaction: !!r.completed_transaction,
         notes: r.notes || null,
         sources: r.source_tag ? [r.source_tag] : [],
         is_active: true,
