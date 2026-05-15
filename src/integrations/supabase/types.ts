@@ -37,64 +37,88 @@ export type Database = {
       }
       archive_buyers: {
         Row: {
+          budget_notes: string | null
           buy_box: Json
           city: string | null
+          completed_transaction: boolean
           created_at: string
           email: string | null
+          exit_strategy: string | null
           first_name: string | null
           full_name: string | null
           id: string
           is_active: boolean
           last_active_at: string | null
           last_name: string | null
+          last_outcome: string | null
+          national: boolean
           notes: string | null
           phone: string | null
+          phone_2: string | null
           preferred_markets: string[]
+          preferred_zips: Json
           price_max: number | null
           price_min: number | null
           property_types: string[]
+          quality_tier: string | null
           sources: Json
           state: string | null
           updated_at: string
         }
         Insert: {
+          budget_notes?: string | null
           buy_box?: Json
           city?: string | null
+          completed_transaction?: boolean
           created_at?: string
           email?: string | null
+          exit_strategy?: string | null
           first_name?: string | null
           full_name?: string | null
           id?: string
           is_active?: boolean
           last_active_at?: string | null
           last_name?: string | null
+          last_outcome?: string | null
+          national?: boolean
           notes?: string | null
           phone?: string | null
+          phone_2?: string | null
           preferred_markets?: string[]
+          preferred_zips?: Json
           price_max?: number | null
           price_min?: number | null
           property_types?: string[]
+          quality_tier?: string | null
           sources?: Json
           state?: string | null
           updated_at?: string
         }
         Update: {
+          budget_notes?: string | null
           buy_box?: Json
           city?: string | null
+          completed_transaction?: boolean
           created_at?: string
           email?: string | null
+          exit_strategy?: string | null
           first_name?: string | null
           full_name?: string | null
           id?: string
           is_active?: boolean
           last_active_at?: string | null
           last_name?: string | null
+          last_outcome?: string | null
+          national?: boolean
           notes?: string | null
           phone?: string | null
+          phone_2?: string | null
           preferred_markets?: string[]
+          preferred_zips?: Json
           price_max?: number | null
           price_min?: number | null
           property_types?: string[]
+          quality_tier?: string | null
           sources?: Json
           state?: string | null
           updated_at?: string
