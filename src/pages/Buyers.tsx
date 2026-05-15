@@ -81,10 +81,19 @@ export default function Buyers() {
   useEffect(() => { load(); }, [user]);
 
   const filtered = buyers.filter((b) => {
-    const q = search.toLowerCase();
-    return !q || b.name.toLowerCase().includes(q) ||
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    const digits = q.replace(/\D/g, "");
+    const phoneDigits = (b.phone || "").replace(/\D/g, "");
+    return (
+      b.name.toLowerCase().includes(q) ||
+      (b.first_name || "").toLowerCase().includes(q) ||
+      (b.last_name || "").toLowerCase().includes(q) ||
+      (b.email || "").toLowerCase().includes(q) ||
+      (b.company_name || "").toLowerCase().includes(q) ||
       b.markets.some((m) => m.toLowerCase().includes(q)) ||
-      (b.company_name || "").toLowerCase().includes(q);
+      (digits.length >= 3 && phoneDigits.includes(digits))
+    );
   });
 
   return (
