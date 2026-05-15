@@ -227,6 +227,12 @@ export default function Admin() {
               <ArchiveBuyersTab />
             </TabsContent>
           )}
+
+          {showArchiveBuyers && (
+            <TabsContent value="import_buyers">
+              <ImportBuyersTab />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 
