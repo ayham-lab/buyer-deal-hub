@@ -116,6 +116,7 @@ export default function Admin() {
             <TabsTrigger value="roles">Roles</TabsTrigger>
             {showPricing && <TabsTrigger value="pricing">Pricing</TabsTrigger>}
             {showArchiveBuyers && <TabsTrigger value="archive_buyers">Archive Buyers</TabsTrigger>}
+            {showArchiveBuyers && <TabsTrigger value="import_buyers">Import Buyers</TabsTrigger>}
           </TabsList>
 
           {/* OVERVIEW */}
