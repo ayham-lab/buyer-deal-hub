@@ -175,6 +175,13 @@ Deno.serve(async (req) => {
         .select("id, full_name, first_name, last_name, email, phone, preferred_markets, property_types, price_min, price_max, sources, city, state, national")
         .eq("is_active", true).eq("national", true).limit(1000)
     );
+    // Undeclared buyers — no state column AND empty preferred_markets. Surface as tier 4
+    // so legacy rolodex auto-promoted records (no location data) still appear.
+    queries.push(
+      admin.from("archive_buyers")
+        .select("id, full_name, first_name, last_name, email, phone, preferred_markets, property_types, price_min, price_max, sources, city, state, national")
+        .eq("is_active", true).is("state", null).or("preferred_markets.eq.{},preferred_markets.is.null").limit(500)
+    );
     // Buyers whose preferred_markets text contains the state name/abbrev or city — catches rows
     // that don't have the state column populated.
     if (cityLc || stateFullLc || stateAbbrLc) {
