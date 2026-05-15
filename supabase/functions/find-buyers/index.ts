@@ -8,6 +8,71 @@ const corsHeaders = {
 
 const REVEAL_COST = 100;
 
+// US state abbrev <-> full name
+const STATE_FULL: Record<string, string> = {
+  AL:"Alabama",AK:"Alaska",AZ:"Arizona",AR:"Arkansas",CA:"California",CO:"Colorado",CT:"Connecticut",DE:"Delaware",DC:"District of Columbia",FL:"Florida",GA:"Georgia",HI:"Hawaii",ID:"Idaho",IL:"Illinois",IN:"Indiana",IA:"Iowa",KS:"Kansas",KY:"Kentucky",LA:"Louisiana",ME:"Maine",MD:"Maryland",MA:"Massachusetts",MI:"Michigan",MN:"Minnesota",MS:"Mississippi",MO:"Missouri",MT:"Montana",NE:"Nebraska",NV:"Nevada",NH:"New Hampshire",NJ:"New Jersey",NM:"New Mexico",NY:"New York",NC:"North Carolina",ND:"North Dakota",OH:"Ohio",OK:"Oklahoma",OR:"Oregon",PA:"Pennsylvania",RI:"Rhode Island",SC:"South Carolina",SD:"South Dakota",TN:"Tennessee",TX:"Texas",UT:"Utah",VT:"Vermont",VA:"Virginia",WA:"Washington",WV:"West Virginia",WI:"Wisconsin",WY:"Wyoming"
+};
+const STATE_ABBR: Record<string, string> = Object.fromEntries(
+  Object.entries(STATE_FULL).map(([k, v]) => [v.toLowerCase(), k])
+);
+
+// Best-effort metro/proximity map keyed by "city, ST" → nearby cities (lowercase)
+const METRO_MAP: Record<string, string[]> = {
+  "montgomery, al": ["prattville","wetumpka","millbrook","tallassee","tuskegee","pike road"],
+  "birmingham, al": ["hoover","bessemer","homewood","vestavia","mountain brook","trussville","alabaster","pelham"],
+  "huntsville, al": ["madison","decatur","athens","huntsville"],
+  "mobile, al": ["daphne","fairhope","spanish fort","saraland","prichard"],
+  "philadelphia, pa": ["camden","trenton","wilmington","norristown","king of prussia","cherry hill","upper darby","chester","levittown"],
+  "pittsburgh, pa": ["mckeesport","monroeville","bethel park","greensburg","cranberry"],
+  "phoenix, az": ["scottsdale","mesa","tempe","chandler","glendale","gilbert","peoria","surprise"],
+  "atlanta, ga": ["marietta","alpharetta","sandy springs","roswell","decatur","smyrna","kennesaw","duluth","lawrenceville"],
+  "dallas, tx": ["plano","irving","arlington","fort worth","frisco","mckinney","garland","richardson","mesquite"],
+  "houston, tx": ["pasadena","sugar land","katy","pearland","spring","baytown","conroe","the woodlands"],
+  "austin, tx": ["round rock","cedar park","pflugerville","georgetown","leander","kyle","buda"],
+  "san antonio, tx": ["new braunfels","schertz","seguin","converse"],
+  "miami, fl": ["hialeah","coral gables","miami beach","doral","kendall","homestead","aventura"],
+  "orlando, fl": ["kissimmee","winter park","sanford","altamonte springs","apopka","ocoee"],
+  "tampa, fl": ["st petersburg","st. petersburg","clearwater","brandon","largo","plant city"],
+  "jacksonville, fl": ["orange park","st augustine","fernandina beach"],
+  "chicago, il": ["naperville","aurora","joliet","evanston","oak park","schaumburg","cicero","skokie"],
+  "los angeles, ca": ["long beach","glendale","santa monica","pasadena","burbank","torrance","inglewood","compton"],
+  "san francisco, ca": ["oakland","berkeley","san jose","daly city","san mateo","fremont","hayward"],
+  "san diego, ca": ["chula vista","oceanside","escondido","carlsbad","el cajon"],
+  "new york, ny": ["brooklyn","queens","bronx","staten island","jersey city","newark","yonkers","hoboken"],
+  "boston, ma": ["cambridge","quincy","newton","somerville","brookline","waltham","medford"],
+  "denver, co": ["aurora","lakewood","centennial","arvada","westminster","thornton"],
+  "seattle, wa": ["bellevue","tacoma","everett","redmond","kirkland","renton","kent"],
+  "detroit, mi": ["dearborn","warren","sterling heights","livonia","southfield","royal oak"],
+  "charlotte, nc": ["concord","gastonia","huntersville","matthews","monroe"],
+  "raleigh, nc": ["cary","durham","chapel hill","apex","wake forest"],
+  "nashville, tn": ["franklin","brentwood","murfreesboro","hendersonville","mount juliet"],
+  "memphis, tn": ["germantown","collierville","bartlett","southaven"],
+  "las vegas, nv": ["henderson","north las vegas","paradise","summerlin"],
+  "columbus, oh": ["dublin","westerville","gahanna","hilliard","grove city"],
+  "cleveland, oh": ["lakewood","parma","euclid","cleveland heights"],
+  "cincinnati, oh": ["covington","norwood","blue ash"],
+  "indianapolis, in": ["carmel","fishers","noblesville","greenwood","lawrence"],
+  "kansas city, mo": ["overland park","independence","lee's summit","olathe","blue springs"],
+  "st louis, mo": ["st. louis","clayton","ferguson","florissant","chesterfield"],
+  "minneapolis, mn": ["st paul","st. paul","bloomington","plymouth","eagan","maple grove"],
+  "milwaukee, wi": ["waukesha","racine","kenosha","west allis"],
+  "baltimore, md": ["columbia","towson","dundalk","bel air","glen burnie"],
+  "washington, dc": ["arlington","alexandria","silver spring","bethesda","rockville","gaithersburg"],
+  "richmond, va": ["henrico","chesterfield","midlothian","mechanicsville"],
+  "norfolk, va": ["virginia beach","chesapeake","portsmouth","hampton","newport news","suffolk"],
+  "salt lake city, ut": ["west valley city","west jordan","sandy","orem","provo","ogden"],
+  "portland, or": ["beaverton","gresham","hillsboro","tigard","lake oswego","vancouver"],
+  "oklahoma city, ok": ["norman","edmond","moore","midwest city"],
+  "tulsa, ok": ["broken arrow","owasso","bixby","sand springs"],
+  "albuquerque, nm": ["rio rancho","santa fe","los lunas"],
+  "louisville, ky": ["jeffersontown","st matthews","new albany"],
+  "new orleans, la": ["metairie","kenner","gretna","slidell"],
+  "honolulu, hi": ["pearl city","kailua","waipahu","kaneohe"],
+};
+
+const NATIONAL_KEYWORDS = ["all","any","anywhere","national","nationwide","everywhere","usa","u.s.","united states","open","flexible"];
+const STATEWIDE_PHRASES = ["any in the state","anywhere in the state","entire state","whole state","statewide","state wide","all over"];
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -35,9 +100,6 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
-    // ── Determine paywall state ─────────────
-    // admin / subscription => all archive contacts auto-revealed.
-    // Otherwise => per-buyer pay-to-reveal (100 credits each via reveal_archive_buyer RPC).
     let archiveState: "admin" | "subscription" | "pay_per_reveal" = "pay_per_reveal";
     let creditBalance = 0;
     if (userId) {
@@ -66,7 +128,6 @@ Deno.serve(async (req) => {
       creditBalance = bal?.balance ?? 0;
     }
 
-    // Already-revealed buyer ids for this location (sticky reveals)
     const revealedIds = new Set<string>();
     if (ghl_location_id) {
       const { data: reveals } = await admin
@@ -76,50 +137,156 @@ Deno.serve(async (req) => {
       for (const r of reveals || []) revealedIds.add(r.buyer_id);
     }
 
-    // Pull two pools in parallel
-    const [rolodexResp, archiveResp, archiveCountResp] = await Promise.all([
+    // ── Build 4-tier candidate pool from archive_buyers ──
+    const cityLc = (ctx.city || "").toLowerCase().trim();
+    let stateRaw = (ctx.state || "").trim();
+    let stateAbbr = "";
+    let stateFull = "";
+    if (stateRaw.length === 2 && STATE_FULL[stateRaw.toUpperCase()]) {
+      stateAbbr = stateRaw.toUpperCase();
+      stateFull = STATE_FULL[stateAbbr];
+    } else if (STATE_ABBR[stateRaw.toLowerCase()]) {
+      stateFull = stateRaw;
+      stateAbbr = STATE_ABBR[stateRaw.toLowerCase()];
+    }
+    const stateAbbrLc = stateAbbr.toLowerCase();
+    const stateFullLc = stateFull.toLowerCase();
+
+    const metroKey = cityLc && stateAbbr ? `${cityLc}, ${stateAbbr.toLowerCase()}` : "";
+    const metroCities = METRO_MAP[metroKey] || [];
+
+    // Fetch state-scoped candidates (covers tier 1/2/3 for buyers with state column)
+    // plus national/empty buyers (tier 4). Use parallel queries and merge by id.
+    const queries: Promise<any>[] = [];
+    if (stateFull || stateAbbr) {
+      const stateOr = [
+        stateFull && `state.ilike.${stateFull}`,
+        stateAbbr && `state.ilike.${stateAbbr}`,
+      ].filter(Boolean).join(",");
+      queries.push(
+        admin.from("archive_buyers")
+          .select("id, full_name, first_name, last_name, email, phone, preferred_markets, property_types, price_min, price_max, sources, city, state, national")
+          .eq("is_active", true).or(stateOr).limit(2000)
+      );
+    }
+    // National flagged buyers
+    queries.push(
+      admin.from("archive_buyers")
+        .select("id, full_name, first_name, last_name, email, phone, preferred_markets, property_types, price_min, price_max, sources, city, state, national")
+        .eq("is_active", true).eq("national", true).limit(1000)
+    );
+    // Buyers whose preferred_markets text contains the state name/abbrev or city — catches rows
+    // that don't have the state column populated.
+    if (cityLc || stateFullLc || stateAbbrLc) {
+      const tokens = [cityLc, stateFullLc, stateAbbrLc, ...metroCities].filter(Boolean);
+      const orParts = tokens.map((t) => `preferred_markets.cs.{${t}}`).join(",");
+      if (orParts) {
+        queries.push(
+          admin.from("archive_buyers")
+            .select("id, full_name, first_name, last_name, email, phone, preferred_markets, property_types, price_min, price_max, sources, city, state, national")
+            .eq("is_active", true).or(orParts).limit(1500)
+        );
+      }
+    }
+
+    const [rolodexResp, ...archiveResps] = await Promise.all([
       userId
-        ? admin
-            .from("buyers")
+        ? admin.from("buyers")
             .select("id, name, email, phone, markets, property_types, price_min, price_max, source, company_name")
-            .eq("user_id", userId)
-            .eq("is_archived", false)
-            .limit(300)
+            .eq("user_id", userId).eq("is_archived", false).limit(300)
         : Promise.resolve({ data: [] as any[] }),
-      admin
-        .from("archive_buyers")
-        .select("id, full_name, first_name, last_name, email, phone, preferred_markets, property_types, price_min, price_max, sources, is_active, city, state")
-        .eq("is_active", true)
-        .limit(500),
-      // Tighter count for the locked teaser — match preferred_markets to State/City/Zip tokens
-      countArchiveMatches(admin, ctx),
+      ...queries,
     ]);
 
-    const rolodex = rolodexResp.data || [];
-    const archive = (archiveResp.data || []).map((r: any) => ({
-      id: r.id,
-      name: r.full_name || [r.first_name, r.last_name].filter(Boolean).join(" ") || "—",
-      email: r.email,
-      phone: r.phone,
-      markets: r.preferred_markets || [],
-      property_types: r.property_types || [],
-      price_min: r.price_min,
-      price_max: r.price_max,
-      city: r.city,
-      state: r.state,
-      source: Array.isArray(r.sources) && r.sources.length ? `${r.sources.length} tenant(s)` : null,
+    const seen = new Map<string, any>();
+    for (const resp of archiveResps) {
+      for (const r of (resp?.data || [])) {
+        if (!seen.has(r.id)) seen.set(r.id, r);
+      }
+    }
+
+    // Score candidates
+    const scored: any[] = [];
+    for (const r of seen.values()) {
+      const markets: string[] = (r.preferred_markets || []).map((m: string) => String(m).toLowerCase());
+      const marketsBlob = markets.join(" | ");
+      const rowStateLc = (r.state || "").toLowerCase().trim();
+      const rowCityLc = (r.city || "").toLowerCase().trim();
+
+      let score = 0;
+      let tier = 0;
+      const reasons: string[] = [];
+
+      const stateMatches =
+        (stateFullLc && (rowStateLc === stateFullLc || marketsBlob.includes(stateFullLc))) ||
+        (stateAbbrLc && (rowStateLc === stateAbbrLc || markets.some((m) => m === stateAbbrLc || m.endsWith(`, ${stateAbbrLc}`) || m.includes(`state:${stateAbbrLc}`))));
+
+      const cityDirect =
+        cityLc && (rowCityLc === cityLc ||
+          markets.some((m) => m === cityLc || m.startsWith(`${cityLc},`) || m.includes(`city:${cityLc}`)));
+
+      const metroMatch = metroCities.some((mc) => markets.some((m) => m.includes(mc)));
+
+      const isStatewide = STATEWIDE_PHRASES.some((p) => marketsBlob.includes(p));
+      const isNational = r.national === true ||
+        NATIONAL_KEYWORDS.some((kw) => markets.some((m) => m === kw || m === kw.toUpperCase().toLowerCase())) ||
+        markets.includes("all") || markets.includes("any") || markets.includes("anywhere");
+      const noMarkets = markets.length === 0;
+
+      if (cityDirect && (stateMatches || !stateFullLc)) {
+        tier = 1; score = 95;
+        reasons.push(`direct city match: ${ctx.city}`);
+      } else if (metroMatch && stateMatches) {
+        tier = 2; score = 75;
+        reasons.push(`metro area match near ${ctx.city}`);
+      } else if (stateMatches && (isStatewide || markets.length === 0 || markets.some((m) => m === stateFullLc || m === stateAbbrLc))) {
+        tier = 3; score = 50;
+        reasons.push(`statewide buyer in ${stateFull || stateAbbr}`);
+      } else if (stateMatches) {
+        tier = 3; score = 40;
+        reasons.push(`buyer in ${stateFull || stateAbbr}`);
+      } else if (isNational) {
+        tier = 4; score = 25;
+        reasons.push("national/all-markets buyer");
+      } else if (noMarkets) {
+        tier = 4; score = 15;
+        reasons.push("undeclared market preferences");
+      } else {
+        continue;
+      }
+
+      scored.push({
+        id: r.id,
+        name: r.full_name || [r.first_name, r.last_name].filter(Boolean).join(" ") || "—",
+        email: r.email,
+        phone: r.phone,
+        markets: r.preferred_markets || [],
+        property_types: r.property_types || [],
+        price_min: r.price_min,
+        price_max: r.price_max,
+        city: r.city,
+        state: r.state,
+        source: Array.isArray(r.sources) && r.sources.length ? `${r.sources.length} tenant(s)` : null,
+        score,
+        tier,
+        reason: reasons.join(", "),
+      });
+    }
+
+    scored.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+    const archiveMatches = scored.slice(0, 60);
+
+    // Rolodex (private buyers) — keep AI ranking, small pool
+    const rolodex = (rolodexResp.data || []).map((b: any) => ({
+      id: b.id, name: b.name, email: b.email, phone: b.phone,
+      markets: b.markets || [], property_types: b.property_types || [],
+      price_min: b.price_min, price_max: b.price_max, source: b.source,
     }));
+    const rolodexMatches = await rankWithAI(rolodex, address, ctx, propertyType, priceHint, LOVABLE_API_KEY);
 
-    const [rolodexMatches, archiveMatches] = await Promise.all([
-      rankWithAI(rolodex, address, ctx, propertyType, priceHint, LOVABLE_API_KEY),
-      rankWithAI(archive, address, ctx, propertyType, priceHint, LOVABLE_API_KEY),
-    ]);
+    // Optional: AI re-rank top archive candidates within tier 1 only (keep tiers stable)
+    // Skipped for now — deterministic order is fine and avoids dropping rows on AI flakiness.
 
-    // Count for teaser: prefer the AI-ranked matches when available, fall back to the rough query count.
-    const archiveCount = Math.max(archiveMatches.length, archiveCountResp);
-
-    // Auto-reveal everything for admin/subscription users; otherwise mask
-    // contact info per-card unless the buyer is already revealed for this loc.
     const autoReveal = archiveState === "admin" || archiveState === "subscription";
     const archivePayload = archiveMatches.map((m: any) => {
       const revealed = autoReveal || revealedIds.has(m.id);
@@ -132,7 +299,7 @@ Deno.serve(async (req) => {
       rolodex: rolodexMatches,
       archive: archivePayload,
       archive_locked: false,
-      archive_count: archiveCount,
+      archive_count: archiveMatches.length,
       archive_state: archiveState,
       archive_reveal_cost: REVEAL_COST,
       archive_credit_balance: creditBalance,
@@ -146,37 +313,6 @@ Deno.serve(async (req) => {
   }
 });
 
-async function countArchiveMatches(admin: any, ctx: { city?: string; state?: string; zip?: string }): Promise<number> {
-  try {
-    const stateLc = (ctx.state || "").toLowerCase().trim();
-    const cityLc = (ctx.city || "").toLowerCase().trim();
-    const zipLc = (ctx.zip || "").toLowerCase().trim();
-    if (!stateLc && !cityLc && !zipLc) return 0;
-    // Pull active rows and match in JS — preferred_markets is small and tokens
-    // are inconsistently cased ("City:philadelphia, PA" vs "City:Philadelphia, PA").
-    const { data } = await admin
-      .from("archive_buyers")
-      .select("preferred_markets")
-      .eq("is_active", true)
-      .limit(2000);
-    if (!Array.isArray(data)) return 0;
-    let n = 0;
-    for (const row of data) {
-      const markets = (row.preferred_markets || []).map((m: string) => String(m).toLowerCase());
-      const hit =
-        (cityLc && markets.some((m) => m.includes(`city:${cityLc}`))) ||
-        (stateLc && markets.some((m) => m.includes(`state:${stateLc}`))) ||
-        (zipLc && markets.some((m) => m.includes(`zip:${zipLc}`))) ||
-        (stateLc && markets.some((m) => m.includes(`, ${stateLc}`)));
-      if (hit) n++;
-    }
-    return n;
-  } catch (e) {
-    console.error("countArchiveMatches", e);
-    return 0;
-  }
-}
-
 async function rankWithAI(
   candidates: any[],
   address: string,
@@ -188,114 +324,51 @@ async function rankWithAI(
   if (!candidates || candidates.length === 0) return [];
 
   const compact = candidates.map((b) => ({
-    id: b.id,
-    name: b.name,
-    markets: b.markets || [],
+    id: b.id, name: b.name, markets: b.markets || [],
     property_types: b.property_types || [],
-    price_min: b.price_min,
-    price_max: b.price_max,
-    source: b.source,
+    price_min: b.price_min, price_max: b.price_max, source: b.source,
   }));
 
-  const sys = `You are a real-estate acquisitions assistant. Given a property's structured address and a list of cash buyers (with target markets, property types, and price ranges), return the top 5 best-matching buyers ranked by fit. Markets may be formatted as "State:TX", "City:Chicago, IL", "County:Dallas, TX", or "Zip:75001". Match strictly on the property's State, City, and Zip — do not match a county to a city of the same name. Also weigh property type and price range alignment. Be concise.`;
+  const sys = `You are a real-estate acquisitions assistant. Given a property and a list of cash buyers, return the top 5 best matches. Be concise.`;
+  const userPrompt = `Property: ${address}\nCity: ${ctx.city || ""}, State: ${ctx.state || ""}, Zip: ${ctx.zip || ""}\n${propertyType ? `Type: ${propertyType}\n` : ""}${priceHint ? `Price: ${priceHint}\n` : ""}\nBuyers: ${JSON.stringify(compact)}\nReturn top 5 with score 0-100 and 1-sentence reason each.`;
 
-  const userPrompt = `Property:
-- Full address: ${address}
-- Street: ${ctx.street || ""}
-- City: ${ctx.city || ""}
-- State: ${ctx.state || ""}
-- Zip: ${ctx.zip || ""}
-${propertyType ? `Property type: ${propertyType}\n` : ""}${priceHint ? `Estimated price: ${priceHint}\n` : ""}
-Candidate buyers (JSON):
-${JSON.stringify(compact)}
-
-Return the top 5 matches with a 1-sentence reason each and a fit score 0-100.`;
-
-  const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "google/gemini-3-flash-preview",
-      messages: [
-        { role: "system", content: sys },
-        { role: "user", content: userPrompt },
-      ],
-      tools: [{
-        type: "function",
-        function: {
-          name: "return_matches",
-          description: "Return ranked buyer matches",
-          parameters: {
-            type: "object",
-            properties: {
-              matches: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    buyer_id: { type: "string" },
-                    score: { type: "number" },
-                    reason: { type: "string" },
-                  },
-                  required: ["buyer_id", "score", "reason"],
-                },
-              },
-            },
-            required: ["matches"],
-          },
-        },
-      }],
-      tool_choice: { type: "function", function: { name: "return_matches" } },
-    }),
-  });
-
-  let aiMatches: any[] = [];
   try {
+    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [{ role: "system", content: sys }, { role: "user", content: userPrompt }],
+        tools: [{
+          type: "function",
+          function: {
+            name: "return_matches",
+            parameters: {
+              type: "object",
+              properties: { matches: { type: "array", items: { type: "object", properties: {
+                buyer_id: { type: "string" }, score: { type: "number" }, reason: { type: "string" }
+              }, required: ["buyer_id","score","reason"] } } },
+              required: ["matches"],
+            },
+          },
+        }],
+        tool_choice: { type: "function", function: { name: "return_matches" } },
+      }),
+    });
     if (aiResp.ok) {
       const aiJson = await aiResp.json();
       const toolCall = aiJson.choices?.[0]?.message?.tool_calls?.[0];
       const args = toolCall ? JSON.parse(toolCall.function.arguments) : { matches: [] };
-      aiMatches = args.matches || [];
-    } else {
-      console.error("AI error", aiResp.status, await aiResp.text());
+      const byId = new Map(candidates.map((c) => [c.id, c]));
+      const mapped = (args.matches || [])
+        .map((m: any) => ({ ...byId.get(m.buyer_id), score: m.score, reason: m.reason }))
+        .filter((m: any) => m.id);
+      if (mapped.length) return mapped;
     }
-  } catch (e) {
-    console.error("AI parse error", e);
-  }
-  const byId = new Map(candidates.map((c) => [c.id, c]));
-  let mapped = aiMatches
-    .map((m: any) => ({ ...byId.get(m.buyer_id), score: m.score, reason: m.reason }))
-    .filter((m: any) => m.id);
+  } catch (e) { console.error("AI rank error", e); }
 
-  // Fallback: AI returned nothing (failure or empty). Build a deterministic
-  // ranking from token overlap so paid users never see an empty archive when
-  // candidates exist.
-  if (mapped.length === 0 && candidates.length > 0) {
-    const stateLc = (ctx.state || "").toLowerCase().trim();
-    const cityLc = (ctx.city || "").toLowerCase().trim();
-    const zipLc = (ctx.zip || "").toLowerCase().trim();
-    const scored = candidates.map((c: any) => {
-      const markets = (c.markets || []).map((m: string) => String(m).toLowerCase());
-      let score = 0;
-      const reasons: string[] = [];
-      if (cityLc && markets.some((m) => m.includes(`city:${cityLc}`))) {
-        score += 70; reasons.push(`city ${ctx.city}`);
-      }
-      if (stateLc && markets.some((m) => m.includes(`state:${stateLc}`))) {
-        score += 40; reasons.push(`state ${ctx.state}`);
-      }
-      if (zipLc && markets.some((m) => m.includes(`zip:${zipLc}`))) {
-        score += 30; reasons.push(`zip ${ctx.zip}`);
-      }
-      if (stateLc && markets.some((m) => m.includes(`, ${stateLc}`))) {
-        score += 15; reasons.push(`region in ${ctx.state}`);
-      }
-      if (markets.length === 0) { score += 10; reasons.push("no market restrictions"); }
-      return { ...c, score, reason: reasons.length ? `Match on ${reasons.join(", ")}.` : "Generalist buyer." };
-    });
-    mapped = scored.sort((a, b) => b.score - a.score).slice(0, 5);
-  }
-  return mapped;
+  // Fallback deterministic
+  return candidates.slice(0, 5).map((c) => ({ ...c, score: 50, reason: "Candidate match" }));
 }
 
 function json(body: unknown, status = 200) {
