@@ -1,11 +1,18 @@
 // Super-admin only (standalone) CRUD over the global archive_buyers table.
-import { useEffect, useState } from "react";
+// Server-side search, filters, sort, pagination — built for 10k+ rows.
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Plus, Trash2, Save, X } from "lucide-react";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Loader2, Plus, Trash2, Save, X, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 interface Row {
@@ -23,6 +30,9 @@ interface Row {
   email: string | null;
   notes: string | null;
   is_active: boolean;
+  quality_tier: string | null;
+  sources: any;
+  created_at: string;
 }
 
 const empty: Partial<Row> = {
@@ -31,28 +41,149 @@ const empty: Partial<Row> = {
   property_types: [], phone: "", email: "", notes: "", is_active: true,
 };
 
+const US_STATES = [
+  "Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware",
+  "Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky",
+  "Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi",
+  "Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico",
+  "New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania",
+  "Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont",
+  "Virginia","Washington","West Virginia","Wisconsin","Wyoming","District of Columbia",
+];
+const QUALITY_TIERS = ["VIP BUYER", "Vetted", "Experienced", "Purchased a deal", "none"];
+const PAGE_SIZE = 50;
+
 function arr(s: string): string[] {
   return s.split(",").map((x) => x.trim()).filter(Boolean);
 }
 
+function useDebounced<T>(value: T, ms = 300): T {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setV(value), ms);
+    return () => clearTimeout(t);
+  }, [value, ms]);
+  return v;
+}
+
+type SortKey = "newest" | "oldest" | "name_asc" | "name_desc" | "tier_desc";
+
 export function ArchiveBuyersTab() {
   const [rows, setRows] = useState<Row[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState<Partial<Row>>({ ...empty });
   const [editId, setEditId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<Partial<Row>>({});
 
+  // Filters
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounced(search, 300);
+  const [stateF, setStateF] = useState<string>("__any__");
+  const [tiers, setTiers] = useState<string[]>([]);
+  const [hasEmail, setHasEmail] = useState<"any" | "yes" | "no">("any");
+  const [hasPhone, setHasPhone] = useState<"any" | "yes" | "no">("any");
+  const [sourceTags, setSourceTags] = useState<string[]>([]);
+  const [allSources, setAllSources] = useState<string[]>([]);
+  const [sort, setSort] = useState<SortKey>("newest");
+  const [page, setPage] = useState(0);
+
+  // Reset to first page whenever filters change
+  useEffect(() => {
+    setPage(0);
+  }, [debouncedSearch, stateF, tiers.join("|"), hasEmail, hasPhone, sourceTags.join("|"), sort]);
+
+  // Load source tags once
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.rpc("archive_buyer_distinct_sources" as any);
+      if (data) setAllSources((data as any[]).map((r) => r.source).filter(Boolean));
+    })();
+  }, []);
+
   const load = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    let q = supabase
       .from("archive_buyers")
-      .select("*")
-      .order("created_at", { ascending: false });
+      .select("*", { count: "exact" });
+
+    // Search across name/email/phone
+    const s = debouncedSearch.trim();
+    if (s) {
+      const esc = s.replace(/[%_]/g, (m) => `\\${m}`);
+      const like = `%${esc}%`;
+      const phoneDigits = s.replace(/\D/g, "");
+      const ors: string[] = [
+        `full_name.ilike.${like}`,
+        `first_name.ilike.${like}`,
+        `last_name.ilike.${like}`,
+        `email.ilike.${like}`,
+      ];
+      if (phoneDigits.length >= 3) {
+        ors.push(`phone.ilike.%${phoneDigits}%`);
+        ors.push(`phone_2.ilike.%${phoneDigits}%`);
+      }
+      q = q.or(ors.join(","));
+    }
+
+    // State filter
+    if (stateF === "__national__") {
+      q = q.eq("national", true);
+    } else if (stateF === "__none__") {
+      q = q.is("state", null);
+    } else if (stateF !== "__any__") {
+      q = q.eq("state", stateF);
+    }
+
+    // Quality tier multi-select
+    if (tiers.length > 0) {
+      const has_none = tiers.includes("none");
+      const real = tiers.filter((t) => t !== "none");
+      if (has_none && real.length > 0) {
+        const orParts = real.map((t) => `quality_tier.eq.${t}`).concat("quality_tier.is.null");
+        q = q.or(orParts.join(","));
+      } else if (has_none) {
+        q = q.is("quality_tier", null);
+      } else {
+        q = q.in("quality_tier", real);
+      }
+    }
+
+    // Email / phone presence
+    if (hasEmail === "yes") q = q.not("email", "is", null).neq("email", "");
+    else if (hasEmail === "no") q = q.or("email.is.null,email.eq.");
+    if (hasPhone === "yes") q = q.not("phone", "is", null).neq("phone", "");
+    else if (hasPhone === "no") q = q.or("phone.is.null,phone.eq.");
+
+    // Source tags (jsonb contains any of the selected)
+    if (sourceTags.length > 0) {
+      // Use OR of contains for each tag
+      const orParts = sourceTags.map((t) => `sources.cs.${JSON.stringify([t])}`);
+      q = q.or(orParts.join(","));
+    }
+
+    // Sort
+    if (sort === "newest") q = q.order("created_at", { ascending: false });
+    else if (sort === "oldest") q = q.order("created_at", { ascending: true });
+    else if (sort === "name_asc") q = q.order("full_name", { ascending: true, nullsFirst: false }).order("last_name", { ascending: true, nullsFirst: false });
+    else if (sort === "name_desc") q = q.order("full_name", { ascending: false, nullsFirst: false }).order("last_name", { ascending: false, nullsFirst: false });
+    else if (sort === "tier_desc") q = q.order("quality_tier", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false });
+
+    // Pagination
+    const from = page * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+    q = q.range(from, to);
+
+    const { data, error, count } = await q;
     if (error) toast.error(error.message);
     setRows((data as any) || []);
+    setTotal(count ?? 0);
     setLoading(false);
   };
-  useEffect(() => { load(); }, []);
+
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [
+    debouncedSearch, stateF, tiers.join("|"), hasEmail, hasPhone, sourceTags.join("|"), sort, page,
+  ]);
 
   async function add() {
     const payload = {
@@ -96,6 +227,20 @@ export function ArchiveBuyersTab() {
     load();
   }
 
+  function clearFilters() {
+    setSearch(""); setStateF("__any__"); setTiers([]);
+    setHasEmail("any"); setHasPhone("any"); setSourceTags([]); setSort("newest");
+  }
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const activeFilterCount =
+    (debouncedSearch ? 1 : 0) +
+    (stateF !== "__any__" ? 1 : 0) +
+    (tiers.length > 0 ? 1 : 0) +
+    (hasEmail !== "any" ? 1 : 0) +
+    (hasPhone !== "any" ? 1 : 0) +
+    (sourceTags.length > 0 ? 1 : 0);
+
   return (
     <div className="space-y-6">
       {/* Add form */}
@@ -122,15 +267,122 @@ export function ArchiveBuyersTab() {
         </div>
       </div>
 
+      {/* Search + filter bar */}
+      <div className="bg-card border border-border rounded-lg p-3 space-y-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search buyers by name, email, phone, company..."
+            className="pl-9"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-2 items-center">
+          {/* State */}
+          <Select value={stateF} onValueChange={setStateF}>
+            <SelectTrigger className="h-9 w-[180px]"><SelectValue placeholder="State" /></SelectTrigger>
+            <SelectContent className="max-h-72">
+              <SelectItem value="__any__">All states</SelectItem>
+              <SelectItem value="__national__">National / Any</SelectItem>
+              <SelectItem value="__none__">No state set</SelectItem>
+              {US_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
+
+          {/* Quality tier */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-9">
+                Quality{tiers.length > 0 ? ` (${tiers.length})` : ""}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {QUALITY_TIERS.map((t) => (
+                <DropdownMenuCheckboxItem
+                  key={t}
+                  checked={tiers.includes(t)}
+                  onCheckedChange={(c) => setTiers(c ? [...tiers, t] : tiers.filter((x) => x !== t))}
+                >{t}</DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Has email */}
+          <Select value={hasEmail} onValueChange={(v: any) => setHasEmail(v)}>
+            <SelectTrigger className="h-9 w-[140px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="any">Email: Any</SelectItem>
+              <SelectItem value="yes">Has email</SelectItem>
+              <SelectItem value="no">No email</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Has phone */}
+          <Select value={hasPhone} onValueChange={(v: any) => setHasPhone(v)}>
+            <SelectTrigger className="h-9 w-[140px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="any">Phone: Any</SelectItem>
+              <SelectItem value="yes">Has phone</SelectItem>
+              <SelectItem value="no">No phone</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Source tags */}
+          {allSources.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-9">
+                  Source{sourceTags.length > 0 ? ` (${sourceTags.length})` : ""}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="max-h-72 overflow-auto">
+                {allSources.map((t) => (
+                  <DropdownMenuCheckboxItem
+                    key={t}
+                    checked={sourceTags.includes(t)}
+                    onCheckedChange={(c) => setSourceTags(c ? [...sourceTags, t] : sourceTags.filter((x) => x !== t))}
+                  >{t}</DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {/* Sort */}
+          <Select value={sort} onValueChange={(v: any) => setSort(v)}>
+            <SelectTrigger className="h-9 w-[180px] ml-auto"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">Newest first</SelectItem>
+              <SelectItem value="oldest">Oldest first</SelectItem>
+              <SelectItem value="name_asc">Name A–Z</SelectItem>
+              <SelectItem value="name_desc">Name Z–A</SelectItem>
+              <SelectItem value="tier_desc">Quality tier ↓</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {activeFilterCount > 0 && (
+            <Button variant="ghost" size="sm" className="h-9" onClick={clearFilters}>
+              Clear filters
+            </Button>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <div>Showing {rows.length === 0 ? 0 : page * PAGE_SIZE + 1}–{page * PAGE_SIZE + rows.length} of {total.toLocaleString()} buyers</div>
+          {loading && <Loader2 className="h-3 w-3 animate-spin" />}
+        </div>
+      </div>
+
       {/* List */}
-      {loading ? (
+      {loading && rows.length === 0 ? (
         <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
       ) : (
         <div className="rounded-lg border border-border overflow-hidden">
           <table className="data-table w-full">
             <thead>
               <tr>
-                <th>Name</th><th>Location</th><th>Markets</th><th>Price</th>
+                <th>Name</th><th>Tier</th><th>Location</th><th>Markets</th><th>Price</th>
                 <th>Email / Phone</th><th>Active</th><th></th>
               </tr>
             </thead>
@@ -153,10 +405,13 @@ export function ArchiveBuyersTab() {
                       )}
                     </td>
                     <td className="text-xs">
+                      {r.quality_tier ? <Badge variant="secondary" className="text-[10px]">{r.quality_tier}</Badge> : <span className="text-muted-foreground">—</span>}
+                    </td>
+                    <td className="text-xs">
                       {isEdit ? (
                         <div className="flex gap-1">
                           <Input className="h-7 w-24" placeholder="City" value={ed.city || ""} onChange={(e) => setEditDraft({ ...editDraft, city: e.target.value })} />
-                          <Input className="h-7 w-12" placeholder="ST" value={ed.state || ""} onChange={(e) => setEditDraft({ ...editDraft, state: e.target.value })} />
+                          <Input className="h-7 w-24" placeholder="State" value={ed.state || ""} onChange={(e) => setEditDraft({ ...editDraft, state: e.target.value })} />
                         </div>
                       ) : (
                         <>{[r.city, r.state].filter(Boolean).join(", ") || "—"}</>
@@ -214,11 +469,28 @@ export function ArchiveBuyersTab() {
                   </tr>
                 );
               })}
-              {rows.length === 0 && (
-                <tr><td colSpan={7} className="text-center py-6 text-muted-foreground">No archive buyers yet.</td></tr>
+              {rows.length === 0 && !loading && (
+                <tr><td colSpan={8} className="text-center py-6 text-muted-foreground">No buyers match your filters.</td></tr>
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {total > PAGE_SIZE && (
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-muted-foreground">
+            Page {page + 1} of {totalPages}
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>
+              <ChevronLeft className="h-3 w-3 mr-1" /> Prev
+            </Button>
+            <Button size="sm" variant="outline" disabled={page >= totalPages - 1} onClick={() => setPage((p) => p + 1)}>
+              Next <ChevronRight className="h-3 w-3 ml-1" />
+            </Button>
+          </div>
         </div>
       )}
     </div>
