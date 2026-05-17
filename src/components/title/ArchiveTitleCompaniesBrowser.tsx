@@ -18,11 +18,12 @@ const US_STATES = [
 ];
 
 type ArchiveRow = {
-  id: string; name: string; contact_name: string | null; email: string | null;
+  id: string; source: string; name: string; contact_name: string | null; email: string | null;
   phone: string | null; address: string | null;
   service_states: string[]; service_cities: string[];
   charges_file_fee: boolean; file_fee_amount: number | null;
   deal_types: string[]; notes: string | null;
+  usage_count: number;
 };
 
 export function ArchiveTitleCompaniesBrowser({ open, onClose, onAdded }: {
