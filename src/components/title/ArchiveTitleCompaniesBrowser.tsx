@@ -127,6 +127,8 @@ export function ArchiveTitleCompaniesBrowser({ open, onClose, onAdded }: {
                     <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="font-semibold">{t.name}</h4>
                       {t.contact_name && <span className="text-sm text-muted-foreground">· {t.contact_name}</span>}
+                      {t.source === "archive" && <Badge variant="secondary" className="text-[10px]">Curated</Badge>}
+                      {t.usage_count > 1 && <Badge variant="outline" className="text-[10px]">Used by {t.usage_count}</Badge>}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1 space-x-3">
                       {t.phone && <span>{t.phone}</span>}
