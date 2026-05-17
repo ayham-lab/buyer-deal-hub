@@ -303,6 +303,23 @@ function MatchCard({
   );
 }
 
+function maskName(raw: string | null | undefined): string {
+  const name = (raw || "").trim();
+  if (!name) return "—";
+  const parts = name.split(/\s+/);
+  if (parts.length === 1) {
+    const w = parts[0];
+    return w.length <= 2 ? w + "•••" : w.slice(0, Math.min(2, w.length)) + "•".repeat(Math.max(3, w.length - 2));
+  }
+  return parts
+    .map((p, idx) => {
+      if (idx === 0) return p; // keep first name / first word
+      const keep = Math.min(1, p.length);
+      return p.slice(0, keep) + "•".repeat(Math.max(3, p.length - keep));
+    })
+    .join(" ");
+}
+
 function ArchiveCard({
   b, i, revealCost, onReveal, onAdd,
 }: { b: Match; i: number; revealCost: number; onReveal: () => void; onAdd: () => void }) {
@@ -311,7 +328,9 @@ function ArchiveCard({
     <div className="border border-border rounded-lg p-3">
       <div className="flex items-center gap-2">
         <span className="text-xs text-muted-foreground w-4">#{i + 1}</span>
-        <span className="font-medium text-sm flex-1 truncate">{b.name}</span>
+        <span className="font-medium text-sm flex-1 truncate">
+          {revealed ? b.name : maskName(b.name)}
+        </span>
         <Badge variant="outline" className="text-[10px]">{Math.round(b.score)}</Badge>
       </div>
       <p className="text-xs text-muted-foreground mt-1">{b.reason}</p>
