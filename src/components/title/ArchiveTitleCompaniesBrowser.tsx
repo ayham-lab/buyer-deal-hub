@@ -18,11 +18,12 @@ const US_STATES = [
 ];
 
 type ArchiveRow = {
-  id: string; name: string; contact_name: string | null; email: string | null;
+  id: string; source: string; name: string; contact_name: string | null; email: string | null;
   phone: string | null; address: string | null;
   service_states: string[]; service_cities: string[];
   charges_file_fee: boolean; file_fee_amount: number | null;
   deal_types: string[]; notes: string | null;
+  usage_count: number;
 };
 
 export function ArchiveTitleCompaniesBrowser({ open, onClose, onAdded }: {
@@ -41,7 +42,7 @@ export function ArchiveTitleCompaniesBrowser({ open, onClose, onAdded }: {
     (async () => {
       setLoading(true);
       const [{ data: ar }, { data: mine }] = await Promise.all([
-        supabase.from("archive_title_companies" as any).select("*").eq("is_active", true).order("name"),
+        supabase.rpc("list_title_company_archive" as any),
         supabase.from("title_companies").select("name").eq("user_id", user.id),
       ]);
       setItems((ar as any) || []);
@@ -126,6 +127,8 @@ export function ArchiveTitleCompaniesBrowser({ open, onClose, onAdded }: {
                     <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="font-semibold">{t.name}</h4>
                       {t.contact_name && <span className="text-sm text-muted-foreground">· {t.contact_name}</span>}
+                      {t.source === "archive" && <Badge variant="secondary" className="text-[10px]">Curated</Badge>}
+                      {t.usage_count > 1 && <Badge variant="outline" className="text-[10px]">Used by {t.usage_count}</Badge>}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1 space-x-3">
                       {t.phone && <span>{t.phone}</span>}
