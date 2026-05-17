@@ -17,6 +17,7 @@ import { RoleManager } from "@/components/admin/RoleManager";
 import { PricingTab } from "@/components/admin/PricingTab";
 import { ArchiveBuyersTab } from "@/components/admin/ArchiveBuyersTab";
 import { ImportBuyersTab } from "@/components/admin/ImportBuyersTab";
+import { ArchiveTitleCompaniesTab } from "@/components/admin/ArchiveTitleCompaniesTab";
 import { useActiveLocation } from "@/contexts/LocationContext";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -117,6 +118,7 @@ export default function Admin() {
             {showPricing && <TabsTrigger value="pricing">Pricing</TabsTrigger>}
             {showArchiveBuyers && <TabsTrigger value="archive_buyers">Archive Buyers</TabsTrigger>}
             {showArchiveBuyers && <TabsTrigger value="import_buyers">Import Buyers</TabsTrigger>}
+            {showArchiveBuyers && <TabsTrigger value="archive_title">Archive Title Cos</TabsTrigger>}
           </TabsList>
 
           {/* OVERVIEW */}
@@ -231,6 +233,12 @@ export default function Admin() {
           {showArchiveBuyers && (
             <TabsContent value="import_buyers">
               <ImportBuyersTab />
+            </TabsContent>
+          )}
+
+          {showArchiveBuyers && (
+            <TabsContent value="archive_title">
+              <ArchiveTitleCompaniesTab />
             </TabsContent>
           )}
         </Tabs>

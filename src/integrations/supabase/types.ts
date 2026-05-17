@@ -125,6 +125,63 @@ export type Database = {
         }
         Relationships: []
       }
+      archive_title_companies: {
+        Row: {
+          address: string | null
+          charges_file_fee: boolean
+          contact_name: string | null
+          created_at: string
+          deal_types: string[]
+          email: string | null
+          file_fee_amount: number | null
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          phone: string | null
+          service_cities: string[]
+          service_states: string[]
+          sources: Json
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          charges_file_fee?: boolean
+          contact_name?: string | null
+          created_at?: string
+          deal_types?: string[]
+          email?: string | null
+          file_fee_amount?: number | null
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          phone?: string | null
+          service_cities?: string[]
+          service_states?: string[]
+          sources?: Json
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          charges_file_fee?: boolean
+          contact_name?: string | null
+          created_at?: string
+          deal_types?: string[]
+          email?: string | null
+          file_fee_amount?: number | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          service_cities?: string[]
+          service_states?: string[]
+          sources?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       buyer_archive: {
         Row: {
           added_by_user_id: string | null
