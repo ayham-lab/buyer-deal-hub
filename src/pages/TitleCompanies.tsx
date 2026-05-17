@@ -5,10 +5,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Building2 } from "lucide-react";
+import { Plus, Search, Building2, Library } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { TitleCompanyModal } from "@/components/title/TitleCompanyModal";
+import { ArchiveTitleCompaniesBrowser } from "@/components/title/ArchiveTitleCompaniesBrowser";
 
 export interface TitleCompany {
   id: string;
@@ -41,6 +42,7 @@ export default function TitleCompanies() {
   const [search, setSearch] = useState("");
   const [active, setActive] = useState<TitleCompany | null>(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [showArchive, setShowArchive] = useState(false);
 
   async function load() {
     if (!user) return;
@@ -75,9 +77,14 @@ export default function TitleCompanies() {
         title="Title Company Rolodex"
         subtitle="Your trusted closing partners"
         actions={
-          <Button onClick={() => setShowAdd(true)} className="bg-primary hover:bg-primary-hover text-primary-foreground">
-            <Plus className="h-4 w-4 mr-1" /> Add Title Company
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowArchive(true)}>
+              <Library className="h-4 w-4 mr-1" /> Browse Archive
+            </Button>
+            <Button onClick={() => setShowAdd(true)} className="bg-primary hover:bg-primary-hover text-primary-foreground">
+              <Plus className="h-4 w-4 mr-1" /> Add Title Company
+            </Button>
+          </div>
         }
       />
       <div className="p-8 space-y-4">
@@ -152,6 +159,11 @@ export default function TitleCompanies() {
         onClose={() => { setShowAdd(false); setActive(null); }}
         onSaved={load}
         existing={active}
+      />
+      <ArchiveTitleCompaniesBrowser
+        open={showArchive}
+        onClose={() => setShowArchive(false)}
+        onAdded={load}
       />
     </AppLayout>
   );
