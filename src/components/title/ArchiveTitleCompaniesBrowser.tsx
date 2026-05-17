@@ -42,7 +42,7 @@ export function ArchiveTitleCompaniesBrowser({ open, onClose, onAdded }: {
     (async () => {
       setLoading(true);
       const [{ data: ar }, { data: mine }] = await Promise.all([
-        supabase.from("archive_title_companies" as any).select("*").eq("is_active", true).order("name"),
+        supabase.rpc("list_title_company_archive" as any),
         supabase.from("title_companies").select("name").eq("user_id", user.id),
       ]);
       setItems((ar as any) || []);
