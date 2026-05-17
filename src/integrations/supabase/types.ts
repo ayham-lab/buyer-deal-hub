@@ -1522,6 +1522,25 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      list_title_company_archive: {
+        Args: never
+        Returns: {
+          address: string
+          charges_file_fee: boolean
+          contact_name: string
+          deal_types: string[]
+          email: string
+          file_fee_amount: number
+          id: string
+          name: string
+          notes: string
+          phone: string
+          service_cities: string[]
+          service_states: string[]
+          source: string
+          usage_count: number
+        }[]
+      }
       normalize_archive_buyer_markets: {
         Args: { p_id: string }
         Returns: undefined
