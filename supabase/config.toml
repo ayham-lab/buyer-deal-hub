@@ -30,4 +30,8 @@ verify_jwt = false
 [functions.audit-ghl-ownership]
 verify_jwt = false
 
+[functions.apply-ownership-patch]
+verify_jwt = false
+
+
 
