@@ -36,6 +36,7 @@ export default function Settings() {
             {showProfile && <TabsTrigger value="profile">Profile</TabsTrigger>}
             <TabsTrigger value="checklist">Checklist</TabsTrigger>
             <TabsTrigger value="team">Team</TabsTrigger>
+            <TabsTrigger value="operator">Operator Account</TabsTrigger>
             {isIframed && <TabsTrigger value="billing">Billing</TabsTrigger>}
             {showGhl && <TabsTrigger value="ghl">GHL Connections</TabsTrigger>}
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
@@ -43,6 +44,7 @@ export default function Settings() {
           {showProfile && <TabsContent value="profile"><ProfileTab /></TabsContent>}
           <TabsContent value="checklist"><ChecklistTab /></TabsContent>
           <TabsContent value="team"><TeamMembersTab /></TabsContent>
+          <TabsContent value="operator"><OperatorAccountTab /></TabsContent>
           {isIframed && <TabsContent value="billing"><BillingTab locationId={activeLocation?.locationId ?? null} /></TabsContent>}
           {showGhl && <TabsContent value="ghl"><GhlTab /></TabsContent>}
           <TabsContent value="notifications"><NotificationsTab /></TabsContent>
