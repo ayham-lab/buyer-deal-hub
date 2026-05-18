@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
       const cur_user = ownerByLoc.get(lid) ?? null;
       const cur_email = cur_user ? (emailByUser.get(cur_user) ?? null) : null;
       try {
-        const r = await fetch(`${GHL_BASE}/locations/${lid}/users`, {
+        const r = await fetch(`${GHL_BASE}/users/?locationId=${encodeURIComponent(lid)}`, {
           headers: {
             Authorization: `Bearer ${agency_access_token}`,
             Version: GHL_VERSION,
