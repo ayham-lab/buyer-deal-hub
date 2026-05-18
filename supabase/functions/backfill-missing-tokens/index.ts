@@ -26,9 +26,7 @@ Deno.serve(async (req) => {
   if (!client_id || !client_secret) return json({ error: "missing_client_credentials" }, 500);
 
   // Find locations with a refresh_token in install log but no token row.
-  // Use latest install log row per location_id.
-  const { data: missing, error: qErr } = await admin.rpc("exec_sql_noop").catch(() => ({ data: null, error: null }));
-  // Fallback: query directly via PostgREST is hard for DISTINCT ON; do two queries.
+
 
   const { data: logs, error: logErr } = await admin
     .from("oauth_install_log")
