@@ -65,14 +65,16 @@ Deno.serve(async (req) => {
   }
 
 
-  // 3. All locations for this company.
+  // 3. All locations + their own access_token (location-scoped tokens carry
+  //    the broader sub-account permissions the agency token lacks).
   const { data: locs, error: locErr } = await admin
     .from("ghl_location_tokens")
-    .select("ghl_location_id, location_name")
+    .select("ghl_location_id, location_name, access_token, expires_at")
     .eq("ghl_company_id", TARGET_COMPANY)
     .not("ghl_location_id", "is", null);
   if (locErr) return json({ error: `loc_query: ${locErr.message}` }, 500);
-  const locations = (locs ?? []) as Array<{ ghl_location_id: string; location_name: string | null }>;
+  const locations = (locs ?? []) as Array<{ ghl_location_id: string; location_name: string | null; access_token: string; expires_at: string | null }>;
+
 
   // 4. Current owners map.
   const ids = locations.map((l) => l.ghl_location_id);
