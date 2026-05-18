@@ -39,53 +39,31 @@ Deno.serve(async (req) => {
   // 1. Agency refresh_token: prefer the live row in ghl_location_tokens with
   //    ghl_location_id IS NULL (kept fresh by cron). Fall back to
   //    oauth_install_log if that row is missing.
-  let refresh_token: string | null = null;
-  let source_used: string = "";
+  // 1. Agency access_token from the live row in ghl_location_tokens
+  //    (ghl_location_id IS NULL, kept fresh by cron). Strict read-only audit:
+  //    we do NOT call /oauth/token because refresh rotates the refresh_token
+  //    and would invalidate the cron's stored credential — that counts as a
+  //    side-effecting write on shared infra.
   const { data: agencyRow } = await admin
     .from("ghl_location_tokens")
-    .select("refresh_token, updated_at")
+    .select("access_token, expires_at, updated_at")
     .eq("ghl_company_id", TARGET_COMPANY)
     .is("ghl_location_id", null)
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (agencyRow?.refresh_token) {
-    refresh_token = agencyRow.refresh_token;
-    source_used = `ghl_location_tokens@${agencyRow.updated_at}`;
-  } else {
-    const { data: installs } = await admin
-      .from("oauth_install_log")
-      .select("payload, created_at")
-      .eq("company_id", TARGET_COMPANY)
-      .eq("source", "oauth-marketplace-callback")
-      .is("location_id", null)
-      .order("created_at", { ascending: false })
-      .limit(5);
-    for (const row of installs ?? []) {
-      const p = (row as any).payload ?? {};
-      const rt = p?.refresh_token ?? p?.refreshToken;
-      if (rt) { refresh_token = rt; source_used = `install_log@${(row as any).created_at}`; break; }
-    }
+  const agency_access_token: string | null = (agencyRow as any)?.access_token ?? null;
+  const agency_expires_at: string | null = (agencyRow as any)?.expires_at ?? null;
+  const source_used = agencyRow ? `ghl_location_tokens(live, updated ${(agencyRow as any).updated_at})` : "none";
+  const stillValid = agency_expires_at ? new Date(agency_expires_at).getTime() > Date.now() + 60_000 : false;
+  if (!agency_access_token || !stillValid) {
+    return json({
+      error: "no_valid_agency_access_token",
+      detail: "Live agency token missing or near expiry. Refresh via refresh-ghl-tokens cron, then retry.",
+      agency_expires_at,
+    }, 500);
   }
-  if (!refresh_token) return json({ error: "no_agency_refresh_token_found", company: TARGET_COMPANY }, 500);
 
-
-  // 2. Mint fresh agency access_token (held in memory; NOT persisted).
-  const form = new URLSearchParams({
-    client_id, client_secret,
-    grant_type: "refresh_token",
-    refresh_token,
-  });
-  const tokResp = await fetch(`${GHL_BASE}/oauth/token`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
-    body: form.toString(),
-  });
-  const tokText = await tokResp.text();
-  if (!tokResp.ok) return json({ error: "agency_token_refresh_failed", status: tokResp.status, body: tokText.slice(0, 400) }, 500);
-  const tokJson = JSON.parse(tokText);
-  const agency_access_token: string = tokJson.access_token;
-  const agency_expires_in: number = tokJson.expires_in ?? 0;
 
   // 3. All locations for this company.
   const { data: locs, error: locErr } = await admin
