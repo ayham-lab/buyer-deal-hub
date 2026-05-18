@@ -1,9 +1,14 @@
 // Operator Account tab in Settings.
 // Lets a location owner group multiple GHL sub-accounts they own so the
 // app surfaces aggregate data + unified billing across all of them.
+//
+// IDENTITY: When rendered inside the GHL iframe, supabase.auth may resolve
+// to whoever is signed in standalone in the same browser (e.g. an admin
+// debugging another tenant). To prevent that, all reads + writes here go
+// through the `operator-account` edge function which resolves the caller
+// via the iframe SSO blob (x-ghl-sso) before doing anything.
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { useActiveLocation, refreshEffectiveLocations } from "@/contexts/LocationContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +19,7 @@ import { toast } from "sonner";
 
 interface OwnedLoc {
   location_id: string;
-  name: string;
+  name: string | null;
   operator_account_id: string | null;
 }
 
@@ -26,8 +31,20 @@ interface OperatorAccount {
   credit_balance: number;
 }
 
+function iframeHeaders(): Record<string, string> {
+  try {
+    const blob = sessionStorage.getItem("ghl_sso_blob");
+    return blob ? { "x-ghl-sso": blob } : {};
+  } catch {
+    return {};
+  }
+}
+
+function displayName(l: { name: string | null; location_id: string }): string {
+  return (l.name && l.name.trim()) || "Unnamed location";
+}
+
 export default function OperatorAccountTab() {
-  const { user } = useAuth();
   const { activeLocation } = useActiveLocation();
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -36,100 +53,75 @@ export default function OperatorAccountTab() {
   const [opLocations, setOpLocations] = useState<OwnedLoc[]>([]);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [groupName, setGroupName] = useState("");
+  const [viewerEmail, setViewerEmail] = useState<string>("");
 
   async function load() {
-    if (!user) return;
     setLoading(true);
-
-    // Find sub-accounts the user owns
-    const { data: memberships } = await supabase
-      .from("location_memberships")
-      .select("location_id, is_owner")
-      .eq("user_id", user.id)
-      .eq("is_owner", true);
-
-    const ids = (memberships || []).map((m: any) => m.location_id);
-    if (ids.length === 0) {
-      setOwned([]);
-      setOp(null);
+    const { data, error } = await supabase.functions.invoke("operator-account", {
+      body: { action: "list" },
+      headers: iframeHeaders(),
+    });
+    if (error || (data as any)?.error) {
       setLoading(false);
+      toast.error((data as any)?.error || error?.message || "Failed to load operator account");
       return;
     }
-
-    const { data: tokens } = await supabase
-      .from("ghl_location_tokens")
-      .select("ghl_location_id, location_name, operator_account_id")
-      .in("ghl_location_id", ids);
-
-    const ownedList: OwnedLoc[] = (tokens || []).map((t: any) => ({
-      location_id: t.ghl_location_id,
-      name: t.location_name || t.ghl_location_id,
-      operator_account_id: t.operator_account_id ?? null,
-    }));
+    const d = data as any;
+    const ownedList: OwnedLoc[] = d.owned ?? [];
     setOwned(ownedList);
+    setOp(d.op ?? null);
+    setOpLocations(d.op_locations ?? []);
 
-    // Is the current active location already in a group?
-    const currentLoc = activeLocation?.locationId;
-    const currentRow = ownedList.find((l) => l.location_id === currentLoc);
-    const opId = currentRow?.operator_account_id ?? null;
-
-    if (opId) {
-      const { data: opRow } = await supabase
-        .from("operator_accounts")
-        .select("id,name,subscription_status,current_period_end,credit_balance")
-        .eq("id", opId)
-        .maybeSingle();
-      setOp((opRow as any) ?? null);
-      const inGroup = ownedList.filter((l) => l.operator_account_id === opId);
-      setOpLocations(inGroup);
-    } else {
-      setOp(null);
-      setOpLocations([]);
-      // Pre-select current location
+    if (!d.op) {
+      const currentLoc = d.active_location_id || activeLocation?.locationId;
       const init: Record<string, boolean> = {};
       ownedList.forEach((l) => { init[l.location_id] = l.location_id === currentLoc; });
       setSelected(init);
-      setGroupName(`${(user.email || "My").split("@")[0]}'s Operations`);
+      // Best-effort default name from viewer email (server doesn't echo it).
+      const seed = viewerEmail || "My";
+      setGroupName(`${seed.split("@")[0]}'s Operations`);
     }
     setLoading(false);
   }
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [user?.id, activeLocation?.locationId]);
+
+  useEffect(() => {
+    // Try to grab a friendlier default name seed.
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.email) setViewerEmail(session.user.email);
+    })();
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeLocation?.locationId]);
 
   async function createGroup() {
-    if (!user) return;
     const picks = Object.entries(selected).filter(([, v]) => v).map(([k]) => k);
     if (picks.length === 0) return toast.error("Select at least one location");
     if (!groupName.trim()) return toast.error("Name your operator account");
     setBusy(true);
-    const { data: created, error } = await supabase
-      .from("operator_accounts")
-      .insert({ name: groupName.trim(), owner_user_id: user.id })
-      .select()
-      .single();
-    if (error || !created) {
-      setBusy(false);
-      return toast.error(error?.message || "Could not create group");
-    }
-    const { error: linkErr } = await supabase
-      .from("ghl_location_tokens")
-      .update({ operator_account_id: (created as any).id })
-      .in("ghl_location_id", picks);
+    const { data, error } = await supabase.functions.invoke("operator-account", {
+      body: { action: "create", name: groupName.trim(), location_ids: picks },
+      headers: iframeHeaders(),
+    });
     setBusy(false);
-    if (linkErr) return toast.error(linkErr.message);
+    if (error || (data as any)?.error) {
+      return toast.error((data as any)?.error || error?.message || "Could not create group");
+    }
     toast.success("Operator account created");
     await refreshEffectiveLocations(activeLocation?.locationId ?? null);
     load();
   }
 
   async function addLocation(locId: string) {
-    if (!op) return;
     setBusy(true);
-    const { error } = await supabase
-      .from("ghl_location_tokens")
-      .update({ operator_account_id: op.id })
-      .eq("ghl_location_id", locId);
+    const { data, error } = await supabase.functions.invoke("operator-account", {
+      body: { action: "add", location_id: locId },
+      headers: iframeHeaders(),
+    });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error || (data as any)?.error) {
+      return toast.error((data as any)?.error || error?.message || "Failed to add");
+    }
     toast.success("Added to group");
     await refreshEffectiveLocations(activeLocation?.locationId ?? null);
     load();
@@ -137,12 +129,14 @@ export default function OperatorAccountTab() {
 
   async function removeLocation(locId: string) {
     setBusy(true);
-    const { error } = await supabase
-      .from("ghl_location_tokens")
-      .update({ operator_account_id: null })
-      .eq("ghl_location_id", locId);
+    const { data, error } = await supabase.functions.invoke("operator-account", {
+      body: { action: "remove", location_id: locId },
+      headers: iframeHeaders(),
+    });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error || (data as any)?.error) {
+      return toast.error((data as any)?.error || error?.message || "Failed to remove");
+    }
     toast.success("Removed from group");
     await refreshEffectiveLocations(activeLocation?.locationId ?? null);
     load();
@@ -159,7 +153,8 @@ export default function OperatorAccountTab() {
   }
 
   if (op) {
-    const ungrouped = owned.filter((l) => !l.operator_account_id);
+    const groupedIds = new Set(opLocations.map((l) => l.location_id));
+    const ungrouped = owned.filter((l) => !groupedIds.has(l.location_id));
     const isActive =
       op.subscription_status === "active" &&
       (!op.current_period_end || new Date(op.current_period_end) > new Date());
@@ -183,7 +178,7 @@ export default function OperatorAccountTab() {
             {opLocations.map((l) => (
               <div key={l.location_id} className="p-3 flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-medium">{l.name}</div>
+                  <div className="text-sm font-medium">{displayName(l)}</div>
                   <div className="text-xs text-muted-foreground font-mono">{l.location_id}</div>
                 </div>
                 <Button variant="ghost" size="sm" disabled={busy} onClick={() => removeLocation(l.location_id)}>
@@ -201,7 +196,7 @@ export default function OperatorAccountTab() {
               {ungrouped.map((l) => (
                 <div key={l.location_id} className="p-3 flex items-center justify-between">
                   <div>
-                    <div className="text-sm font-medium">{l.name}</div>
+                    <div className="text-sm font-medium">{displayName(l)}</div>
                     <div className="text-xs text-muted-foreground font-mono">{l.location_id}</div>
                   </div>
                   <Button variant="outline" size="sm" disabled={busy} onClick={() => addLocation(l.location_id)}>
@@ -244,7 +239,7 @@ export default function OperatorAccountTab() {
                 onCheckedChange={(v) => setSelected((s) => ({ ...s, [l.location_id]: !!v }))}
               />
               <div className="flex-1">
-                <div className="text-sm font-medium">{l.name}</div>
+                <div className="text-sm font-medium">{displayName(l)}</div>
                 <div className="text-xs text-muted-foreground font-mono">{l.location_id}</div>
               </div>
             </label>
