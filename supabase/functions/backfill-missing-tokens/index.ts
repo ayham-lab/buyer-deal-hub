@@ -114,6 +114,7 @@ Deno.serve(async (req) => {
         location_id: t.location_id, company_id: row.ghl_company_id,
         payload: { backfilled: true },
       });
+      if (row.ghl_company_id) await seedOwnerFromGhl(admin, t.location_id, row.ghl_company_id);
     } catch (e: any) {
       results.push({ location_id: t.location_id, status: "failed_refresh", detail: `threw: ${e?.message ?? "err"}` });
     }
