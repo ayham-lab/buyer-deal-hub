@@ -242,6 +242,12 @@ export default function Admin() {
               <ArchiveTitleCompaniesTab />
             </TabsContent>
           )}
+
+          {isSuperAdmin && (
+            <TabsContent value="operator_accounts">
+              <OperatorAccountsTab />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 
