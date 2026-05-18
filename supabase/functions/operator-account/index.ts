@@ -5,8 +5,14 @@
 // parent browser's standalone session (e.g. a super_admin's identity).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { resolveCaller } from "../_shared/resolveCaller.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-ghl-sso",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 
 interface Body {
   action: "list" | "create" | "add" | "remove";
