@@ -1595,9 +1595,14 @@ export type Database = {
           usage_count: number
         }[]
       }
+      location_in_active_group: { Args: { p_target: string }; Returns: boolean }
       normalize_archive_buyer_markets: {
         Args: { p_id: string }
         Returns: undefined
+      }
+      operator_id_for_location: {
+        Args: { p_location: string }
+        Returns: string
       }
       reveal_archive_buyer: {
         Args: { p_buyer_id: string; p_location: string }
