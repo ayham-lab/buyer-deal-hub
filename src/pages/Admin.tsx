@@ -18,6 +18,7 @@ import { PricingTab } from "@/components/admin/PricingTab";
 import { ArchiveBuyersTab } from "@/components/admin/ArchiveBuyersTab";
 import { ImportBuyersTab } from "@/components/admin/ImportBuyersTab";
 import { ArchiveTitleCompaniesTab } from "@/components/admin/ArchiveTitleCompaniesTab";
+import { OperatorAccountsTab } from "@/components/admin/OperatorAccountsTab";
 import { useActiveLocation } from "@/contexts/LocationContext";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -119,6 +120,7 @@ export default function Admin() {
             {showArchiveBuyers && <TabsTrigger value="archive_buyers">Archive Buyers</TabsTrigger>}
             {showArchiveBuyers && <TabsTrigger value="import_buyers">Import Buyers</TabsTrigger>}
             {showArchiveBuyers && <TabsTrigger value="archive_title">Archive Title Cos</TabsTrigger>}
+            {isSuperAdmin && <TabsTrigger value="operator_accounts">Operator Accounts</TabsTrigger>}
           </TabsList>
 
           {/* OVERVIEW */}
@@ -239,6 +241,12 @@ export default function Admin() {
           {showArchiveBuyers && (
             <TabsContent value="archive_title">
               <ArchiveTitleCompaniesTab />
+            </TabsContent>
+          )}
+
+          {isSuperAdmin && (
+            <TabsContent value="operator_accounts">
+              <OperatorAccountsTab />
             </TabsContent>
           )}
         </Tabs>
