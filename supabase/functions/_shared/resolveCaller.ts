@@ -14,22 +14,10 @@ export async function resolveCaller(req: Request, admin: SupabaseClient): Promis
   const authHeader = req.headers.get("Authorization") ?? "";
   const ssoHeader = req.headers.get("x-ghl-sso") ?? "";
 
-  // Standalone path: Bearer JWT.
-  if (authHeader.startsWith("Bearer ") && authHeader.length > 16) {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-    const { data: { user }, error } = await userClient.auth.getUser();
-    if (!error && user) {
-      return { ok: true, userId: user.id, viaIframe: false, ssoLocationId: null, email: user.email ?? null };
-    }
-    // Fall through to SSO if JWT failed but SSO blob is present.
-  }
-
-  // Iframe path: encrypted SSO blob.
+  // PRIORITY: x-ghl-sso wins over Bearer auth. In iframe context the parent
+  // browser's standalone Supabase session leaks into the iframe's fetch as a
+  // Bearer JWT (different user entirely — e.g. a super_admin viewing a tenant
+  // iframe). The SSO blob is the only trustworthy iframe identity signal.
   if (ssoHeader) {
     const sharedSecret = Deno.env.get("GHL_APP_SSO_KEY");
     if (!sharedSecret) return { ok: false, status: 500, error: "GHL_APP_SSO_KEY not configured" };
@@ -54,6 +42,20 @@ export async function resolveCaller(req: Request, admin: SupabaseClient): Promis
       ssoLocationId: payload?.activeLocation || payload?.locationId || null,
       email,
     };
+  }
+
+  // Standalone path: Bearer JWT.
+  if (authHeader.startsWith("Bearer ") && authHeader.length > 16) {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data: { user }, error } = await userClient.auth.getUser();
+    if (!error && user) {
+      return { ok: true, userId: user.id, viaIframe: false, ssoLocationId: null, email: user.email ?? null };
+    }
   }
 
   return { ok: false, status: 401, error: "unauthorized" };
