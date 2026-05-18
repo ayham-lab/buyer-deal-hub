@@ -27,3 +27,7 @@ verify_jwt = false
 [functions.backfill-missing-tokens]
 verify_jwt = false
 
+[functions.audit-ghl-ownership]
+verify_jwt = false
+
+
