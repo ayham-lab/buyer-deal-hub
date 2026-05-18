@@ -24,3 +24,6 @@ verify_jwt = false
 [functions.lookup-invite]
 verify_jwt = false
 
+[functions.backfill-missing-tokens]
+verify_jwt = false
+
