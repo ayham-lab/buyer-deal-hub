@@ -2,6 +2,7 @@
 // mint per-location tokens. Uses an existing token in ghl_location_tokens to
 // authenticate against GHL.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { resolveGhlAdminForLocation, ghlUserDisplayName, provisionAuthUserByEmail } from "../_shared/ghlOwnership.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
