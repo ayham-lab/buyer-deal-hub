@@ -92,14 +92,21 @@ Deno.serve(async (req) => {
       const cur_user = ownerByLoc.get(lid) ?? null;
       const cur_email = cur_user ? (emailByUser.get(cur_user) ?? null) : null;
       try {
-        const r = await fetch(`${GHL_BASE}/users/search?companyId=${encodeURIComponent(TARGET_COMPANY)}&locationId=${encodeURIComponent(lid)}`, {
-          headers: {
-            Authorization: `Bearer ${pit_token}`,
-            Version: GHL_VERSION,
-            Accept: "application/json",
-          },
-        });
-        const txt = await r.text();
+        let r: Response | null = null;
+        let txt = "";
+        for (let attempt = 0; attempt < 5; attempt++) {
+          r = await fetch(`${GHL_BASE}/users/search?companyId=${encodeURIComponent(TARGET_COMPANY)}&locationId=${encodeURIComponent(lid)}`, {
+            headers: {
+              Authorization: `Bearer ${pit_token}`,
+              Version: GHL_VERSION,
+              Accept: "application/json",
+            },
+          });
+          txt = await r.text();
+          if (r.status !== 429) break;
+          await new Promise((res) => setTimeout(res, 1500 * (attempt + 1)));
+        }
+        if (!r) throw new Error("no_response");
 
         if (!r.ok) {
           diffs.push({
