@@ -119,6 +119,7 @@ export default function Admin() {
             {showArchiveBuyers && <TabsTrigger value="archive_buyers">Archive Buyers</TabsTrigger>}
             {showArchiveBuyers && <TabsTrigger value="import_buyers">Import Buyers</TabsTrigger>}
             {showArchiveBuyers && <TabsTrigger value="archive_title">Archive Title Cos</TabsTrigger>}
+            {isSuperAdmin && <TabsTrigger value="operator_accounts">Operator Accounts</TabsTrigger>}
           </TabsList>
 
           {/* OVERVIEW */}
