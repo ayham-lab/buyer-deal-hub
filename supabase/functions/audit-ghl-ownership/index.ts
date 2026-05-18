@@ -21,7 +21,7 @@ const corsHeaders = {
 const GHL_BASE = "https://services.leadconnectorhq.com";
 const GHL_VERSION = "2021-07-28";
 const TARGET_COMPANY = "l5O3WVAjAPg6osSnZ16i";
-const CONCURRENCY = 6;
+const CONCURRENCY = 2;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
