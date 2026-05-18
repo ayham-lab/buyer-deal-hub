@@ -6,8 +6,11 @@
 // `x-ghl-location-id` header. Supabase RLS then enforces per-location
 // scoping (see public.current_ghl_location()).
 //
-// In standalone mode (no iframe → no active location) the header is omitted
-// and the user sees all of their data across locations (agency-owner view).
+// Operator Accounts: if the active location belongs to an operator_account,
+// LocationProvider also caches `ghl_effective_locations` (array of every
+// location id in the group). scopeToLocation() then uses `.in(...)` so
+// queries return aggregated rows across the whole group. RLS still
+// authorizes via `location_in_active_group()`.
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const GLOBAL_ADMIN_REST_TABLES = [
@@ -29,9 +32,34 @@ export function getActiveLocationId(): string | null {
   }
 }
 
+/** Effective location ids — full operator-group set, or [activeLocation], or null. */
+export function getEffectiveLocationIds(): string[] | null {
+  try {
+    const raw = sessionStorage.getItem("ghl_effective_locations");
+    if (!raw) return null;
+    const arr = JSON.parse(raw);
+    if (Array.isArray(arr) && arr.length > 0) return arr.filter((x) => typeof x === "string");
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/** Cached map of location_id → display name for badges. */
+export function getLocationNamesMap(): Record<string, string> {
+  try {
+    const raw = sessionStorage.getItem("ghl_location_names");
+    if (!raw) return {};
+    return JSON.parse(raw) || {};
+  } catch {
+    return {};
+  }
+}
+
 /**
  * Spread into any insert payload to auto-tag the row with the active
  * location. Returns `{}` in standalone mode so the column stays NULL.
+ * Inserts always belong to the active location (not the whole group).
  */
 export function withLocation<T extends Record<string, unknown>>(
   payload: T,
@@ -41,14 +69,17 @@ export function withLocation<T extends Record<string, unknown>>(
 }
 
 /**
- * Defense-in-depth: explicitly filter a SELECT query by ghl_location_id when
- * an active location is set. RLS enforces this server-side, but adding the
- * filter client-side makes the scope visible in queries and protects against
- * RLS regressions. No-op in standalone mode (returns the query unchanged).
+ * Defense-in-depth filter. If the active location is in an operator group
+ * with siblings, expands to `.in()` over every id in the group; otherwise
+ * `.eq(activeLocation)`. No-op in standalone.
  */
 export function scopeToLocation<T>(query: T): T {
   const loc = getActiveLocationId();
   if (!loc) return query;
+  const effective = getEffectiveLocationIds();
+  if (effective && effective.length > 1) {
+    return (query as any).in("ghl_location_id", effective);
+  }
   return (query as any).eq("ghl_location_id", loc);
 }
 
@@ -97,19 +128,10 @@ export function installLocationHeader() {
       return originalFetch(input, init);
     }
 
-    // Skip edge function calls — they don't enforce per-row RLS scoping
-    // (they run with the service role) and adding these custom headers
-    // would force a CORS preflight that the functions don't whitelist,
-    // silently breaking every functions.invoke() call from the browser.
     if (url.includes("/functions/v1/")) {
       return originalFetch(input, init);
     }
 
-    // Pricing configuration tables are global, not workspace-scoped. If an
-    // admin has a workspace selected in standalone mode, forwarding the active
-    // location header makes RLS see current_ghl_location() and the admin update
-    // policy intentionally matches zero rows. Leave these requests unscoped so
-    // pricing edits persist after refresh.
     if (GLOBAL_ADMIN_REST_TABLES.some((table) => url.includes(`/rest/v1/${table}`))) {
       return originalFetch(input, init);
     }
@@ -119,8 +141,6 @@ export function installLocationHeader() {
 
     const headers = new Headers(init?.headers ?? (input as Request)?.headers);
     if (loc) headers.set("x-ghl-location-id", loc);
-    // Belt-and-suspenders: tell the DB this request is from inside the GHL
-    // iframe. The DB guard refuses to run if iframe=1 but no location is set.
     if (isIframed) headers.set("x-ghl-iframe", "1");
     return originalFetch(input, { ...(init ?? {}), headers });
   };
