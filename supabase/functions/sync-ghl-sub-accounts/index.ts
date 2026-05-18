@@ -227,6 +227,58 @@ async function persistLocationToken(admin: any, row: {
   return await admin.from("ghl_location_tokens").insert(row);
 }
 
+// Seed ghl_location_links + location_memberships with the GHL-truth admin for
+// a newly-minted location, so the first iframe visitor does not become owner.
+async function seedOwnerFromGhl(admin: any, locationId: string, companyId: string) {
+  try {
+    const { data: existingLink } = await admin
+      .from("ghl_location_links")
+      .select("workspace_owner_user_id")
+      .eq("ghl_location_id", locationId)
+      .not("workspace_owner_user_id", "is", null)
+      .limit(1).maybeSingle();
+    if (existingLink?.workspace_owner_user_id) return;
+    const verdict = await resolveGhlAdminForLocation(companyId, locationId);
+    if (verdict.verdict === "admin") {
+      const u = verdict.user;
+      const ownerId = await provisionAuthUserByEmail(admin, u.email, ghlUserDisplayName(u), u.id);
+      if (!ownerId) { await queueManual(admin, locationId, companyId, "ghl_admin_no_email", u); return; }
+      await admin.from("ghl_location_links").upsert({
+        user_id: ownerId, workspace_owner_user_id: ownerId, linked_by_user_id: ownerId,
+        ghl_location_id: locationId, ghl_company_id: companyId,
+      }, { onConflict: "user_id,ghl_location_id", ignoreDuplicates: true });
+      await admin.from("location_memberships").upsert(
+        { location_id: locationId, user_id: ownerId, role: "owner", is_owner: true },
+        { onConflict: "location_id,user_id" },
+      );
+      await admin.from("ownership_audit_log").insert({
+        location_id: locationId, action: "insert", new_owner_user_id: ownerId,
+        ghl_admin_user_id: u.id, ghl_admin_email: u.email,
+        executed_by: "sync-ghl-sub-accounts", detail: { source: "ghl_admin_lookup" },
+      });
+    } else if (verdict.verdict === "no_admin") {
+      await queueManual(admin, locationId, companyId, "no_ghl_admin", null);
+    } else if (verdict.verdict === "unresolved") {
+      await queueManual(admin, locationId, companyId, "multiple_unresolved", verdict.admins);
+    } else {
+      await queueManual(admin, locationId, companyId, `fetch_failed: ${verdict.detail.slice(0, 200)}`, null);
+    }
+  } catch (e) {
+    console.error("seedOwnerFromGhl failed", e);
+  }
+}
+
+async function queueManual(admin: any, locationId: string, companyId: string | null, reason: string, snapshot: unknown) {
+  await admin.from("manual_review_queue").upsert({
+    location_id: locationId, ghl_company_id: companyId, reason,
+    ghl_users_snapshot: snapshot ?? null, status: "pending",
+  }, { onConflict: "location_id", ignoreDuplicates: true });
+  await admin.from("ownership_audit_log").insert({
+    location_id: locationId, action: "queue_manual",
+    executed_by: "sync-ghl-sub-accounts", detail: { reason },
+  });
+}
+
 function json(o: unknown, status = 200) {
   return new Response(JSON.stringify(o), {
     status,
