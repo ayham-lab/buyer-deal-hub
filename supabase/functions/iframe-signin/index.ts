@@ -86,29 +86,113 @@ Deno.serve(async (req) => {
         { onConflict: "user_id" },
       );
 
-    // 3) Resolve workspace owner (first installer wins) and upsert link.
-    //    The sync_membership_from_ghl_link trigger fills location_memberships.
+    // 3) Resolve workspace owner via GHL truth (PIT lookup), not first-visitor.
+    //    Behavior:
+    //      - existing link row → keep its workspace_owner_user_id
+    //      - GHL has a clear admin → owner = that admin's user (auto-provision)
+    //      - GHL has no admin or unresolved → owner = null, queue for review,
+    //        and insert SSO user as a plain member
     const { data: existingLink } = await admin
       .from("ghl_location_links")
       .select("workspace_owner_user_id")
       .eq("ghl_location_id", locationId)
+      .not("workspace_owner_user_id", "is", null)
       .limit(1)
       .maybeSingle();
-    const ownerId = existingLink?.workspace_owner_user_id ?? userId;
 
-    await admin
-      .from("ghl_location_links")
-      .upsert(
-        {
-          user_id: userId,
-          workspace_owner_user_id: ownerId,
-          linked_by_user_id: userId,
-          ghl_location_id: locationId,
-          ghl_company_id: companyId,
-          ghl_location_name: null,
-        },
-        { onConflict: "user_id,ghl_location_id", ignoreDuplicates: true },
+    let ownerId: string | null = existingLink?.workspace_owner_user_id ?? null;
+    let ownerSourceDetail: Record<string, unknown> = { source: "existing_link" };
+    let queueForReview: { reason: string; snapshot: unknown } | null = null;
+
+    if (!ownerId && companyId) {
+      const verdict = await resolveGhlAdminForLocation(companyId, locationId);
+      if (verdict.verdict === "admin") {
+        const adminUser = verdict.user;
+        const provisioned = await provisionAuthUserByEmail(
+          admin,
+          adminUser.email,
+          ghlUserDisplayName(adminUser),
+          adminUser.id,
+        );
+        if (provisioned) {
+          ownerId = provisioned;
+          ownerSourceDetail = {
+            source: "ghl_admin_lookup",
+            ghl_admin_user_id: adminUser.id,
+            ghl_admin_email: adminUser.email,
+          };
+        } else {
+          queueForReview = { reason: "ghl_admin_no_email", snapshot: adminUser };
+        }
+      } else if (verdict.verdict === "no_admin") {
+        queueForReview = { reason: "no_ghl_admin", snapshot: null };
+      } else if (verdict.verdict === "unresolved") {
+        queueForReview = { reason: "multiple_unresolved", snapshot: verdict.admins };
+      } else {
+        // fetch_failed: do NOT silently make the SSO user owner. Queue for review.
+        queueForReview = { reason: `fetch_failed: ${verdict.detail.slice(0, 200)}`, snapshot: null };
+      }
+    } else if (!ownerId && !companyId) {
+      queueForReview = { reason: "no_company_id_in_sso", snapshot: null };
+    }
+
+    // Insert link row. If we have an owner, the trigger upserts membership as
+    // owner (when user_id === workspace_owner_user_id) or member (otherwise).
+    // If we don't have an owner yet, we still create a member-only membership
+    // row so the SSO user can use the app.
+    if (ownerId) {
+      await admin
+        .from("ghl_location_links")
+        .upsert(
+          {
+            user_id: userId,
+            workspace_owner_user_id: ownerId,
+            linked_by_user_id: userId,
+            ghl_location_id: locationId,
+            ghl_company_id: companyId,
+            ghl_location_name: null,
+          },
+          { onConflict: "user_id,ghl_location_id", ignoreDuplicates: true },
+        );
+      // Audit only when this call is the one that established ownership.
+      if (ownerSourceDetail.source === "ghl_admin_lookup") {
+        await admin.from("ownership_audit_log").insert({
+          location_id: locationId,
+          action: "insert",
+          old_owner_user_id: null,
+          new_owner_user_id: ownerId,
+          ghl_admin_user_id: ownerSourceDetail.ghl_admin_user_id ?? null,
+          ghl_admin_email: ownerSourceDetail.ghl_admin_email ?? null,
+          executed_by: "iframe-signin",
+          detail: ownerSourceDetail,
+        });
+      }
+    } else {
+      // Member-only insert; SSO user gets access but is not owner.
+      await admin.from("location_memberships").upsert(
+        { location_id: locationId, user_id: userId, role: "member", is_owner: false },
+        { onConflict: "location_id,user_id" },
       );
+      if (queueForReview) {
+        await admin.from("manual_review_queue").upsert(
+          {
+            location_id: locationId,
+            ghl_company_id: companyId,
+            reason: queueForReview.reason,
+            current_owner_user_id: null,
+            ghl_users_snapshot: queueForReview.snapshot ?? null,
+            status: "pending",
+          },
+          { onConflict: "location_id", ignoreDuplicates: true },
+        );
+        await admin.from("ownership_audit_log").insert({
+          location_id: locationId,
+          action: "queue_manual",
+          executed_by: "iframe-signin",
+          detail: { reason: queueForReview.reason },
+        });
+      }
+    }
 
     // 4) Mint a session: generate a magiclink, then verify it to get tokens.
     const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
