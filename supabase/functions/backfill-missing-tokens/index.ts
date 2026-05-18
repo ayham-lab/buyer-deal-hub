@@ -2,6 +2,7 @@
 // oauth_install_log.payload but NO row in ghl_location_tokens, refresh the
 // token via /oauth/token and insert the row. Reports per-location outcome.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { resolveGhlAdminForLocation, ghlUserDisplayName, provisionAuthUserByEmail } from "../_shared/ghlOwnership.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
