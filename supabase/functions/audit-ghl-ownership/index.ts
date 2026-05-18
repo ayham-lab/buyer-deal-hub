@@ -262,7 +262,7 @@ Deno.serve(async (req) => {
     no_ghl_admin: diffs.filter((d) => d.verdict === "no_ghl_admin").length,
     multiple_unresolved: diffs.filter((d) => d.verdict === "multiple_unresolved").length,
     fetch_failed: diffs.filter((d) => d.verdict === "fetch_failed").length,
-    agency_install_used_at: install_used_at,
+    agency_token_source: source_used,
     agency_token_expires_in_seconds: agency_expires_in,
   };
   return json({ summary, diffs });
