@@ -132,6 +132,12 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     navigate(target, { replace: true });
   }, [activeLocation, navigate]);
 
+  // Whenever active location changes, refresh the operator-group cache so
+  // aggregated queries (scopeToLocation) and badges see siblings.
+  useEffect(() => {
+    refreshEffectiveLocations(activeLocation?.locationId ?? null);
+  }, [activeLocation?.locationId]);
+
   const pushDebug = (msg: string) => {
     setDebugMessages((prev) => [...prev.slice(-9), `${new Date().toISOString().slice(11, 19)} ${msg}`]);
   };
