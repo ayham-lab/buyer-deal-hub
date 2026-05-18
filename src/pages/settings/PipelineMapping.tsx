@@ -116,19 +116,20 @@ export default function PipelineMapping() {
       />
       <div className="p-6 lg:p-8 max-w-4xl space-y-6">
         {isIframed ? (
-          loading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : !activeLocation?.locationId ? (
+          !activeLocation?.locationId ? (
             <div className="text-sm text-muted-foreground p-6 border border-dashed rounded-md">
               Waiting for GHL to send active sub-account…
             </div>
-          ) : locations.length === 0 ? (
-            <div className="text-sm text-muted-foreground p-6 border border-dashed rounded-md">
-              This location isn't synced yet — contact your agency admin.
-            </div>
           ) : (
+            // Iframe mode: trust the SSO-resolved active location. Don't gate
+            // on a client-side ghl_location_tokens lookup (the row exists
+            // server-side but RLS visibility is brittle for newly-minted
+            // iframe-signin users). If a token actually isn't synced for
+            // this location, ghl-list-pipelines will surface an error inline.
             <>
-              {locations.map((l) => <LocationMapper key={l.ghl_location_id} location={l} />)}
+              <LocationMapper
+                location={{ ghl_location_id: activeLocation.locationId, ghl_company_id: activeLocation.companyId ?? null }}
+              />
               <ClearUnmappedButton locationId={activeLocation.locationId} />
             </>
           )

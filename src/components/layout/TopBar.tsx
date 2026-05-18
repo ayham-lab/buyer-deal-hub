@@ -26,6 +26,7 @@ export function TopBar() {
   const { activeLocation, isIframed } = useActiveLocation();
   const [memberships, setMemberships] = useState<MembershipOption[] | null>(null);
   const [loadingMemberships, setLoadingMemberships] = useState(false);
+  const [iframeLocationName, setIframeLocationName] = useState<string | null>(null);
 
   const ghlName = activeLocation?.userName || null;
   const ghlEmail = activeLocation?.email || null;
@@ -42,11 +43,30 @@ export function TopBar() {
   const activeLocationId = activeLocation?.locationId ?? null;
   const activeMembership = memberships?.find((m) => m.location_id === activeLocationId) ?? null;
   const locationLabel = isIframed
-    ? (activeLocation ? `Loc ${activeLocation.locationId.slice(0, 8)}` : "GHL")
+    ? (activeLocation ? (iframeLocationName ?? "Unnamed location") : "GHL")
     : activeMembership?.location_name
       || (activeLocationId
-        ? `Loc ${activeLocationId.slice(0, 8)}`
+        ? "Unnamed location"
         : (isSuperAdmin ? "Admin view" : "Select workspace"));
+
+  // Iframe: fetch friendly name from ghl_location_tokens for the active loc.
+  useEffect(() => {
+    if (!isIframed || !activeLocationId) {
+      setIframeLocationName(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("ghl_location_tokens")
+        .select("location_name")
+        .eq("ghl_location_id", activeLocationId)
+        .maybeSingle();
+      if (!cancelled) setIframeLocationName((data as any)?.location_name ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [isIframed, activeLocationId]);
+
 
   async function loadMemberships() {
     if (isIframed || !user) return;
