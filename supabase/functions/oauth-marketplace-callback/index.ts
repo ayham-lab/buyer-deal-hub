@@ -3,6 +3,7 @@
 // agency installs, enumerates installed sub-accounts and mints per-location
 // tokens so Dispo Pro can act on each sub-account independently.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { resolveGhlAdminForLocation, ghlUserDisplayName, provisionAuthUserByEmail } from "../_shared/ghlOwnership.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -271,11 +272,9 @@ async function persistLocationToken(admin: any, row: {
     .maybeSingle();
   if (selErr) return { error: selErr };
 
-  // After token persist, ensure a workspace owner exists in
-  // location_memberships so the new install has a clear owner who can invite
-  // the rest of the team. We map ownership to ghl_location_links.workspace_owner_user_id
-  // (set during the SSO/install flow) — never to ghl_location_tokens (no user_id).
-  await ensureOwnerMembership(admin, row.ghl_location_id);
+  // After token persist, ensure the location has a workspace owner derived
+  // from GHL truth (PIT lookup), not whoever happens to visit first.
+  await ensureOwnerMembership(admin, row.ghl_location_id, row.ghl_company_id);
 
   if (existing?.id) {
     return await admin.from("ghl_location_tokens").update(row).eq("id", existing.id);
@@ -283,8 +282,9 @@ async function persistLocationToken(admin: any, row: {
   return await admin.from("ghl_location_tokens").insert(row);
 }
 
-async function ensureOwnerMembership(admin: any, locationId: string) {
+async function ensureOwnerMembership(admin: any, locationId: string, companyId: string | null) {
   try {
+    // 1. Existing link wins.
     const { data: link } = await admin
       .from("ghl_location_links")
       .select("workspace_owner_user_id")
@@ -292,15 +292,83 @@ async function ensureOwnerMembership(admin: any, locationId: string) {
       .not("workspace_owner_user_id", "is", null)
       .limit(1)
       .maybeSingle();
-    const ownerId = link?.workspace_owner_user_id;
-    if (!ownerId) return; // no SSO link yet — first user to SSO will become owner via trigger-less flow
-    await admin.from("location_memberships").upsert(
-      { location_id: locationId, user_id: ownerId, role: "owner", is_owner: true },
-      { onConflict: "location_id,user_id" },
-    );
+    if (link?.workspace_owner_user_id) {
+      await admin.from("location_memberships").upsert(
+        { location_id: locationId, user_id: link.workspace_owner_user_id, role: "owner", is_owner: true },
+        { onConflict: "location_id,user_id" },
+      );
+      return;
+    }
+
+    // 2. No link yet — ask GHL who the admin is.
+    if (!companyId) {
+      await queueManual(admin, locationId, null, "no_company_id_on_install", null);
+      return;
+    }
+    const verdict = await resolveGhlAdminForLocation(companyId, locationId);
+    if (verdict.verdict === "admin") {
+      const adminUser = verdict.user;
+      const ownerUserId = await provisionAuthUserByEmail(
+        admin, adminUser.email, ghlUserDisplayName(adminUser), adminUser.id,
+      );
+      if (!ownerUserId) {
+        await queueManual(admin, locationId, companyId, "ghl_admin_no_email", adminUser);
+        return;
+      }
+      await admin.from("ghl_location_links").upsert(
+        {
+          user_id: ownerUserId,
+          workspace_owner_user_id: ownerUserId,
+          linked_by_user_id: ownerUserId,
+          ghl_location_id: locationId,
+          ghl_company_id: companyId,
+        },
+        { onConflict: "user_id,ghl_location_id", ignoreDuplicates: true },
+      );
+      await admin.from("location_memberships").upsert(
+        { location_id: locationId, user_id: ownerUserId, role: "owner", is_owner: true },
+        { onConflict: "location_id,user_id" },
+      );
+      await admin.from("ownership_audit_log").insert({
+        location_id: locationId,
+        action: "insert",
+        new_owner_user_id: ownerUserId,
+        ghl_admin_user_id: adminUser.id,
+        ghl_admin_email: adminUser.email,
+        executed_by: "oauth-marketplace-callback",
+        detail: { source: "ghl_admin_lookup" },
+      });
+      return;
+    }
+    if (verdict.verdict === "no_admin") {
+      await queueManual(admin, locationId, companyId, "no_ghl_admin", null);
+    } else if (verdict.verdict === "unresolved") {
+      await queueManual(admin, locationId, companyId, "multiple_unresolved", verdict.admins);
+    } else {
+      await queueManual(admin, locationId, companyId, `fetch_failed: ${verdict.detail.slice(0, 200)}`, null);
+    }
   } catch (e) {
     console.error("ensureOwnerMembership failed", e);
   }
+}
+
+async function queueManual(admin: any, locationId: string, companyId: string | null, reason: string, snapshot: unknown) {
+  await admin.from("manual_review_queue").upsert(
+    {
+      location_id: locationId,
+      ghl_company_id: companyId,
+      reason,
+      ghl_users_snapshot: snapshot ?? null,
+      status: "pending",
+    },
+    { onConflict: "location_id", ignoreDuplicates: true },
+  );
+  await admin.from("ownership_audit_log").insert({
+    location_id: locationId,
+    action: "queue_manual",
+    executed_by: "oauth-marketplace-callback",
+    detail: { reason },
+  });
 }
 
 function json(o: unknown, status = 200) {

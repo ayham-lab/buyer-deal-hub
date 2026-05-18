@@ -2,6 +2,7 @@
 // oauth_install_log.payload but NO row in ghl_location_tokens, refresh the
 // token via /oauth/token and insert the row. Reports per-location outcome.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { resolveGhlAdminForLocation, ghlUserDisplayName, provisionAuthUserByEmail } from "../_shared/ghlOwnership.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -113,6 +114,7 @@ Deno.serve(async (req) => {
         location_id: t.location_id, company_id: row.ghl_company_id,
         payload: { backfilled: true },
       });
+      if (row.ghl_company_id) await seedOwnerFromGhl(admin, t.location_id, row.ghl_company_id);
     } catch (e: any) {
       results.push({ location_id: t.location_id, status: "failed_refresh", detail: `threw: ${e?.message ?? "err"}` });
     }
@@ -130,5 +132,53 @@ Deno.serve(async (req) => {
 function json(o: unknown, status = 200) {
   return new Response(JSON.stringify(o), {
     status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+async function seedOwnerFromGhl(admin: any, locationId: string, companyId: string) {
+  try {
+    const { data: existingLink } = await admin
+      .from("ghl_location_links")
+      .select("workspace_owner_user_id")
+      .eq("ghl_location_id", locationId)
+      .not("workspace_owner_user_id", "is", null)
+      .limit(1).maybeSingle();
+    if (existingLink?.workspace_owner_user_id) return;
+    const verdict = await resolveGhlAdminForLocation(companyId, locationId);
+    if (verdict.verdict === "admin") {
+      const u = verdict.user;
+      const ownerId = await provisionAuthUserByEmail(admin, u.email, ghlUserDisplayName(u), u.id);
+      if (!ownerId) { await queueManual(admin, locationId, companyId, "ghl_admin_no_email", u); return; }
+      await admin.from("ghl_location_links").upsert({
+        user_id: ownerId, workspace_owner_user_id: ownerId, linked_by_user_id: ownerId,
+        ghl_location_id: locationId, ghl_company_id: companyId,
+      }, { onConflict: "user_id,ghl_location_id", ignoreDuplicates: true });
+      await admin.from("location_memberships").upsert(
+        { location_id: locationId, user_id: ownerId, role: "owner", is_owner: true },
+        { onConflict: "location_id,user_id" },
+      );
+      await admin.from("ownership_audit_log").insert({
+        location_id: locationId, action: "insert", new_owner_user_id: ownerId,
+        ghl_admin_user_id: u.id, ghl_admin_email: u.email,
+        executed_by: "backfill-missing-tokens", detail: { source: "ghl_admin_lookup" },
+      });
+    } else if (verdict.verdict === "no_admin") {
+      await queueManual(admin, locationId, companyId, "no_ghl_admin", null);
+    } else if (verdict.verdict === "unresolved") {
+      await queueManual(admin, locationId, companyId, "multiple_unresolved", verdict.admins);
+    } else {
+      await queueManual(admin, locationId, companyId, `fetch_failed: ${verdict.detail.slice(0, 200)}`, null);
+    }
+  } catch (e) { console.error("seedOwnerFromGhl failed", e); }
+}
+
+async function queueManual(admin: any, locationId: string, companyId: string | null, reason: string, snapshot: unknown) {
+  await admin.from("manual_review_queue").upsert({
+    location_id: locationId, ghl_company_id: companyId, reason,
+    ghl_users_snapshot: snapshot ?? null, status: "pending",
+  }, { onConflict: "location_id", ignoreDuplicates: true });
+  await admin.from("ownership_audit_log").insert({
+    location_id: locationId, action: "queue_manual",
+    executed_by: "backfill-missing-tokens", detail: { reason },
   });
 }

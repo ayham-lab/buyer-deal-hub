@@ -969,6 +969,51 @@ export type Database = {
         }
         Relationships: []
       }
+      manual_review_queue: {
+        Row: {
+          created_at: string
+          current_owner_user_id: string | null
+          ghl_company_id: string | null
+          ghl_users_snapshot: Json | null
+          id: string
+          location_id: string
+          location_name: string | null
+          reason: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by_user_id: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          current_owner_user_id?: string | null
+          ghl_company_id?: string | null
+          ghl_users_snapshot?: Json | null
+          id?: string
+          location_id: string
+          location_name?: string | null
+          reason: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by_user_id?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          current_owner_user_id?: string | null
+          ghl_company_id?: string | null
+          ghl_users_snapshot?: Json | null
+          id?: string
+          location_id?: string
+          location_name?: string | null
+          reason?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by_user_id?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string | null
@@ -1170,6 +1215,45 @@ export type Database = {
           stripe_subscription_id?: string | null
           subscription_status?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      ownership_audit_log: {
+        Row: {
+          action: string
+          detail: Json | null
+          executed_at: string
+          executed_by: string
+          ghl_admin_email: string | null
+          ghl_admin_user_id: string | null
+          id: string
+          location_id: string
+          new_owner_user_id: string | null
+          old_owner_user_id: string | null
+        }
+        Insert: {
+          action: string
+          detail?: Json | null
+          executed_at?: string
+          executed_by: string
+          ghl_admin_email?: string | null
+          ghl_admin_user_id?: string | null
+          id?: string
+          location_id: string
+          new_owner_user_id?: string | null
+          old_owner_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          detail?: Json | null
+          executed_at?: string
+          executed_by?: string
+          ghl_admin_email?: string | null
+          ghl_admin_user_id?: string | null
+          id?: string
+          location_id?: string
+          new_owner_user_id?: string | null
+          old_owner_user_id?: string | null
         }
         Relationships: []
       }
