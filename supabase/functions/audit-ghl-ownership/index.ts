@@ -36,30 +36,39 @@ Deno.serve(async (req) => {
   const client_secret = Deno.env.get("GHL_MARKETPLACE_CLIENT_SECRET") ?? "";
   if (!client_id || !client_secret) return json({ error: "missing_client_credentials" }, 500);
 
-  // 1. Freshest agency-scope refresh_token for this company.
-  const { data: installs, error: instErr } = await admin
-    .from("oauth_install_log")
-    .select("payload, created_at")
-    .eq("company_id", TARGET_COMPANY)
-    .eq("source", "oauth-marketplace-callback")
-    .is("location_id", null)
-    .order("created_at", { ascending: false })
-    .limit(5);
-  if (instErr) return json({ error: `install_query: ${instErr.message}` }, 500);
-
+  // 1. Agency refresh_token: prefer the live row in ghl_location_tokens with
+  //    ghl_location_id IS NULL (kept fresh by cron). Fall back to
+  //    oauth_install_log if that row is missing.
   let refresh_token: string | null = null;
-  let install_used_at: string | null = null;
-  for (const row of installs ?? []) {
-    const p = (row as any).payload ?? {};
-    const rt = p?.refresh_token ?? p?.refreshToken;
-    const ut = p?.userType ?? p?.user_type;
-    if (rt && (ut === "Company" || !ut)) {
-      refresh_token = rt;
-      install_used_at = (row as any).created_at;
-      break;
+  let source_used: string = "";
+  const { data: agencyRow } = await admin
+    .from("ghl_location_tokens")
+    .select("refresh_token, updated_at")
+    .eq("ghl_company_id", TARGET_COMPANY)
+    .is("ghl_location_id", null)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (agencyRow?.refresh_token) {
+    refresh_token = agencyRow.refresh_token;
+    source_used = `ghl_location_tokens@${agencyRow.updated_at}`;
+  } else {
+    const { data: installs } = await admin
+      .from("oauth_install_log")
+      .select("payload, created_at")
+      .eq("company_id", TARGET_COMPANY)
+      .eq("source", "oauth-marketplace-callback")
+      .is("location_id", null)
+      .order("created_at", { ascending: false })
+      .limit(5);
+    for (const row of installs ?? []) {
+      const p = (row as any).payload ?? {};
+      const rt = p?.refresh_token ?? p?.refreshToken;
+      if (rt) { refresh_token = rt; source_used = `install_log@${(row as any).created_at}`; break; }
     }
   }
   if (!refresh_token) return json({ error: "no_agency_refresh_token_found", company: TARGET_COMPANY }, 500);
+
 
   // 2. Mint fresh agency access_token (held in memory; NOT persisted).
   const form = new URLSearchParams({
