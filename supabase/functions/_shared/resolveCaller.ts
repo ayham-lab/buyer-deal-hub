@@ -29,15 +29,45 @@ export async function resolveCaller(req: Request, admin: SupabaseClient): Promis
     }
     const email = String(payload?.email ?? "").trim().toLowerCase();
     if (!email) return { ok: false, status: 401, error: "sso_missing_email" };
-    const { data: prof } = await admin
+    let { data: prof } = await admin
       .from("profiles")
       .select("user_id")
       .eq("email", email)
       .maybeSingle();
-    if (!prof?.user_id) return { ok: false, status: 403, error: "sso_user_not_provisioned" };
+    if (!prof?.user_id) {
+      // Auto-provision: find or create auth user, then upsert profile.
+      // Mirrors iframe-signin so any iframe-handling function works even if
+      // the user hasn't yet hit iframe-signin in this session.
+      const userName: string | null = payload?.userName ?? payload?.name ?? null;
+      let newUserId: string | null = null;
+      try {
+        const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+        const existing = list?.users?.find((u: any) => u.email?.toLowerCase() === email);
+        if (existing) {
+          newUserId = existing.id;
+        } else {
+          const { data: created, error: createErr } = await admin.auth.admin.createUser({
+            email,
+            email_confirm: true,
+            user_metadata: { name: userName ?? email, source: "ghl_iframe_sso_autoprov" },
+          });
+          if (createErr || !created?.user) {
+            return { ok: false, status: 500, error: `autoprov_create_user_failed: ${createErr?.message ?? "unknown"}` };
+          }
+          newUserId = created.user.id;
+        }
+        await admin.from("profiles").upsert(
+          { user_id: newUserId, email, name: userName ?? email },
+          { onConflict: "user_id" },
+        );
+        prof = { user_id: newUserId } as any;
+      } catch (e: any) {
+        return { ok: false, status: 500, error: `autoprov_failed: ${String(e?.message ?? e)}` };
+      }
+    }
     return {
       ok: true,
-      userId: prof.user_id,
+      userId: prof!.user_id,
       viaIframe: true,
       ssoLocationId: payload?.activeLocation || payload?.locationId || null,
       email,
