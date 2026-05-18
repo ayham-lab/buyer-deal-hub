@@ -32,48 +32,20 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     { auth: { persistSession: false, autoRefreshToken: false } },
   );
-  const client_id = Deno.env.get("GHL_MARKETPLACE_CLIENT_ID") ?? "";
-  const client_secret = Deno.env.get("GHL_MARKETPLACE_CLIENT_SECRET") ?? "";
-  if (!client_id || !client_secret) return json({ error: "missing_client_credentials" }, 500);
+  const pit_token = Deno.env.get("GHL_AGENCY_PIT_TOKEN") ?? "";
+  if (!pit_token) return json({ error: "missing_pit_token" }, 500);
+  const source_used = "GHL_AGENCY_PIT_TOKEN";
+  const agency_expires_at: string | null = null;
 
-  // 1. Agency refresh_token: prefer the live row in ghl_location_tokens with
-  //    ghl_location_id IS NULL (kept fresh by cron). Fall back to
-  //    oauth_install_log if that row is missing.
-  // 1. Agency access_token from the live row in ghl_location_tokens
-  //    (ghl_location_id IS NULL, kept fresh by cron). Strict read-only audit:
-  //    we do NOT call /oauth/token because refresh rotates the refresh_token
-  //    and would invalidate the cron's stored credential — that counts as a
-  //    side-effecting write on shared infra.
-  const { data: agencyRow } = await admin
-    .from("ghl_location_tokens")
-    .select("access_token, expires_at, updated_at")
-    .eq("ghl_company_id", TARGET_COMPANY)
-    .is("ghl_location_id", null)
-    .order("updated_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  const agency_access_token: string | null = (agencyRow as any)?.access_token ?? null;
-  const agency_expires_at: string | null = (agencyRow as any)?.expires_at ?? null;
-  const source_used = agencyRow ? `ghl_location_tokens(live, updated ${(agencyRow as any).updated_at})` : "none";
-  const stillValid = agency_expires_at ? new Date(agency_expires_at).getTime() > Date.now() + 60_000 : false;
-  if (!agency_access_token || !stillValid) {
-    return json({
-      error: "no_valid_agency_access_token",
-      detail: "Live agency token missing or near expiry. Refresh via refresh-ghl-tokens cron, then retry.",
-      agency_expires_at,
-    }, 500);
-  }
-
-
-  // 3. All locations + their own access_token (location-scoped tokens carry
-  //    the broader sub-account permissions the agency token lacks).
+  // All locations under target company.
   const { data: locs, error: locErr } = await admin
     .from("ghl_location_tokens")
-    .select("ghl_location_id, location_name, access_token, expires_at")
+    .select("ghl_location_id, location_name")
     .eq("ghl_company_id", TARGET_COMPANY)
     .not("ghl_location_id", "is", null);
   if (locErr) return json({ error: `loc_query: ${locErr.message}` }, 500);
-  const locations = (locs ?? []) as Array<{ ghl_location_id: string; location_name: string | null; access_token: string; expires_at: string | null }>;
+  const locations = (locs ?? []) as Array<{ ghl_location_id: string; location_name: string | null }>;
+
 
 
   // 4. Current owners map.
