@@ -21,7 +21,7 @@ const corsHeaders = {
 const GHL_BASE = "https://services.leadconnectorhq.com";
 const GHL_VERSION = "2021-07-28";
 const TARGET_COMPANY = "l5O3WVAjAPg6osSnZ16i";
-const CONCURRENCY = 6;
+const CONCURRENCY = 2;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -32,48 +32,20 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     { auth: { persistSession: false, autoRefreshToken: false } },
   );
-  const client_id = Deno.env.get("GHL_MARKETPLACE_CLIENT_ID") ?? "";
-  const client_secret = Deno.env.get("GHL_MARKETPLACE_CLIENT_SECRET") ?? "";
-  if (!client_id || !client_secret) return json({ error: "missing_client_credentials" }, 500);
+  const pit_token = Deno.env.get("GHL_AGENCY_PIT_TOKEN") ?? "";
+  if (!pit_token) return json({ error: "missing_pit_token" }, 500);
+  const source_used = "GHL_AGENCY_PIT_TOKEN";
+  const agency_expires_at: string | null = null;
 
-  // 1. Agency refresh_token: prefer the live row in ghl_location_tokens with
-  //    ghl_location_id IS NULL (kept fresh by cron). Fall back to
-  //    oauth_install_log if that row is missing.
-  // 1. Agency access_token from the live row in ghl_location_tokens
-  //    (ghl_location_id IS NULL, kept fresh by cron). Strict read-only audit:
-  //    we do NOT call /oauth/token because refresh rotates the refresh_token
-  //    and would invalidate the cron's stored credential — that counts as a
-  //    side-effecting write on shared infra.
-  const { data: agencyRow } = await admin
-    .from("ghl_location_tokens")
-    .select("access_token, expires_at, updated_at")
-    .eq("ghl_company_id", TARGET_COMPANY)
-    .is("ghl_location_id", null)
-    .order("updated_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  const agency_access_token: string | null = (agencyRow as any)?.access_token ?? null;
-  const agency_expires_at: string | null = (agencyRow as any)?.expires_at ?? null;
-  const source_used = agencyRow ? `ghl_location_tokens(live, updated ${(agencyRow as any).updated_at})` : "none";
-  const stillValid = agency_expires_at ? new Date(agency_expires_at).getTime() > Date.now() + 60_000 : false;
-  if (!agency_access_token || !stillValid) {
-    return json({
-      error: "no_valid_agency_access_token",
-      detail: "Live agency token missing or near expiry. Refresh via refresh-ghl-tokens cron, then retry.",
-      agency_expires_at,
-    }, 500);
-  }
-
-
-  // 3. All locations + their own access_token (location-scoped tokens carry
-  //    the broader sub-account permissions the agency token lacks).
+  // All locations under target company.
   const { data: locs, error: locErr } = await admin
     .from("ghl_location_tokens")
-    .select("ghl_location_id, location_name, access_token, expires_at")
+    .select("ghl_location_id, location_name")
     .eq("ghl_company_id", TARGET_COMPANY)
     .not("ghl_location_id", "is", null);
   if (locErr) return json({ error: `loc_query: ${locErr.message}` }, 500);
-  const locations = (locs ?? []) as Array<{ ghl_location_id: string; location_name: string | null; access_token: string; expires_at: string | null }>;
+  const locations = (locs ?? []) as Array<{ ghl_location_id: string; location_name: string | null }>;
+
 
 
   // 4. Current owners map.
@@ -119,17 +91,22 @@ Deno.serve(async (req) => {
       const lid = loc.ghl_location_id;
       const cur_user = ownerByLoc.get(lid) ?? null;
       const cur_email = cur_user ? (emailByUser.get(cur_user) ?? null) : null;
-      const locTokenValid = loc.expires_at ? new Date(loc.expires_at).getTime() > Date.now() + 60_000 : false;
-      const tokenToUse = locTokenValid && loc.access_token ? loc.access_token : agency_access_token;
       try {
-        const r = await fetch(`${GHL_BASE}/users/?locationId=${encodeURIComponent(lid)}`, {
-          headers: {
-            Authorization: `Bearer ${tokenToUse}`,
-            Version: GHL_VERSION,
-            Accept: "application/json",
-          },
-        });
-        const txt = await r.text();
+        let r: Response | null = null;
+        let txt = "";
+        for (let attempt = 0; attempt < 5; attempt++) {
+          r = await fetch(`${GHL_BASE}/users/search?companyId=${encodeURIComponent(TARGET_COMPANY)}&locationId=${encodeURIComponent(lid)}`, {
+            headers: {
+              Authorization: `Bearer ${pit_token}`,
+              Version: GHL_VERSION,
+              Accept: "application/json",
+            },
+          });
+          txt = await r.text();
+          if (r.status !== 429) break;
+          await new Promise((res) => setTimeout(res, 1500 * (attempt + 1)));
+        }
+        if (!r) throw new Error("no_response");
 
         if (!r.ok) {
           diffs.push({
