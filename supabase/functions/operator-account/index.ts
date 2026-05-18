@@ -27,9 +27,21 @@ Deno.serve(async (req) => {
 
     const caller = await resolveCaller(req, admin);
     if (!caller.ok) {
+      console.log("operator-account resolve_failed", {
+        status: caller.status,
+        error: caller.error,
+        has_sso: Boolean(req.headers.get("x-ghl-sso")),
+        has_auth: Boolean(req.headers.get("Authorization")),
+      });
       return json({ error: caller.error }, caller.status);
     }
     const userId = caller.userId;
+    console.log("operator-account resolved", {
+      user_id: userId,
+      via_iframe: caller.viaIframe,
+      sso_location_id: caller.ssoLocationId,
+      email: caller.email,
+    });
 
     const body = (await req.json().catch(() => ({}))) as Body;
     const action = body.action;
@@ -42,6 +54,7 @@ Deno.serve(async (req) => {
         .eq("user_id", userId)
         .eq("is_owner", true);
       const ids = (memberships ?? []).map((m: any) => m.location_id);
+      console.log("operator-account list owned_memberships", { user_id: userId, ids });
 
       let owned: any[] = [];
       if (ids.length > 0) {
@@ -49,6 +62,14 @@ Deno.serve(async (req) => {
           .from("ghl_location_tokens")
           .select("ghl_location_id, location_name, operator_account_id")
           .in("ghl_location_id", ids);
+        console.log("operator-account list token_rows", {
+          user_id: userId,
+          rows: (tokens ?? []).map((t: any) => ({
+            ghl_location_id: t.ghl_location_id,
+            location_name: t.location_name,
+            operator_account_id: t.operator_account_id,
+          })),
+        });
         owned = (tokens ?? []).map((t: any) => ({
           location_id: t.ghl_location_id,
           name: t.location_name || null,
