@@ -811,6 +811,7 @@ export type Database = {
           ghl_location_id: string | null
           id: string
           location_name: string | null
+          operator_account_id: string | null
           refresh_token: string
           updated_at: string
         }
@@ -822,6 +823,7 @@ export type Database = {
           ghl_location_id?: string | null
           id?: string
           location_name?: string | null
+          operator_account_id?: string | null
           refresh_token: string
           updated_at?: string
         }
@@ -833,10 +835,19 @@ export type Database = {
           ghl_location_id?: string | null
           id?: string
           location_name?: string | null
+          operator_account_id?: string | null
           refresh_token?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ghl_location_tokens_operator_account_id_fkey"
+            columns: ["operator_account_id"]
+            isOneToOne: false
+            referencedRelation: "operator_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       jv_partners: {
         Row: {
@@ -1120,6 +1131,45 @@ export type Database = {
           location_id?: string | null
           payload?: Json | null
           source?: string
+        }
+        Relationships: []
+      }
+      operator_accounts: {
+        Row: {
+          created_at: string
+          credit_balance: number
+          current_period_end: string | null
+          id: string
+          name: string
+          owner_user_id: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          credit_balance?: number
+          current_period_end?: string | null
+          id?: string
+          name: string
+          owner_user_id: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          credit_balance?: number
+          current_period_end?: string | null
+          id?: string
+          name?: string
+          owner_user_id?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1505,6 +1555,10 @@ export type Database = {
         Returns: boolean
       }
       current_ghl_location: { Args: never; Returns: string }
+      effective_location_ids: {
+        Args: { p_location: string }
+        Returns: string[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
