@@ -5,6 +5,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { decryptGhlSso } from "../_shared/ghlSso.ts";
+import { resolveGhlAdminForLocation, ghlUserDisplayName, provisionAuthUserByEmail } from "../_shared/ghlOwnership.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
