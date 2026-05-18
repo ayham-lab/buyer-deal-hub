@@ -31,6 +31,62 @@ export function useActiveLocation() {
 }
 
 /**
+ * Refreshes the operator-account aware effective-location cache used by
+ * scopeToLocation() and LocationBadge. Idempotent + safe to call from
+ * Settings after creating/editing a group.
+ */
+export async function refreshEffectiveLocations(activeLocationId: string | null) {
+  if (!activeLocationId) {
+    try {
+      sessionStorage.removeItem("ghl_effective_locations");
+      sessionStorage.removeItem("ghl_location_names");
+    } catch {}
+    return;
+  }
+  try {
+    // Look up operator group for the active location.
+    const { data: meTok } = await supabase
+      .from("ghl_location_tokens")
+      .select("operator_account_id")
+      .eq("ghl_location_id", activeLocationId)
+      .maybeSingle();
+    const opId = (meTok as any)?.operator_account_id ?? null;
+
+    let ids: string[] = [activeLocationId];
+    let nameRows: any[] = [];
+
+    if (opId) {
+      const { data: sibs } = await supabase
+        .from("ghl_location_tokens")
+        .select("ghl_location_id, location_name")
+        .eq("operator_account_id", opId);
+      if (Array.isArray(sibs) && sibs.length > 0) {
+        ids = Array.from(new Set(sibs.map((r: any) => r.ghl_location_id).filter(Boolean)));
+        nameRows = sibs;
+      }
+    } else {
+      const { data: self } = await supabase
+        .from("ghl_location_tokens")
+        .select("ghl_location_id, location_name")
+        .eq("ghl_location_id", activeLocationId);
+      nameRows = self || [];
+    }
+
+    const nameMap: Record<string, string> = {};
+    nameRows.forEach((r: any) => {
+      if (r.ghl_location_id) nameMap[r.ghl_location_id] = r.location_name || "";
+    });
+
+    try {
+      sessionStorage.setItem("ghl_effective_locations", JSON.stringify(ids));
+      sessionStorage.setItem("ghl_location_names", JSON.stringify(nameMap));
+    } catch {}
+  } catch (e) {
+    console.error("refreshEffectiveLocations failed", e);
+  }
+}
+
+/**
  * Listens for the GHL parent-frame postMessage SSO handshake on EVERY route
  * (not just /embed), so any deep-linked page inside the GHL iframe can scope
  * itself to the active sub-account via sessionStorage.ghl_active_location.
