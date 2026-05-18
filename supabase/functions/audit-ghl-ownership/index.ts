@@ -119,15 +119,18 @@ Deno.serve(async (req) => {
       const lid = loc.ghl_location_id;
       const cur_user = ownerByLoc.get(lid) ?? null;
       const cur_email = cur_user ? (emailByUser.get(cur_user) ?? null) : null;
+      const locTokenValid = loc.expires_at ? new Date(loc.expires_at).getTime() > Date.now() + 60_000 : false;
+      const tokenToUse = locTokenValid && loc.access_token ? loc.access_token : agency_access_token;
       try {
         const r = await fetch(`${GHL_BASE}/users/?locationId=${encodeURIComponent(lid)}`, {
           headers: {
-            Authorization: `Bearer ${agency_access_token}`,
+            Authorization: `Bearer ${tokenToUse}`,
             Version: GHL_VERSION,
             Accept: "application/json",
           },
         });
         const txt = await r.text();
+
         if (!r.ok) {
           diffs.push({
             location_id: lid, location_name: loc.location_name,
