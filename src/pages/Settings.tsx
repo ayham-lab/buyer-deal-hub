@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Loader2, Trash2, Infinity as InfinityIcon, ExternalLink } from "lucide-react";
 import { useActiveLocation } from "@/contexts/LocationContext";
 import TeamMembersTab from "@/pages/settings/TeamMembersTab";
+import OperatorAccountTab from "@/pages/settings/OperatorAccountTab";
 
 export default function Settings() {
   const { isIframed, activeLocation } = useActiveLocation();
