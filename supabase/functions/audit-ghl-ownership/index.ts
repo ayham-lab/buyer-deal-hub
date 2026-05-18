@@ -241,7 +241,7 @@ Deno.serve(async (req) => {
     multiple_unresolved: diffs.filter((d) => d.verdict === "multiple_unresolved").length,
     fetch_failed: diffs.filter((d) => d.verdict === "fetch_failed").length,
     agency_token_source: source_used,
-    agency_token_expires_in_seconds: agency_expires_in,
+    agency_token_expires_at: agency_expires_at,
   };
   return json({ summary, diffs });
 });
