@@ -182,6 +182,7 @@ Deno.serve(async (req) => {
         } else {
           await logInstall({ company_id: companyId, location_id: locId, payload: { name: loc.name, minted: true } });
           minted.push({ locationId: locId, name: loc.name });
+          await seedOwnerFromGhl(admin, locId, companyId);
         }
       } catch (e: any) {
         await logInstall({ company_id: companyId, location_id: locId, error: `loop: ${e?.message ?? "err"}` });
