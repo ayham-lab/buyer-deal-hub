@@ -3,6 +3,7 @@
 // agency installs, enumerates installed sub-accounts and mints per-location
 // tokens so Dispo Pro can act on each sub-account independently.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { resolveGhlAdminForLocation, ghlUserDisplayName, provisionAuthUserByEmail } from "../_shared/ghlOwnership.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
