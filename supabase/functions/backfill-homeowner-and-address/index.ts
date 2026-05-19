@@ -105,10 +105,10 @@ Deno.serve(async (req) => {
 
   const total = deals?.length ?? 0;
 
-  // Skip rows already backfilled (marker in deal_activity).
+  // Skip rows already backfilled (marker in deal_activity), unless force=1.
   const ids = (deals ?? []).map((d: any) => d.id);
   const skipSet = new Set<string>();
-  if (ids.length > 0) {
+  if (!force && ids.length > 0) {
     const { data: markers } = await admin
       .from("deal_activity")
       .select("deal_id")
