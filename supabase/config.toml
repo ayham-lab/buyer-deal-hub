@@ -36,6 +36,10 @@ verify_jwt = false
 [functions.backfill-location-names]
 verify_jwt = false
 
+[functions.backfill-homeowner-and-address]
+verify_jwt = false
+
+
 
 
 

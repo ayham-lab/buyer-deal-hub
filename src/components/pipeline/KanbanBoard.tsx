@@ -68,7 +68,10 @@ function Card({ deal, onSelect, locationNames }: { deal: Deal; onSelect: (id: st
         isDragging && "opacity-50"
       )}
     >
-      <div className="text-sm font-medium line-clamp-2">{deal.property_address}</div>
+      <div className="text-sm font-medium line-clamp-2">{deal.property_address || "—"}</div>
+      {deal.homeowner_name && (
+        <div className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{deal.homeowner_name}</div>
+      )}
       <div className="mt-2 flex items-center justify-between">
         <span className="text-primary font-bold text-sm">
           {deal.assignment_fee ? `$${deal.assignment_fee.toLocaleString()}` : "—"}
@@ -76,6 +79,7 @@ function Card({ deal, onSelect, locationNames }: { deal: Deal; onSelect: (id: st
         {ip && <span className={cn("text-[10px] px-1.5 py-0.5 rounded font-medium", ip.cls)}>{ip.label}</span>}
       </div>
       {deal.lead_source && <div className="mt-2 text-[10px] text-muted-foreground uppercase tracking-wider">{deal.lead_source}</div>}
+
       {Array.isArray(deal.exit_strategies) && deal.exit_strategies.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1">
           {deal.exit_strategies.slice(0, 2).map((k) => {

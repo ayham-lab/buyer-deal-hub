@@ -2,6 +2,8 @@
 // access token, fetches the opportunity + pipeline stage name, and writes a row
 // to `deals` when the stage name contains "dispo".
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { fetchContactAddress, formatContactAddress } from "../_shared/ghlContactAddress.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -118,16 +120,33 @@ Deno.serve(async (req) => {
     const sellerEmail = contact.email || body.email || null;
     const ghlContactId = body.contactId || opp.contactId || contact.id || contact._id || null;
 
+    // Homeowner Name = opportunity name. Lead Source = opportunity.source (whatever string GHL returns).
+    const homeownerName = (opp.name ?? body.name ?? "").toString().trim() || null;
+    const leadSource =
+      (opp.source ?? body.source ?? opp.opportunitySource ?? null) || null;
+
+    // Property Address = formatted contact address. Resolve from inline payload first,
+    // then fall back to a PIT-backed /contacts/{id} fetch.
+    let propertyAddress: string | null = null;
+    const inlineAddress = formatContactAddress(contact);
+
+    if (inlineAddress) {
+      propertyAddress = inlineAddress;
+    } else if (ghlContactId) {
+      const pit = Deno.env.get("GHL_AGENCY_PIT_TOKEN") ?? "";
+      if (pit) {
+        const r = await fetchContactAddress(ghlContactId, pit);
+        if (r.formatted) propertyAddress = r.formatted;
+        else console.log("contact address resolution:", r.source, r.detail ?? "");
+      }
+    }
+
     let written = false;
     let insertError: string | null = null;
-    const address =
-      opp.name ||
-      opp.contact?.name ||
-      `GHL Opportunity ${opportunityId}`;
 
     const { data: existing, error: selErr } = await admin
       .from("deals")
-      .select("id, seller_name, seller_phone, seller_email, ghl_contact_id")
+      .select("id, seller_name, seller_phone, seller_email, ghl_contact_id, property_address, homeowner_name, lead_source")
       .eq("ghl_opportunity_id", opportunityId)
       .eq("ghl_location_id", locationId)
       .maybeSingle();
@@ -145,6 +164,9 @@ Deno.serve(async (req) => {
       if (ghlAssignedUserId) patch.ghl_assigned_user_id = ghlAssignedUserId;
       patch.ghl_pipeline_id = pipelineId;
       if (stageId) patch.ghl_pipeline_stage_id = stageId;
+      if (homeownerName) patch.homeowner_name = homeownerName;
+      if (propertyAddress) patch.property_address = propertyAddress;
+      if (leadSource) patch.lead_source = leadSource;
       if (Object.keys(patch).length > 0) {
         const { error: updErr } = await admin.from("deals").update(patch).eq("id", existing.id);
         if (updErr) {
@@ -159,9 +181,10 @@ Deno.serve(async (req) => {
         .insert({
           user_id: null,
           ghl_assigned_user_id: ghlAssignedUserId,
-          property_address: address,
+          property_address: propertyAddress ?? "",
+          homeowner_name: homeownerName,
           status: "lead",
-          lead_source: "ghl",
+          lead_source: leadSource,
           ghl_opportunity_id: opportunityId,
           ghl_location_id: locationId,
           ghl_pipeline_id: pipelineId,
@@ -179,6 +202,7 @@ Deno.serve(async (req) => {
         written = true;
       }
     }
+
 
     return j({ ok: true, written, stageId, stageName: mapping?.ghl_stage_name ?? null, mapped: !!mapping, ghlAssignedUserId, insertError }, 200);
   } catch (err: any) {
