@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { scopeToLocation } from "@/lib/locationScope";
+import { scopeToLocation, getActiveLocationId } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -47,13 +47,13 @@ export default function TitleCompanies() {
   async function load() {
     if (!user) return;
     setLoading(true);
-    const { data } = await scopeToLocation(
-      supabase
-        .from("title_companies")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-    );
+    const activeLoc = getActiveLocationId();
+    const base = supabase
+      .from("title_companies")
+      .select("*")
+      .order("created_at", { ascending: false });
+    const q = activeLoc ? base : base.eq("user_id", user.id);
+    const { data } = await scopeToLocation(q);
     setItems((data as any) || []);
     setLoading(false);
   }
