@@ -61,6 +61,9 @@ async function fetchOpportunitySource(
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  const url = new URL(req.url);
+  const force = url.searchParams.get("force") === "1";
+
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -69,6 +72,20 @@ Deno.serve(async (req) => {
   const pit = Deno.env.get("GHL_AGENCY_PIT_TOKEN") ?? "";
   if (!pit) {
     return j({ error: "missing GHL_AGENCY_PIT_TOKEN" }, 500);
+  }
+
+  // Cache of per-location access tokens (contacts/opportunities require sub-account scope).
+  const tokenCache = new Map<string, string>();
+  async function locToken(locId: string): Promise<string> {
+    if (tokenCache.has(locId)) return tokenCache.get(locId)!;
+    const { data } = await admin
+      .from("ghl_location_tokens")
+      .select("access_token")
+      .eq("ghl_location_id", locId)
+      .maybeSingle();
+    const t = (data as any)?.access_token || pit;
+    tokenCache.set(locId, t);
+    return t;
   }
 
   // Scope: every deal whose location belongs to the target company (via ghl_location_tokens).
@@ -88,10 +105,10 @@ Deno.serve(async (req) => {
 
   const total = deals?.length ?? 0;
 
-  // Skip rows already backfilled (marker in deal_activity).
+  // Skip rows already backfilled (marker in deal_activity), unless force=1.
   const ids = (deals ?? []).map((d: any) => d.id);
   const skipSet = new Set<string>();
-  if (ids.length > 0) {
+  if (!force && ids.length > 0) {
     const { data: markers } = await admin
       .from("deal_activity")
       .select("deal_id")
@@ -135,9 +152,10 @@ Deno.serve(async (req) => {
         buckets.push("homeowner_name_set");
       }
 
-      // 2) Refresh property_address from linked contact
-      if (d.ghl_contact_id) {
-        const r = await fetchContactAddress(d.ghl_contact_id, pit);
+      // 2) Refresh property_address from linked contact (use location OAuth token; PIT lacks contact scope)
+      if (d.ghl_contact_id && d.ghl_location_id) {
+        const bearer = await locToken(d.ghl_location_id);
+        const r = await fetchContactAddress(d.ghl_contact_id, bearer);
         if (r.source === "ok" && r.formatted) {
           patch.property_address = r.formatted;
           counts.address_refreshed++;
@@ -148,7 +166,7 @@ Deno.serve(async (req) => {
           buckets.push("address_not_available");
         } else {
           counts.fetch_failed++;
-          buckets.push("fetch_failed:address");
+          buckets.push(`fetch_failed:address:${r.detail ?? ""}`);
         }
       } else {
         patch.property_address = "";
@@ -158,13 +176,7 @@ Deno.serve(async (req) => {
 
       // 3) Refresh lead_source from opportunity
       if (d.ghl_opportunity_id && d.ghl_location_id) {
-        // Prefer the location's own access_token (broader perms on opps); fall back to PIT.
-        const { data: tok } = await admin
-          .from("ghl_location_tokens")
-          .select("access_token")
-          .eq("ghl_location_id", d.ghl_location_id)
-          .maybeSingle();
-        const bearer = (tok as any)?.access_token || pit;
+        const bearer = await locToken(d.ghl_location_id);
         const sr = await fetchOpportunitySource(d.ghl_opportunity_id, bearer);
         if (sr.ok) {
           if (sr.source) {
