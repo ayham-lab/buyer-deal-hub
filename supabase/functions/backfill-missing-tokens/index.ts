@@ -3,6 +3,7 @@
 // token via /oauth/token and insert the row. Reports per-location outcome.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { resolveGhlAdminForLocation, ghlUserDisplayName, provisionAuthUserByEmail } from "../_shared/ghlOwnership.ts";
+import { resolveOrFetchName } from "../_shared/ghlLocationName.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -87,10 +88,11 @@ Deno.serve(async (req) => {
       }
       const j = JSON.parse(text);
       const expiresAt = new Date(Date.now() + (Number(j.expires_in) || 0) * 1000).toISOString();
+      const name = t.location_name ?? await resolveOrFetchName(null, t.location_id);
       const row = {
         ghl_location_id: t.location_id,
         ghl_company_id: j.companyId ?? j.company_id ?? t.company_id,
-        location_name: t.location_name ?? null,
+        location_name: name,
         access_token: j.access_token,
         refresh_token: j.refresh_token ?? t.refresh_token,
         expires_at: expiresAt,

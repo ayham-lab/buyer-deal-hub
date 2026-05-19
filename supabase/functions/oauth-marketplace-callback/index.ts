@@ -4,6 +4,7 @@
 // tokens so Dispo Pro can act on each sub-account independently.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { resolveGhlAdminForLocation, ghlUserDisplayName, provisionAuthUserByEmail } from "../_shared/ghlOwnership.ts";
+import { resolveOrFetchName } from "../_shared/ghlLocationName.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -100,9 +101,11 @@ Deno.serve(async (req) => {
 
     // Sub-account install: single upsert.
     if (locationId) {
+      const name = await resolveOrFetchName(parsed, locationId);
       const { error: upErr } = await persistLocationToken(admin, {
         ghl_location_id: locationId,
         ghl_company_id: companyId,
+        location_name: name,
         access_token: parsed.access_token,
         refresh_token: parsed.refresh_token,
         expires_at: expiresAt(parsed.expires_in),
@@ -206,9 +209,11 @@ Deno.serve(async (req) => {
                   continue;
                 }
                 const mintJson = JSON.parse(mintText);
+                const name = await resolveOrFetchName(loc, locId);
                 const { error: upErr } = await persistLocationToken(admin, {
                   ghl_location_id: locId,
                   ghl_company_id: companyId,
+                  location_name: name,
                   access_token: mintJson.access_token,
                   refresh_token: mintJson.refresh_token ?? mintJson.access_token,
                   expires_at: expiresAt(mintJson.expires_in),
@@ -260,6 +265,7 @@ Deno.serve(async (req) => {
 async function persistLocationToken(admin: any, row: {
   ghl_location_id: string;
   ghl_company_id: string | null;
+  location_name?: string | null;
   access_token: string;
   refresh_token: string;
   expires_at: string;
@@ -277,7 +283,10 @@ async function persistLocationToken(admin: any, row: {
   await ensureOwnerMembership(admin, row.ghl_location_id, row.ghl_company_id);
 
   if (existing?.id) {
-    return await admin.from("ghl_location_tokens").update(row).eq("id", existing.id);
+    // Don't clobber an existing name with null.
+    const updateRow: any = { ...row };
+    if (updateRow.location_name == null) delete updateRow.location_name;
+    return await admin.from("ghl_location_tokens").update(updateRow).eq("id", existing.id);
   }
   return await admin.from("ghl_location_tokens").insert(row);
 }

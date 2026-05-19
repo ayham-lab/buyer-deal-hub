@@ -3,6 +3,7 @@
 // authenticate against GHL.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { resolveGhlAdminForLocation, ghlUserDisplayName, provisionAuthUserByEmail } from "../_shared/ghlOwnership.ts";
+import { resolveOrFetchName } from "../_shared/ghlLocationName.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -169,7 +170,7 @@ Deno.serve(async (req) => {
         const { error: upErr } = await persistLocationToken(admin, {
           ghl_location_id: locId,
           ghl_company_id: companyId,
-          location_name: loc.name ?? loc.businessName ?? null,
+          location_name: await resolveOrFetchName(loc, locId),
           access_token: mintJson.access_token,
           refresh_token: mintJson.refresh_token ?? mintJson.access_token,
           expires_at: expiresAt,
@@ -222,7 +223,9 @@ async function persistLocationToken(admin: any, row: {
     .maybeSingle();
   if (selErr) return { error: selErr };
   if (existing?.id) {
-    return await admin.from("ghl_location_tokens").update(row).eq("id", existing.id);
+    const updateRow: any = { ...row };
+    if (updateRow.location_name == null) delete updateRow.location_name;
+    return await admin.from("ghl_location_tokens").update(updateRow).eq("id", existing.id);
   }
   return await admin.from("ghl_location_tokens").insert(row);
 }
