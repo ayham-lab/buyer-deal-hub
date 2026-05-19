@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { scopeToLocation } from "@/lib/locationScope";
+import { scopeToLocation, getActiveLocationId } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveLocation } from "@/contexts/LocationContext";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
