@@ -65,14 +65,22 @@ Deno.serve(async (req) => {
       }
       const parsed = JSON.parse(text);
       const newExpires = new Date(Date.now() + (Number(parsed.expires_in) || 0) * 1000).toISOString();
+      // Refresh the display name on each token-refresh pass so renames in GHL
+      // propagate (typically within 24h since tokens last 24h).
+      const pit = Deno.env.get("GHL_AGENCY_PIT_TOKEN") ?? "";
+      const update: Record<string, unknown> = {
+        access_token: parsed.access_token,
+        refresh_token: parsed.refresh_token ?? row.refresh_token,
+        expires_at: newExpires,
+        updated_at: new Date().toISOString(),
+      };
+      if (!isCompany && pit && row.ghl_location_id) {
+        const nameRes = await fetchAndResolveLocationName(row.ghl_location_id, pit);
+        if (nameRes.name) update.location_name = nameRes.name;
+      }
       const { error: updErr } = await admin
         .from("ghl_location_tokens")
-        .update({
-          access_token: parsed.access_token,
-          refresh_token: parsed.refresh_token ?? row.refresh_token,
-          expires_at: newExpires,
-          updated_at: new Date().toISOString(),
-        })
+        .update(update)
         .eq("id", row.id);
       if (updErr) {
         errors.push(`${label} update: ${updErr.message}`);
