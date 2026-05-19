@@ -277,6 +277,10 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
             </Button>
           </TabsContent>
 
+          <TabsContent value="offers" className="mt-4">
+            <DealOffers dealId={dealId} />
+          </TabsContent>
+
           <TabsContent value="files" className="mt-4">
             <DealFiles dealId={dealId} />
           </TabsContent>
