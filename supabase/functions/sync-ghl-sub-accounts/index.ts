@@ -3,6 +3,7 @@
 // authenticate against GHL.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { resolveGhlAdminForLocation, ghlUserDisplayName, provisionAuthUserByEmail } from "../_shared/ghlOwnership.ts";
+import { resolveOrFetchName } from "../_shared/ghlLocationName.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
