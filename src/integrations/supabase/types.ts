@@ -664,6 +664,7 @@ export type Database = {
           emd_amount: number | null
           emd_received: boolean
           emd_received_at: string | null
+          exit_strategies: string[]
           ghl_assigned_user_id: string | null
           ghl_contact_id: string | null
           ghl_location_id: string | null
@@ -708,6 +709,7 @@ export type Database = {
           emd_amount?: number | null
           emd_received?: boolean
           emd_received_at?: string | null
+          exit_strategies?: string[]
           ghl_assigned_user_id?: string | null
           ghl_contact_id?: string | null
           ghl_location_id?: string | null
@@ -752,6 +754,7 @@ export type Database = {
           emd_amount?: number | null
           emd_received?: boolean
           emd_received_at?: string | null
+          exit_strategies?: string[]
           ghl_assigned_user_id?: string | null
           ghl_contact_id?: string | null
           ghl_location_id?: string | null
