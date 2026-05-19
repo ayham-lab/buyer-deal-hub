@@ -242,6 +242,8 @@ export default function KPIs() {
           <Stat icon={<TrendingUp />} label="Revenue Closed" value={`$${revenueClosed.toLocaleString()}`} />
           <Stat icon={<Briefcase />} label="Deals Active" value={String(active.length)} />
           <Stat icon={<Target />} label="Contract Conversion" value={`${conversion}%`} />
+          <Stat icon={<DollarSign />} label="Expected Assignments (Active)" value={`$${active.reduce((s, d) => s + (Number(d.expected_assignment) || 0), 0).toLocaleString()}`} />
+          <Stat icon={<DollarSign />} label="Capital Tied (Active)" value={`$${active.reduce((s, d) => s + (Number(d.price_under_contract) || 0), 0).toLocaleString()}`} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
