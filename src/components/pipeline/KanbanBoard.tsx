@@ -3,6 +3,7 @@ import { Deal, DealStatus } from "@/pages/Pipeline";
 import { STATUS_COLS, ipBadge } from "./utils";
 import { cn } from "@/lib/utils";
 import { ExternalLink } from "lucide-react";
+import { EXIT_STRATEGY_MAP } from "./exitStrategies";
 
 export function KanbanBoard({ deals, onStatusChange, onSelect, locationNames }: {
   deals: Deal[]; onStatusChange: (id: string, s: DealStatus) => void; onSelect: (id: string) => void;
@@ -75,6 +76,23 @@ function Card({ deal, onSelect, locationNames }: { deal: Deal; onSelect: (id: st
         {ip && <span className={cn("text-[10px] px-1.5 py-0.5 rounded font-medium", ip.cls)}>{ip.label}</span>}
       </div>
       {deal.lead_source && <div className="mt-2 text-[10px] text-muted-foreground uppercase tracking-wider">{deal.lead_source}</div>}
+      {Array.isArray(deal.exit_strategies) && deal.exit_strategies.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {deal.exit_strategies.slice(0, 2).map((k) => {
+            const meta = EXIT_STRATEGY_MAP[k];
+            return (
+              <span key={k} className={cn("text-[9px] px-1.5 py-0.5 rounded font-medium", meta?.cls)}>
+                {meta?.label || k}
+              </span>
+            );
+          })}
+          {deal.exit_strategies.length > 2 && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-muted text-muted-foreground border border-border">
+              +{deal.exit_strategies.length - 2}
+            </span>
+          )}
+        </div>
+      )}
       {(sourceName || deal.ghl_contact_id) && (
         <div className="mt-1 flex items-center justify-between gap-2">
           {sourceName ? (

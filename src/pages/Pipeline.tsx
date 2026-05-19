@@ -33,6 +33,7 @@ export interface Deal {
   notes: string | null;
   ghl_location_id?: string | null;
   ghl_contact_id?: string | null;
+  exit_strategies?: string[] | null;
   created_at: string;
 }
 
