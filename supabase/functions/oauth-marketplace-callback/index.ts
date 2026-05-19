@@ -265,6 +265,7 @@ Deno.serve(async (req) => {
 async function persistLocationToken(admin: any, row: {
   ghl_location_id: string;
   ghl_company_id: string | null;
+  location_name?: string | null;
   access_token: string;
   refresh_token: string;
   expires_at: string;
