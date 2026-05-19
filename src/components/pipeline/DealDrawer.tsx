@@ -131,8 +131,9 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
         </SheetHeader>
 
         <Tabs defaultValue="overview" className="mt-6">
-          <TabsList className="bg-secondary">
+          <TabsList className="bg-secondary flex-wrap h-auto">
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="offers">Offers</TabsTrigger>
             <TabsTrigger value="files">Files</TabsTrigger>
             <TabsTrigger value="checklist">Checklist ({checklist.filter((c) => !c.is_completed).length})</TabsTrigger>
             <TabsTrigger value="tasks">Tasks</TabsTrigger>
