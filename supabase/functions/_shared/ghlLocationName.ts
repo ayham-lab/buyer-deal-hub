@@ -24,26 +24,36 @@ export function extractLocationName(loc: any): NameResolution {
 }
 
 // Fetch a location from GHL using the agency PIT (preferred) and resolve a name.
+// Retries up to 5 times on 429 with exponential backoff.
 export async function fetchAndResolveLocationName(
   locationId: string,
   pitToken: string,
 ): Promise<NameResolution> {
-  try {
-    const resp = await fetch(`${GHL_BASE}/locations/${encodeURIComponent(locationId)}`, {
-      headers: {
-        Authorization: `Bearer ${pitToken}`,
-        Accept: "application/json",
-        Version: GHL_API_VERSION,
-      },
-    });
-    const text = await resp.text();
-    if (!resp.ok) {
-      return { name: null, source: "fetch_failed", detail: `${resp.status}: ${text.slice(0, 200)}` };
+  const url = `${GHL_BASE}/locations/${encodeURIComponent(locationId)}`;
+  const headers = {
+    Authorization: `Bearer ${pitToken}`,
+    Accept: "application/json",
+    Version: GHL_API_VERSION,
+  };
+  const backoffs = [1500, 3000, 4500, 6000, 7500];
+  for (let attempt = 0; attempt < backoffs.length; attempt++) {
+    try {
+      const resp = await fetch(url, { headers });
+      const text = await resp.text();
+      if (resp.status === 429) {
+        await new Promise((r) => setTimeout(r, backoffs[attempt]));
+        continue;
+      }
+      if (!resp.ok) {
+        return { name: null, source: "fetch_failed", detail: `${resp.status}: ${text.slice(0, 200)}` };
+      }
+      let j: any;
+      try { j = JSON.parse(text); } catch { return { name: null, source: "fetch_failed", detail: "bad_json" }; }
+      return extractLocationName(j.location ?? j);
+    } catch (e: any) {
+      return { name: null, source: "fetch_failed", detail: e?.message ?? "err" };
     }
-    let j: any;
-    try { j = JSON.parse(text); } catch { return { name: null, source: "fetch_failed", detail: "bad_json" }; }
-    return extractLocationName(j.location ?? j);
-  } catch (e: any) {
-    return { name: null, source: "fetch_failed", detail: e?.message ?? "err" };
   }
+  return { name: null, source: "fetch_failed", detail: "429_after_retries" };
 }
+
