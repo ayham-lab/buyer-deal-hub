@@ -32,12 +32,14 @@ export default function KPIs() {
 
   useEffect(() => {
     if (!user) return;
-    // In iframe, scope deals/buyers to the location (RLS allows seeing all per-location rows
-    // including webhook-imported ones with user_id=NULL). Standalone scopes by owner.
-    const dealsQ = isIframed
+    // When a GHL location is active (iframe or standalone admin), include all rows for the
+    // location (incl. webhook-imported with user_id=NULL). RLS enforces location scoping.
+    const activeLoc = getActiveLocationId();
+    const inLocation = isIframed || !!activeLoc;
+    const dealsQ = inLocation
       ? supabase.from("deals").select("*")
       : supabase.from("deals").select("*").eq("user_id", user.id);
-    const buyersQ = isIframed
+    const buyersQ = inLocation
       ? supabase.from("buyers").select("id, created_at")
       : supabase.from("buyers").select("id, created_at").eq("user_id", user.id);
     const promises: any[] = [
