@@ -144,7 +144,9 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4 mt-4">
-            <Field label="Address" value={deal.property_address} onSave={(v) => saveField("property_address", v)} />
+            <Field label="Homeowner Name" value={deal.homeowner_name ?? ""} onSave={(v) => saveField("homeowner_name", v || null)} />
+            <Field label="Address" value={deal.property_address ?? ""} onSave={(v) => saveField("property_address", v)} />
+
             <div className="grid grid-cols-2 gap-3">
               <Field label="Asking Price" type="number" value={deal.asking_price ?? ""} onSave={(v) => saveField("asking_price", v ? Number(v) : null)} />
               <Field label="Price Under Contract" type="number" value={deal.price_under_contract ?? ""} onSave={(v) => saveField("price_under_contract", v ? Number(v) : null)} />
