@@ -672,6 +672,7 @@ export type Database = {
           ghl_opportunity_id: string | null
           ghl_pipeline_id: string | null
           ghl_pipeline_stage_id: string | null
+          homeowner_name: string | null
           id: string
           ip_expiry_date: string | null
           jv_partner_id: string | null
@@ -719,6 +720,7 @@ export type Database = {
           ghl_opportunity_id?: string | null
           ghl_pipeline_id?: string | null
           ghl_pipeline_stage_id?: string | null
+          homeowner_name?: string | null
           id?: string
           ip_expiry_date?: string | null
           jv_partner_id?: string | null
@@ -766,6 +768,7 @@ export type Database = {
           ghl_opportunity_id?: string | null
           ghl_pipeline_id?: string | null
           ghl_pipeline_stage_id?: string | null
+          homeowner_name?: string | null
           id?: string
           ip_expiry_date?: string | null
           jv_partner_id?: string | null
