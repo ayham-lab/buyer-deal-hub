@@ -57,3 +57,19 @@ export async function fetchAndResolveLocationName(
   return { name: null, source: "fetch_failed", detail: "429_after_retries" };
 }
 
+// Resolve a name from a payload first, then fall back to a PIT-backed
+// /locations/{id} fetch when the payload is empty. Returns null if nothing
+// usable was found or no PIT is configured.
+export async function resolveOrFetchName(
+  loc: any | null,
+  locationId: string,
+): Promise<string | null> {
+  const fromPayload = extractLocationName(loc);
+  if (fromPayload.name) return fromPayload.name;
+  const pit = Deno.env.get("GHL_AGENCY_PIT_TOKEN") ?? "";
+  if (!pit) return null;
+  const fetched = await fetchAndResolveLocationName(locationId, pit);
+  return fetched.name;
+}
+
+
