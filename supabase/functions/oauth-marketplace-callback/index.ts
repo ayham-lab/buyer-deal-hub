@@ -209,9 +209,11 @@ Deno.serve(async (req) => {
                   continue;
                 }
                 const mintJson = JSON.parse(mintText);
+                const name = await resolveOrFetchName(loc, locId);
                 const { error: upErr } = await persistLocationToken(admin, {
                   ghl_location_id: locId,
                   ghl_company_id: companyId,
+                  location_name: name,
                   access_token: mintJson.access_token,
                   refresh_token: mintJson.refresh_token ?? mintJson.access_token,
                   expires_at: expiresAt(mintJson.expires_in),
