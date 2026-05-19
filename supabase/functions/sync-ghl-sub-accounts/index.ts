@@ -223,7 +223,9 @@ async function persistLocationToken(admin: any, row: {
     .maybeSingle();
   if (selErr) return { error: selErr };
   if (existing?.id) {
-    return await admin.from("ghl_location_tokens").update(row).eq("id", existing.id);
+    const updateRow: any = { ...row };
+    if (updateRow.location_name == null) delete updateRow.location_name;
+    return await admin.from("ghl_location_tokens").update(updateRow).eq("id", existing.id);
   }
   return await admin.from("ghl_location_tokens").insert(row);
 }
