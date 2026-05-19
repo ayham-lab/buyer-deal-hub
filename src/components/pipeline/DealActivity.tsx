@@ -83,9 +83,12 @@ function describe(a: Activity): string {
       const to = formatStrategyList(a.to_value, a.metadata?.to);
       return `Exit strategy changed from [${from}] to [${to}]`;
     }
+    case "homeowner_address_backfilled":
+      return "Homeowner / address backfilled from GHL";
     default:
       return a.event_type;
   }
+
 }
 
 export function DealActivity({ dealId }: { dealId: string }) {
