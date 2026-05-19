@@ -18,6 +18,7 @@ import { DealAssignees } from "./DealAssignees";
 import { DealActivity } from "./DealActivity";
 import { DealMarketing } from "./DealMarketing";
 import { DealOffers } from "./DealOffers";
+import { ExitStrategyPicker } from "./ExitStrategyPicker";
 import { format } from "date-fns";
 
 export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | null; onClose: () => void; onUpdated: () => void }) {
@@ -152,6 +153,13 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
               <Field label="IP Expiry" type="date" value={deal.ip_expiry_date ?? ""} onSave={(v) => saveField("ip_expiry_date", v || null)} />
               <Field label="Closing" type="date" value={deal.closing_date ?? ""} onSave={(v) => saveField("closing_date", v || null)} />
               <Field label="Lead Source" value={deal.lead_source ?? ""} onSave={(v) => saveField("lead_source", v)} />
+            </div>
+            <div>
+              <label className="text-[11px] uppercase tracking-wider text-muted-foreground">Exit Strategy</label>
+              <ExitStrategyPicker
+                value={deal.exit_strategies || []}
+                onChange={(v) => saveField("exit_strategies", v)}
+              />
             </div>
             <div>
               <label className="text-[11px] uppercase tracking-wider text-muted-foreground">Title Company</label>

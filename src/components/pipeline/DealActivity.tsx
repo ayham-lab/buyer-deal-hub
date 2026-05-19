@@ -13,7 +13,9 @@ import {
   UserMinus,
   DollarSign,
   CheckCircle2,
+  Tag,
 } from "lucide-react";
+import { exitStrategyLabel } from "./exitStrategies";
 
 interface Activity {
   id: string;
@@ -37,7 +39,16 @@ const ICONS: Record<string, any> = {
   offer_updated: Activity,
   offer_status_changed: ArrowRight,
   offer_deleted: Activity,
+  exit_strategy_changed: Tag,
 };
+
+function formatStrategyList(raw: string | null | undefined, arr?: string[]): string {
+  const list = Array.isArray(arr) && arr.length
+    ? arr
+    : (raw ? raw.split(",").filter(Boolean) : []);
+  if (list.length === 0) return "none";
+  return list.map(exitStrategyLabel).join(", ");
+}
 
 function describe(a: Activity): string {
   switch (a.event_type) {
@@ -67,6 +78,11 @@ function describe(a: Activity): string {
     }
     case "offer_deleted":
       return `Deleted ${a.from_value || "offer"}`;
+    case "exit_strategy_changed": {
+      const from = formatStrategyList(a.from_value, a.metadata?.from);
+      const to = formatStrategyList(a.to_value, a.metadata?.to);
+      return `Exit strategy changed from [${from}] to [${to}]`;
+    }
     default:
       return a.event_type;
   }
