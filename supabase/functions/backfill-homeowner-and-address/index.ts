@@ -152,9 +152,10 @@ Deno.serve(async (req) => {
         buckets.push("homeowner_name_set");
       }
 
-      // 2) Refresh property_address from linked contact
-      if (d.ghl_contact_id) {
-        const r = await fetchContactAddress(d.ghl_contact_id, pit);
+      // 2) Refresh property_address from linked contact (use location OAuth token; PIT lacks contact scope)
+      if (d.ghl_contact_id && d.ghl_location_id) {
+        const bearer = await locToken(d.ghl_location_id);
+        const r = await fetchContactAddress(d.ghl_contact_id, bearer);
         if (r.source === "ok" && r.formatted) {
           patch.property_address = r.formatted;
           counts.address_refreshed++;
@@ -165,13 +166,17 @@ Deno.serve(async (req) => {
           buckets.push("address_not_available");
         } else {
           counts.fetch_failed++;
-          buckets.push("fetch_failed:address");
+          buckets.push(`fetch_failed:address:${r.detail ?? ""}`);
         }
       } else {
         patch.property_address = "";
         counts.address_not_available++;
         buckets.push("address_not_available");
       }
+
+      // 3) Refresh lead_source from opportunity
+      if (d.ghl_opportunity_id && d.ghl_location_id) {
+        const bearer = await locToken(d.ghl_location_id);
 
       // 3) Refresh lead_source from opportunity
       if (d.ghl_opportunity_id && d.ghl_location_id) {
