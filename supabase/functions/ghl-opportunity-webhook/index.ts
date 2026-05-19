@@ -128,11 +128,8 @@ Deno.serve(async (req) => {
     // Property Address = formatted contact address. Resolve from inline payload first,
     // then fall back to a PIT-backed /contacts/{id} fetch.
     let propertyAddress: string | null = null;
-    const inlineAddress = await (async () => {
-      // Try to build from inline contact payload first (no extra fetch).
-      const { formatContactAddress } = await import("../_shared/ghlContactAddress.ts");
-      return formatContactAddress(contact);
-    })();
+    const inlineAddress = formatContactAddress(contact);
+
     if (inlineAddress) {
       propertyAddress = inlineAddress;
     } else if (ghlContactId) {
