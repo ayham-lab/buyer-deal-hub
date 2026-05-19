@@ -576,6 +576,78 @@ export type Database = {
           },
         ]
       }
+      deal_offers: {
+        Row: {
+          buyer_id: string
+          contingencies: string[]
+          contingencies_other: string | null
+          created_at: string
+          created_by: string | null
+          deal_id: string
+          emd_amount: number | null
+          ghl_location_id: string | null
+          id: string
+          ideal_closing_date: string | null
+          notes: string | null
+          offer_amount: number
+          offer_date: string
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          buyer_id: string
+          contingencies?: string[]
+          contingencies_other?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_id: string
+          emd_amount?: number | null
+          ghl_location_id?: string | null
+          id?: string
+          ideal_closing_date?: string | null
+          notes?: string | null
+          offer_amount: number
+          offer_date?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          buyer_id?: string
+          contingencies?: string[]
+          contingencies_other?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string
+          emd_amount?: number | null
+          ghl_location_id?: string | null
+          id?: string
+          ideal_closing_date?: string | null
+          notes?: string | null
+          offer_amount?: number
+          offer_date?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_offers_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "buyers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_offers_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deals: {
         Row: {
           acquisitions_manager_id: string | null

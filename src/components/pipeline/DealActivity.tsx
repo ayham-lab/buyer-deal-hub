@@ -33,6 +33,10 @@ const ICONS: Record<string, any> = {
   assignee_removed: UserMinus,
   file_uploaded: FileUp,
   note_added: MessageSquare,
+  offer_added: DollarSign,
+  offer_updated: Activity,
+  offer_status_changed: ArrowRight,
+  offer_deleted: Activity,
 };
 
 function describe(a: Activity): string {
@@ -53,6 +57,16 @@ function describe(a: Activity): string {
       return `Uploaded ${a.to_value} (${a.metadata?.category || "file"})`;
     case "note_added":
       return a.to_value || "Note added";
+    case "offer_added":
+      return `Added ${a.to_value || "offer"}`;
+    case "offer_updated":
+      return `Updated ${a.to_value || "offer"}`;
+    case "offer_status_changed": {
+      const buyer = a.metadata?.buyer_name ? ` (${a.metadata.buyer_name})` : "";
+      return `Offer status${buyer} changed from ${a.from_value || "—"} to ${a.to_value || "—"}`;
+    }
+    case "offer_deleted":
+      return `Deleted ${a.from_value || "offer"}`;
     default:
       return a.event_type;
   }

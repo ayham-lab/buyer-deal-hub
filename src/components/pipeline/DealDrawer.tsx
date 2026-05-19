@@ -17,6 +17,7 @@ import { DealBuyerMatch } from "./DealBuyerMatch";
 import { DealAssignees } from "./DealAssignees";
 import { DealActivity } from "./DealActivity";
 import { DealMarketing } from "./DealMarketing";
+import { DealOffers } from "./DealOffers";
 import { format } from "date-fns";
 
 export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | null; onClose: () => void; onUpdated: () => void }) {
@@ -130,8 +131,9 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
         </SheetHeader>
 
         <Tabs defaultValue="overview" className="mt-6">
-          <TabsList className="bg-secondary">
+          <TabsList className="bg-secondary flex-wrap h-auto">
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="offers">Offers</TabsTrigger>
             <TabsTrigger value="files">Files</TabsTrigger>
             <TabsTrigger value="checklist">Checklist ({checklist.filter((c) => !c.is_completed).length})</TabsTrigger>
             <TabsTrigger value="tasks">Tasks</TabsTrigger>
@@ -273,6 +275,10 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
             <Button onClick={deleteDeal} variant="outline" className="text-destructive border-destructive/30 mt-4">
               <Trash2 className="h-4 w-4 mr-1" /> Delete Deal
             </Button>
+          </TabsContent>
+
+          <TabsContent value="offers" className="mt-4">
+            <DealOffers dealId={dealId} />
           </TabsContent>
 
           <TabsContent value="files" className="mt-4">
