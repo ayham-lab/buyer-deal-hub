@@ -47,13 +47,13 @@ export default function TitleCompanies() {
   async function load() {
     if (!user) return;
     setLoading(true);
-    const { data } = await scopeToLocation(
-      supabase
-        .from("title_companies")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-    );
+    const activeLoc = getActiveLocationId();
+    const base = supabase
+      .from("title_companies")
+      .select("*")
+      .order("created_at", { ascending: false });
+    const q = activeLoc ? base : base.eq("user_id", user.id);
+    const { data } = await scopeToLocation(q);
     setItems((data as any) || []);
     setLoading(false);
   }
