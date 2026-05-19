@@ -2,6 +2,8 @@
 // access token, fetches the opportunity + pipeline stage name, and writes a row
 // to `deals` when the stage name contains "dispo".
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { fetchContactAddress } from "../_shared/ghlContactAddress.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
