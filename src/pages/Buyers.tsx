@@ -66,14 +66,16 @@ export default function Buyers() {
   async function load() {
     if (!user) return;
     setLoading(true);
-    const { data } = await scopeToLocation(
-      supabase
-        .from("buyers")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("is_archived", false)
-        .order("created_at", { ascending: false })
-    );
+    // When a GHL location is active, show all buyers for that location (including
+    // webhook-imported rows with user_id IS NULL). RLS gates by location.
+    const activeLoc = getActiveLocationId();
+    const base = supabase
+      .from("buyers")
+      .select("*")
+      .eq("is_archived", false)
+      .order("created_at", { ascending: false });
+    const q = activeLoc ? base : base.eq("user_id", user.id);
+    const { data } = await scopeToLocation(q);
     setBuyers((data as any) || []);
     setLoading(false);
   }
