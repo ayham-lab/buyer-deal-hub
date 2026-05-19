@@ -61,6 +61,9 @@ async function fetchOpportunitySource(
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  const url = new URL(req.url);
+  const force = url.searchParams.get("force") === "1";
+
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -69,6 +72,20 @@ Deno.serve(async (req) => {
   const pit = Deno.env.get("GHL_AGENCY_PIT_TOKEN") ?? "";
   if (!pit) {
     return j({ error: "missing GHL_AGENCY_PIT_TOKEN" }, 500);
+  }
+
+  // Cache of per-location access tokens (contacts/opportunities require sub-account scope).
+  const tokenCache = new Map<string, string>();
+  async function locToken(locId: string): Promise<string> {
+    if (tokenCache.has(locId)) return tokenCache.get(locId)!;
+    const { data } = await admin
+      .from("ghl_location_tokens")
+      .select("access_token")
+      .eq("ghl_location_id", locId)
+      .maybeSingle();
+    const t = (data as any)?.access_token || pit;
+    tokenCache.set(locId, t);
+    return t;
   }
 
   // Scope: every deal whose location belongs to the target company (via ghl_location_tokens).
