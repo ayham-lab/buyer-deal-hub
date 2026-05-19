@@ -3,6 +3,7 @@
 // agency-level Company token never lapses — that token is what we use to
 // re-mint per-location tokens and enumerate newly-installed sub-accounts.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { fetchAndResolveLocationName } from "../_shared/ghlLocationName.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
