@@ -101,9 +101,11 @@ Deno.serve(async (req) => {
 
     // Sub-account install: single upsert.
     if (locationId) {
+      const name = await resolveOrFetchName(parsed, locationId);
       const { error: upErr } = await persistLocationToken(admin, {
         ghl_location_id: locationId,
         ghl_company_id: companyId,
+        location_name: name,
         access_token: parsed.access_token,
         refresh_token: parsed.refresh_token,
         expires_at: expiresAt(parsed.expires_in),
