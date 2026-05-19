@@ -33,7 +33,9 @@ export interface Deal {
   notes: string | null;
   ghl_location_id?: string | null;
   ghl_contact_id?: string | null;
-  exit_strategies?: string[] | null;
+ exit_strategies?: string[] | null;
+ price_under_contract?: number | null;
+ expected_assignment?: number | null;
   created_at: string;
 }
 
