@@ -122,6 +122,29 @@ export default function KPIs() {
     return Object.entries(m).map(([name, { sum, count }]) => ({ name, avg: Math.round(sum / count) }));
   }, [deals]);
 
+  // Expected vs Actual Assignment per closed deal (most recent 30)
+  const expectedVsActual = useMemo(() => {
+    return ownerScoped
+      .filter((d) => d.status === "closed")
+      .sort((a, b) => {
+        const ad = new Date(a.closed_at || a.updated_at || a.created_at).getTime();
+        const bd = new Date(b.closed_at || b.updated_at || b.created_at).getTime();
+        return bd - ad;
+      })
+      .slice(0, 30)
+      .reverse()
+      .map((d) => {
+        const label = (d.marketing_name || d.property_address || "Untitled").toString();
+        const short = label.length > 22 ? label.slice(0, 22) + "…" : label;
+        return {
+          name: short,
+          fullName: label,
+          expected: Number(d.expected_assignment) || 0,
+          actual: Number(d.assignment_fee) || 0,
+        };
+      });
+  }, [ownerScoped]);
+
   // By owner (dispo manager)
   // In iframe mode, NEVER show users.email/name from the Lovable profiles table —
   // those leak across tenants. Use GHL identity from the deal (ghl_assigned_user_id)
