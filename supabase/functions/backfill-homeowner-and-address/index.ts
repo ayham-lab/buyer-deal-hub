@@ -177,16 +177,6 @@ Deno.serve(async (req) => {
       // 3) Refresh lead_source from opportunity
       if (d.ghl_opportunity_id && d.ghl_location_id) {
         const bearer = await locToken(d.ghl_location_id);
-
-      // 3) Refresh lead_source from opportunity
-      if (d.ghl_opportunity_id && d.ghl_location_id) {
-        // Prefer the location's own access_token (broader perms on opps); fall back to PIT.
-        const { data: tok } = await admin
-          .from("ghl_location_tokens")
-          .select("access_token")
-          .eq("ghl_location_id", d.ghl_location_id)
-          .maybeSingle();
-        const bearer = (tok as any)?.access_token || pit;
         const sr = await fetchOpportunitySource(d.ghl_opportunity_id, bearer);
         if (sr.ok) {
           if (sr.source) {
