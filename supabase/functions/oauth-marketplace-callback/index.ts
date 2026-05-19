@@ -283,7 +283,10 @@ async function persistLocationToken(admin: any, row: {
   await ensureOwnerMembership(admin, row.ghl_location_id, row.ghl_company_id);
 
   if (existing?.id) {
-    return await admin.from("ghl_location_tokens").update(row).eq("id", existing.id);
+    // Don't clobber an existing name with null.
+    const updateRow: any = { ...row };
+    if (updateRow.location_name == null) delete updateRow.location_name;
+    return await admin.from("ghl_location_tokens").update(updateRow).eq("id", existing.id);
   }
   return await admin.from("ghl_location_tokens").insert(row);
 }
