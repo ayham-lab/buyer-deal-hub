@@ -308,6 +308,53 @@ export default function KPIs() {
           </div>
 
           <div className="bg-card border border-border rounded-lg p-5 lg:col-span-2">
+            <h3 className="text-sm font-semibold mb-4">Expected vs Actual Assignment (per closed deal)</h3>
+            {expectedVsActual.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-8 text-center">
+                No closed deals yet. Once a deal closes, its Expected vs Actual assignment will appear here so you can compare forecast to reality.
+              </p>
+            ) : (
+              <div style={{ width: "100%", overflowX: expectedVsActual.length > 10 ? "auto" : "visible" }}>
+                <div style={{ minWidth: Math.max(expectedVsActual.length * 70, 600) }}>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={expectedVsActual} margin={{ top: 10, right: 20, left: 0, bottom: 60 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={11} angle={-35} textAnchor="end" interval={0} height={70} />
+                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
+                      <Tooltip
+                        contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                        content={({ active: a, payload }) => {
+                          if (!a || !payload?.length) return null;
+                          const row: any = payload[0].payload;
+                          const variance = row.actual - row.expected;
+                          const pct = row.expected ? Math.round((variance / row.expected) * 100) : null;
+                          return (
+                            <div className="rounded-lg border border-border bg-card px-3 py-2 text-xs shadow-xl">
+                              <div className="font-semibold mb-1">{row.fullName}</div>
+                              <div>Expected: <span className="font-mono">${row.expected.toLocaleString()}</span></div>
+                              <div>Actual: <span className="font-mono">${row.actual.toLocaleString()}</span></div>
+                              {row.expected > 0 && (
+                                <div className={cn("mt-1", variance < 0 ? "text-destructive" : "text-emerald-600 dark:text-emerald-400")}>
+                                  Off by ${Math.abs(variance).toLocaleString()}{pct !== null ? ` / ${pct > 0 ? "+" : ""}${pct}%` : ""}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }}
+                      />
+                      <Legend />
+                      <Bar dataKey="expected" fill="hsl(var(--muted-foreground))" name="Expected" />
+                      <Bar dataKey="actual" fill="#CC0000" name="Actual" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+          </div>
+
+
+
+          <div className="bg-card border border-border rounded-lg p-5 lg:col-span-2">
             <h3 className="text-sm font-semibold mb-4">Performance by Dispo Manager</h3>
             {byOwner.length === 0 ? (
               <p className="text-sm text-muted-foreground">No deals yet.</p>
