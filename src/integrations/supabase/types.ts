@@ -665,6 +665,7 @@ export type Database = {
           emd_received: boolean
           emd_received_at: string | null
           exit_strategies: string[]
+          expected_assignment: number | null
           ghl_assigned_user_id: string | null
           ghl_contact_id: string | null
           ghl_location_id: string | null
@@ -683,6 +684,7 @@ export type Database = {
           minimum_sale_price: number | null
           notes: string | null
           owner_id: string | null
+          price_under_contract: number | null
           property_address: string
           seller_email: string | null
           seller_name: string | null
@@ -710,6 +712,7 @@ export type Database = {
           emd_received?: boolean
           emd_received_at?: string | null
           exit_strategies?: string[]
+          expected_assignment?: number | null
           ghl_assigned_user_id?: string | null
           ghl_contact_id?: string | null
           ghl_location_id?: string | null
@@ -728,6 +731,7 @@ export type Database = {
           minimum_sale_price?: number | null
           notes?: string | null
           owner_id?: string | null
+          price_under_contract?: number | null
           property_address: string
           seller_email?: string | null
           seller_name?: string | null
@@ -755,6 +759,7 @@ export type Database = {
           emd_received?: boolean
           emd_received_at?: string | null
           exit_strategies?: string[]
+          expected_assignment?: number | null
           ghl_assigned_user_id?: string | null
           ghl_contact_id?: string | null
           ghl_location_id?: string | null
@@ -773,6 +778,7 @@ export type Database = {
           minimum_sale_price?: number | null
           notes?: string | null
           owner_id?: string | null
+          price_under_contract?: number | null
           property_address?: string
           seller_email?: string | null
           seller_name?: string | null

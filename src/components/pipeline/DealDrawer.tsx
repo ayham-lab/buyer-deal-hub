@@ -147,9 +147,11 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
             <Field label="Address" value={deal.property_address} onSave={(v) => saveField("property_address", v)} />
             <div className="grid grid-cols-2 gap-3">
               <Field label="Asking Price" type="number" value={deal.asking_price ?? ""} onSave={(v) => saveField("asking_price", v ? Number(v) : null)} />
+              <Field label="Price Under Contract" type="number" value={deal.price_under_contract ?? ""} onSave={(v) => saveField("price_under_contract", v ? Number(v) : null)} />
               <Field label="ARV" type="number" value={deal.arv ?? ""} onSave={(v) => saveField("arv", v ? Number(v) : null)} />
-              <Field label="Assignment Fee" type="number" value={deal.assignment_fee ?? ""} onSave={(v) => saveField("assignment_fee", v ? Number(v) : null)} />
               <Field label="EMD Amount" type="number" value={deal.emd_amount ?? ""} onSave={(v) => saveField("emd_amount", v ? Number(v) : null)} />
+              <Field label="Expected Assignment" type="number" value={deal.expected_assignment ?? ""} onSave={(v) => saveField("expected_assignment", v ? Number(v) : null)} />
+              <Field label="Actual Assignment" type="number" value={deal.assignment_fee ?? ""} onSave={(v) => saveField("assignment_fee", v ? Number(v) : null)} />
               <Field label="IP Expiry" type="date" value={deal.ip_expiry_date ?? ""} onSave={(v) => saveField("ip_expiry_date", v || null)} />
               <Field label="Closing" type="date" value={deal.closing_date ?? ""} onSave={(v) => saveField("closing_date", v || null)} />
               <Field label="Lead Source" value={deal.lead_source ?? ""} onSave={(v) => saveField("lead_source", v)} />
