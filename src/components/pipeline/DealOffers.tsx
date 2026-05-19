@@ -412,10 +412,15 @@ function OfferFormModal({
       <AddBuyerModal
         open={showAddBuyer}
         onClose={() => setShowAddBuyer(false)}
-        onCreated={async (newBuyerId?: string) => {
+        onCreated={async () => {
           setShowAddBuyer(false);
+          // Reload buyers and auto-select the most recently created one
+          const { data } = await scopeToLocation(
+            supabase.from("buyers").select("id,name,company_name,phone,created_at").order("created_at", { ascending: false }).limit(1),
+          );
           await onBuyersChanged();
-          if (newBuyerId) setBuyerId(newBuyerId);
+          const newest: any = (data as any)?.[0];
+          if (newest?.id) setBuyerId(newest.id);
         }}
       />
     </>
