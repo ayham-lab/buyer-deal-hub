@@ -19,6 +19,7 @@ export type DealStatus = "lead" | "active" | "under_contract" | "closed" | "dead
 export interface Deal {
   id: string;
   property_address: string;
+  homeowner_name?: string | null;
   status: DealStatus;
   ip_expiry_date: string | null;
   closing_date: string | null;
@@ -38,6 +39,7 @@ export interface Deal {
  expected_assignment?: number | null;
   created_at: string;
 }
+
 
 export default function Pipeline() {
   const { user } = useAuth();
