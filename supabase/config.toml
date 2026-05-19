@@ -33,5 +33,10 @@ verify_jwt = false
 [functions.apply-ownership-patch]
 verify_jwt = false
 
+[functions.backfill-location-names]
+verify_jwt = false
+
+
+
 
 
