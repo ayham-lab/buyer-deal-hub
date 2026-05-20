@@ -176,6 +176,11 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
           <div><Label>Price Min</Label><Input type="number" value={form.price_min} onChange={(e) => set("price_min", e.target.value)} /></div>
           <div><Label>Price Max</Label><Input type="number" value={form.price_max} onChange={(e) => set("price_max", e.target.value)} /></div>
 
+          <div className="col-span-2">
+            <Label>Deals Purchased (your count)</Label>
+            <Input type="number" min={0} max={999} value={form.deals_purchased} onChange={(e) => set("deals_purchased", e.target.value)} />
+          </div>
+
           <div className="col-span-2"><Label>Source</Label><Input value={form.source} onChange={(e) => set("source", e.target.value)} placeholder="REIA, Facebook, Referral" /></div>
           <div className="col-span-2"><Label>Criteria Notes</Label><Textarea value={form.criteria_notes} onChange={(e) => set("criteria_notes", e.target.value)} /></div>
 
