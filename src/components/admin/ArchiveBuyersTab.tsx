@@ -445,23 +445,30 @@ export function ArchiveBuyersTab() {
                       )}
                     </td>
                     <td className="text-xs">
-                      <div className="flex flex-col gap-1">
-                        <Select value={r.status ?? "__none__"} onValueChange={(v) => v !== "__none__" && setStatus(r.id, v as any)}>
-                          <SelectTrigger className={`h-7 w-[150px] text-[11px] ${r.status ? STATUS_COLOR[r.status] : ""}`}>
-                            <SelectValue placeholder="—" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {STATUS_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                        {r.status_override_by_admin && (
-                          <div className="flex items-center gap-1">
-                            <Badge variant="outline" className="text-[9px] border-amber-300 text-amber-700">Override</Badge>
-                            <button onClick={() => clearOverride(r.id)} className="text-[10px] text-primary hover:underline">Clear</button>
-                          </div>
+                      <div className="flex items-center gap-2">
+                        {r.status ? (
+                          <Badge variant="outline" className={`text-[10px] rounded ${STATUS_COLOR[r.status]}`}>
+                            {STATUS_LABEL[r.status]}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
                         )}
-                        {r.quality_tier && !r.status && (
-                          <span className="text-[9px] text-muted-foreground">legacy: {r.quality_tier}</span>
+                        {r.status_override_by_admin && (
+                          <span title="Admin override active" className="inline-flex items-center text-amber-600">
+                            <ShieldAlert className="h-3 w-3" />
+                          </span>
+                        )}
+                        {isSuperAdmin && (
+                          <button
+                            onClick={() => {
+                              setStatusModal(r);
+                              setStatusDraft((r.status ?? "not_vetted"));
+                            }}
+                            className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                            title="Edit status (super admin)"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </button>
                         )}
                       </div>
                     </td>
