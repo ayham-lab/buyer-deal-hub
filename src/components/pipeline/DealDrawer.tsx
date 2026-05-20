@@ -66,10 +66,23 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
 
   async function saveField(field: string, value: any) {
     console.log("[DealDrawer.saveField in]", { field, value });
-    const { error } = await supabase.from("deals").update({ [field]: value } as any).eq("id", dealId);
-    console.log("[DealDrawer.saveField result]", { field, value, error });
-    if (error) toast.error(error.message);
-    else { setDeal((prev: any) => prev ? { ...prev, [field]: value } : prev); onUpdated(); }
+    const { data, error } = await supabase
+      .from("deals")
+      .update({ [field]: value } as any)
+      .eq("id", dealId)
+      .select("id");
+    console.log("[DealDrawer.saveField result]", { field, value, error, affected: data?.length ?? 0 });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    if (!data || data.length === 0) {
+      console.error("[DealDrawer.saveField] zero rows affected — likely RLS rejection", { field, dealId });
+      toast.error("Couldn't save — check your permissions or try again");
+      return;
+    }
+    setDeal((prev: any) => prev ? { ...prev, [field]: value } : prev);
+    onUpdated();
   }
 
   async function toggleCheck(id: string, current: boolean) {
