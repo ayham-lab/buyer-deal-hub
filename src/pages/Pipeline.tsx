@@ -57,7 +57,7 @@ export default function Pipeline() {
     // show ALL deals for that location — including webhook-imported deals where user_id IS NULL.
     // RLS already gates by location. Only fall back to owner-scoped when no location context exists.
     const activeLoc = getActiveLocationId();
-    const base = supabase.from("deals").select("*").order("created_at", { ascending: false });
+    const base = supabase.from("deals").select("*").is("deleted_at", null).order("created_at", { ascending: false });
     const query = (isIframed || activeLoc) ? base : base.eq("user_id", user.id);
     const { data } = await scopeToLocation(query);
     setDeals((data as any) || []);

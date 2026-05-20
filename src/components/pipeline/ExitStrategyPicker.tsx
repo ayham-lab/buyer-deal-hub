@@ -35,44 +35,28 @@ export function ExitStrategyPicker({
 
   // Keep ref in lockstep with state.
   useEffect(() => {
-    const prev = localRef.current;
     localRef.current = local;
-    console.log("[ExitStrategyPicker local change]", { from: prev, to: local, refAfter: localRef.current });
   }, [local]);
 
-  // Architectural fix (C): only sync from parent on the open transition. Once open=false,
+  // Architectural fix: only sync from parent on the open transition. Once open=false,
   // we do NOT react to value changes — this prevents a stale parent refetch from clobbering
   // our just-committed local state and re-saving the pre-save value.
   useEffect(() => {
     const wasOpen = prevOpenRef.current;
     prevOpenRef.current = open;
     if (open && !wasOpen) {
-      // Opening: reseed from parent.
       initialOnOpenRef.current = value || [];
       setLocal(value || []);
       localRef.current = value || [];
       savedThisSessionRef.current = false;
-      console.log("[ExitStrategyPicker open]", { initialValue: value || [], setLocalTo: value || [] });
     }
   }, [open, value]);
 
-  function commitFromRef(reason: string) {
-    if (savedThisSessionRef.current) {
-      console.log("[ExitStrategyPicker close skipped]", { reason, why: "already saved this session" });
-      return;
-    }
+  function commitFromRef(_reason: string) {
+    if (savedThisSessionRef.current) return;
     const before = initialOnOpenRef.current;
     const current = localRef.current;
     const changed = !arraysEqual(before, current);
-    console.log("[ExitStrategyPicker close]", {
-      reason,
-      initial: before,
-      localState: local,
-      refValue: current,
-      changed,
-      willCallOnChange: changed,
-    });
-    // Mark as saved regardless of whether the value changed — we've handled this close.
     savedThisSessionRef.current = true;
     if (changed) {
       onChangeRef.current(current);

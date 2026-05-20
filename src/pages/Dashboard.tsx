@@ -54,11 +54,11 @@ export default function Dashboard() {
       const sevenDaysAgo = format(addDays(today, -7), "yyyy-MM-dd");
 
       const [closings, emd, ip, leads, revenue, openTasks] = await Promise.all([
-        scopeToLocation(supabase.from("deals").select("id,property_address,city,state,closing_date,assignment_fee").gte("closing_date", todayISO).lte("closing_date", weekISO).order("closing_date")),
-        scopeToLocation(supabase.from("deals").select("id,property_address,emd_amount,closing_date,status").eq("status", "under_contract").eq("emd_received", false)),
-        scopeToLocation(supabase.from("deals").select("id,property_address,ip_expiry_date").gte("ip_expiry_date", todayISO).lte("ip_expiry_date", weekISO).order("ip_expiry_date")),
-        scopeToLocation(supabase.from("deals").select("id", { count: "exact", head: true }).gte("created_at", sevenDaysAgo)),
-        scopeToLocation(supabase.from("deals").select("assignment_fee").gte("closed_at", monthStart.toISOString())),
+        scopeToLocation(supabase.from("deals").select("id,property_address,city,state,closing_date,assignment_fee").is("deleted_at", null).gte("closing_date", todayISO).lte("closing_date", weekISO).order("closing_date")),
+        scopeToLocation(supabase.from("deals").select("id,property_address,emd_amount,closing_date,status").is("deleted_at", null).eq("status", "under_contract").eq("emd_received", false)),
+        scopeToLocation(supabase.from("deals").select("id,property_address,ip_expiry_date").is("deleted_at", null).gte("ip_expiry_date", todayISO).lte("ip_expiry_date", weekISO).order("ip_expiry_date")),
+        scopeToLocation(supabase.from("deals").select("id", { count: "exact", head: true }).is("deleted_at", null).gte("created_at", sevenDaysAgo)),
+        scopeToLocation(supabase.from("deals").select("assignment_fee").is("deleted_at", null).gte("closed_at", monthStart.toISOString())),
         scopeToLocation(supabase.from("tasks").select("id", { count: "exact", head: true }).eq("is_completed", false)),
       ]);
 

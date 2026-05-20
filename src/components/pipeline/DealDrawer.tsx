@@ -65,19 +65,16 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
   if (!dealId || !deal) return null;
 
   async function saveField(field: string, value: any) {
-    console.log("[DealDrawer.saveField in]", { field, value });
     const { data, error } = await supabase
       .from("deals")
       .update({ [field]: value } as any)
       .eq("id", dealId)
       .select("id");
-    console.log("[DealDrawer.saveField result]", { field, value, error, affected: data?.length ?? 0 });
     if (error) {
       toast.error(error.message);
       return;
     }
     if (!data || data.length === 0) {
-      console.error("[DealDrawer.saveField] zero rows affected — likely RLS rejection", { field, dealId });
       toast.error("Couldn't save — check your permissions or try again");
       return;
     }
@@ -116,17 +113,12 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
 
   async function deleteDeal() {
     if (!confirm("Delete this deal? It will be hidden from the pipeline and can be restored from Admin → Recently Deleted.")) return;
-    const { data, error } = await supabase
-      .from("deals")
-      .update({ deleted_at: new Date().toISOString(), deleted_by: user?.id ?? null } as any)
-      .eq("id", dealId)
-      .is("deleted_at", null)
-      .select("id");
+    const { data, error } = await supabase.rpc("soft_delete_deal", { p_deal_id: dealId });
     if (error) {
       toast.error(error.message);
       return;
     }
-    if (!data || data.length === 0) {
+    if (data !== true) {
       toast.error("Couldn't delete — check your permissions or try again");
       return;
     }

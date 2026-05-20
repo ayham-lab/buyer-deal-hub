@@ -37,8 +37,8 @@ export default function KPIs() {
     const activeLoc = getActiveLocationId();
     const inLocation = isIframed || !!activeLoc;
     const dealsQ = inLocation
-      ? supabase.from("deals").select("*")
-      : supabase.from("deals").select("*").eq("user_id", user.id);
+      ? supabase.from("deals").select("*").is("deleted_at", null)
+      : supabase.from("deals").select("*").is("deleted_at", null).eq("user_id", user.id);
     const buyersQ = inLocation
       ? supabase.from("buyers").select("id, created_at")
       : supabase.from("buyers").select("id, created_at").eq("user_id", user.id);

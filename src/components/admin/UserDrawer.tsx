@@ -26,7 +26,7 @@ export function UserDrawer({ userId, onClose, onChanged }: Props) {
       const now = new Date();
       const [{ data: p }, { data: d }, { data: b }, { data: k }] = await Promise.all([
         supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
-        supabase.from("deals").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+        supabase.from("deals").select("*").is("deleted_at", null).eq("user_id", userId).order("created_at", { ascending: false }),
         supabase.from("buyers").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
         supabase.from("kpi_snapshots").select("*").eq("user_id", userId)
           .eq("year", now.getFullYear()).eq("month", now.getMonth() + 1).maybeSingle(),
