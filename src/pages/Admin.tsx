@@ -40,7 +40,7 @@ export default function Admin() {
     setLoading(true);
     const [{ data: pf }, { data: dl }, { data: by }, { data: ar }, { data: rl }, { data: lt }] = await Promise.all([
       supabase.from("profiles").select("*").order("created_at", { ascending: false }),
-      supabase.from("deals").select("*").order("created_at", { ascending: false }),
+      supabase.from("deals").select("*").is("deleted_at", null).order("created_at", { ascending: false }),
       supabase.from("buyers").select("*").order("created_at", { ascending: false }),
       supabase.from("buyer_archive").select("*").order("created_at", { ascending: false }),
       supabase.from("user_roles").select("*"),
