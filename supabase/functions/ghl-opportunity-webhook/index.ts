@@ -3,6 +3,7 @@
 // to `deals` when the stage name contains "dispo".
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { fetchContactAddress, formatContactAddress } from "../_shared/ghlContactAddress.ts";
+import { resolveOppMapping } from "../_shared/oppFieldMapping.ts";
 
 
 const corsHeaders = {
