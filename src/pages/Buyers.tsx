@@ -27,6 +27,7 @@ export interface Buyer {
   source: string | null;
   last_contact_at: string | null;
   deal_count: number;
+  deals_purchased: number;
   criteria_notes: string | null;
   created_at: string;
   first_name?: string | null;
