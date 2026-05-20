@@ -246,6 +246,20 @@ export function ArchiveBuyersTab() {
     load();
   }
 
+  async function setStatus(id: string, status: NonNullable<Row["status"]>) {
+    const { data, error } = await supabase.rpc("set_archive_buyer_status" as any, { p_id: id, p_status: status });
+    if (error || !data) return toast.error(error?.message || "Failed (super-admin only)");
+    toast.success("Status set (override active)");
+    load();
+  }
+
+  async function clearOverride(id: string) {
+    const { data, error } = await supabase.rpc("clear_archive_buyer_status_override" as any, { p_id: id });
+    if (error || !data) return toast.error(error?.message || "Failed (super-admin only)");
+    toast.success("Override cleared — auto-sync restored");
+    load();
+  }
+
   function clearFilters() {
     setSearch(""); setStateF("__any__"); setTiers([]);
     setHasEmail("any"); setHasPhone("any"); setSourceTags([]); setSort("newest");
