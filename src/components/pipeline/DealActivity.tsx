@@ -40,6 +40,9 @@ const ICONS: Record<string, any> = {
   offer_status_changed: ArrowRight,
   offer_deleted: Activity,
   exit_strategy_changed: Tag,
+  soft_deleted: Activity,
+  resurrected: Activity,
+  resurrected_from_stage_change: ArrowRight,
 };
 
 function formatStrategyList(raw: string | null | undefined, arr?: string[]): string {
