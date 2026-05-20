@@ -36,10 +36,10 @@ interface Outcome {
   buckets: string[];
 }
 
-async function fetchOpportunitySource(
+async function fetchOpportunityFull(
   oppId: string,
   bearer: string,
-): Promise<{ source: string | null; ok: boolean; detail?: string }> {
+): Promise<{ ok: boolean; source: string | null; name: string | null; detail?: string }> {
   const backoffs = [1500, 3000, 4500, 6000, 7500];
   for (let i = 0; i < backoffs.length; i++) {
     try {
@@ -48,15 +48,19 @@ async function fetchOpportunitySource(
       });
       const text = await resp.text();
       if (resp.status === 429) { await new Promise((r) => setTimeout(r, backoffs[i])); continue; }
-      if (!resp.ok) return { source: null, ok: false, detail: `${resp.status}: ${text.slice(0, 200)}` };
+      if (!resp.ok) return { source: null, name: null, ok: false, detail: `${resp.status}: ${text.slice(0, 200)}` };
       const j = JSON.parse(text);
       const opp = j.opportunity ?? j;
-      return { source: (opp.source ?? opp.opportunitySource ?? null) || null, ok: true };
+      return {
+        source: (opp.source ?? opp.opportunitySource ?? null) || null,
+        name: (opp.name ?? null) || null,
+        ok: true,
+      };
     } catch (e: any) {
-      return { source: null, ok: false, detail: e?.message ?? "err" };
+      return { source: null, name: null, ok: false, detail: e?.message ?? "err" };
     }
   }
-  return { source: null, ok: false, detail: "429_after_retries" };
+  return { source: null, name: null, ok: false, detail: "429_after_retries" };
 }
 
 Deno.serve(async (req) => {
