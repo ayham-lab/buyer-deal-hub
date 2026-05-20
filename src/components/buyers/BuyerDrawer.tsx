@@ -175,7 +175,10 @@ export function BuyerDrawer({ buyer, onClose, onUpdated }: { buyer: Buyer | null
               onChange={(e) => set("deals_purchased", e.target.value)}
             />
             <p className="text-[11px] text-muted-foreground mt-1">
-              How many deals this buyer has closed with you. System-wide total is shown in the shared Archive.
+              Your personal count. System total combines all operators.
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              System-wide deals: <span className="font-medium text-foreground">{systemDeals}</span>
             </p>
           </div>
 
