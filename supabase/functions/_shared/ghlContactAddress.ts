@@ -47,7 +47,7 @@ export async function fetchContactAddress(
       try { j = JSON.parse(text); } catch { return { formatted: null, source: "fetch_failed", detail: "bad_json" }; }
       const c = j.contact ?? j;
       const formatted = formatContactAddress(c);
-      return formatted ? { formatted, source: "ok" } : { formatted: null, source: "no_address" };
+      return formatted ? { formatted, source: "ok", contact: c } : { formatted: null, source: "no_address", contact: c };
     } catch (e: any) {
       return { formatted: null, source: "fetch_failed", detail: e?.message ?? "err" };
     }
