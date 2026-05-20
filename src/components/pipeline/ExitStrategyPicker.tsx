@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EXIT_STRATEGIES, EXIT_STRATEGY_MAP } from "./exitStrategies";
@@ -13,17 +13,41 @@ export function ExitStrategyPicker({
   onChange: (v: string[]) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const selected = value || [];
+  // Local source of truth while editing. Synced from `value` only when closed,
+  // so rapid clicks accumulate against latest local state (no prop-race).
+  const [local, setLocal] = useState<string[]>(value || []);
+  const initialOnOpenRef = useRef<string[]>(value || []);
+
+  useEffect(() => {
+    if (!open) setLocal(value || []);
+  }, [value, open]);
 
   function toggle(key: string) {
-    const next = selected.includes(key)
-      ? selected.filter((k) => k !== key)
-      : [...selected, key];
-    onChange(next);
+    setLocal((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
+    );
   }
 
+  function handleOpenChange(next: boolean) {
+    if (next) {
+      initialOnOpenRef.current = value || [];
+      setLocal(value || []);
+    } else {
+      // Single write per editing session — only if changed.
+      const before = initialOnOpenRef.current;
+      const changed =
+        before.length !== local.length ||
+        before.some((k) => !local.includes(k)) ||
+        local.some((k) => !before.includes(k));
+      if (changed) onChange(local);
+    }
+    setOpen(next);
+  }
+
+  const selected = open ? local : value || [];
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -52,7 +76,7 @@ export function ExitStrategyPicker({
       <PopoverContent className="w-64 p-2" align="start">
         <div className="space-y-0.5">
           {EXIT_STRATEGIES.map((s) => {
-            const checked = selected.includes(s.key);
+            const checked = local.includes(s.key);
             return (
               <label
                 key={s.key}

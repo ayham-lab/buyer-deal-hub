@@ -67,7 +67,7 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
   async function saveField(field: string, value: any) {
     const { error } = await supabase.from("deals").update({ [field]: value } as any).eq("id", dealId);
     if (error) toast.error(error.message);
-    else { setDeal({ ...deal, [field]: value }); onUpdated(); }
+    else { setDeal((prev: any) => prev ? { ...prev, [field]: value } : prev); onUpdated(); }
   }
 
   async function toggleCheck(id: string, current: boolean) {
