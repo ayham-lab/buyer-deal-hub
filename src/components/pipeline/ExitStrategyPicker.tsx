@@ -5,6 +5,12 @@ import { EXIT_STRATEGIES, EXIT_STRATEGY_MAP } from "./exitStrategies";
 import { cn } from "@/lib/utils";
 import { ChevronDown } from "lucide-react";
 
+function arraysEqual(a: string[], b: string[]) {
+  if (a.length !== b.length) return false;
+  for (const k of a) if (!b.includes(k)) return false;
+  return true;
+}
+
 export function ExitStrategyPicker({
   value,
   onChange,
@@ -13,33 +19,74 @@ export function ExitStrategyPicker({
   onChange: (v: string[]) => void;
 }) {
   const [open, setOpen] = useState(false);
-  // Local source of truth while editing. Synced from `value` only when closed,
-  // so rapid clicks accumulate against latest local state (no prop-race).
   const [local, setLocal] = useState<string[]>(value || []);
+  // Ref mirrors latest local — read this in close/unmount handlers to avoid stale closures.
+  const localRef = useRef<string[]>(value || []);
   const initialOnOpenRef = useRef<string[]>(value || []);
+  const openRef = useRef(false);
+  const onChangeRef = useRef(onChange);
 
+  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
+  useEffect(() => { openRef.current = open; }, [open]);
+
+  // Keep ref in lockstep with state.
   useEffect(() => {
-    if (!open) setLocal(value || []);
+    const prev = localRef.current;
+    localRef.current = local;
+    console.log("[ExitStrategyPicker local change]", { from: prev, to: local, refAfter: localRef.current });
+  }, [local]);
+
+  // Sync from parent only when closed.
+  useEffect(() => {
+    if (!open) {
+      setLocal(value || []);
+      localRef.current = value || [];
+    }
   }, [value, open]);
 
+  function commitFromRef(reason: string) {
+    const before = initialOnOpenRef.current;
+    const current = localRef.current;
+    const changed = !arraysEqual(before, current);
+    console.log("[ExitStrategyPicker close]", {
+      reason,
+      initial: before,
+      localState: local,
+      refValue: current,
+      changed,
+      willCallOnChange: changed,
+    });
+    if (changed) {
+      onChangeRef.current(current);
+      // Treat committed value as the new baseline so subsequent fallback commits don't double-fire.
+      initialOnOpenRef.current = current;
+    }
+  }
+
+  // Fallback commit on unmount (e.g., parent sheet closes while picker still open).
+  useEffect(() => {
+    return () => {
+      if (openRef.current) commitFromRef("unmount");
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function toggle(key: string) {
-    setLocal((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
-    );
+    setLocal((prev) => {
+      const next = prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key];
+      localRef.current = next; // update ref synchronously so rapid clicks see latest
+      return next;
+    });
   }
 
   function handleOpenChange(next: boolean) {
     if (next) {
       initialOnOpenRef.current = value || [];
       setLocal(value || []);
+      localRef.current = value || [];
+      console.log("[ExitStrategyPicker open]", { initialValue: value || [], setLocalTo: value || [] });
     } else {
-      // Single write per editing session — only if changed.
-      const before = initialOnOpenRef.current;
-      const changed =
-        before.length !== local.length ||
-        before.some((k) => !local.includes(k)) ||
-        local.some((k) => !before.includes(k));
-      if (changed) onChange(local);
+      commitFromRef("openChange");
     }
     setOpen(next);
   }
@@ -73,7 +120,12 @@ export function ExitStrategyPicker({
           <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-2" align="start">
+      <PopoverContent
+        className="w-64 p-2"
+        align="start"
+        onInteractOutside={() => commitFromRef("interactOutside")}
+        onEscapeKeyDown={() => commitFromRef("escape")}
+      >
         <div className="space-y-0.5">
           {EXIT_STRATEGIES.map((s) => {
             const checked = local.includes(s.key);
