@@ -559,6 +559,55 @@ export function ArchiveBuyersTab() {
           </div>
         </div>
       )}
+
+      {/* Super-admin status override modal */}
+      <Dialog open={!!statusModal} onOpenChange={(o) => !o && setStatusModal(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Edit status — {statusModal?.full_name || [statusModal?.first_name, statusModal?.last_name].filter(Boolean).join(" ") || "buyer"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="text-xs text-muted-foreground">
+              Saving sets an admin override that prevents auto-sync from changing this status.
+              Current: <span className="font-medium text-foreground">{statusModal?.status ? STATUS_LABEL[statusModal.status] : "—"}</span>
+              {statusModal?.status_override_by_admin && <span className="ml-1 text-amber-600">(override active)</span>}
+            </div>
+            <Select value={statusDraft} onValueChange={(v) => setStatusDraft(v as any)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter className="flex sm:justify-between gap-2">
+            <Button
+              variant="outline"
+              disabled={!statusModal?.status_override_by_admin}
+              onClick={async () => {
+                if (!statusModal) return;
+                await clearOverride(statusModal.id);
+                setStatusModal(null);
+              }}
+            >
+              Clear override
+            </Button>
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={() => setStatusModal(null)}>Cancel</Button>
+              <Button
+                onClick={async () => {
+                  if (!statusModal) return;
+                  await setStatus(statusModal.id, statusDraft);
+                  setStatusModal(null);
+                }}
+              >
+                Save as override
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
