@@ -117,6 +117,7 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
       buyer_frequency: form.buyer_frequency,
       price_min: form.price_min ? Number(form.price_min) : null,
       price_max: form.price_max ? Number(form.price_max) : null,
+      deals_purchased: Math.max(0, Math.min(999, Number(form.deals_purchased) || 0)),
       source: form.source || null,
       criteria_notes: form.criteria_notes || null,
       previous_deals: form.previous_deals || null,
