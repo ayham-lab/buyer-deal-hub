@@ -40,6 +40,9 @@ const ICONS: Record<string, any> = {
   offer_status_changed: ArrowRight,
   offer_deleted: Activity,
   exit_strategy_changed: Tag,
+  soft_deleted: Activity,
+  resurrected: Activity,
+  resurrected_from_stage_change: ArrowRight,
 };
 
 function formatStrategyList(raw: string | null | undefined, arr?: string[]): string {
@@ -85,6 +88,12 @@ function describe(a: Activity): string {
     }
     case "homeowner_address_backfilled":
       return "Homeowner / address backfilled from GHL";
+    case "soft_deleted":
+      return "Deal deleted (soft) — hidden from pipeline";
+    case "resurrected":
+      return "Deal restored from Recently Deleted";
+    case "resurrected_from_stage_change":
+      return `Deal restored automatically — GHL stage changed${a.metadata?.new_stage_name ? ` to "${a.metadata.new_stage_name}"` : ""}`;
     default:
       return a.event_type;
   }

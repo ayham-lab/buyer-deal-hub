@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select";
 import {
   Users, Briefcase, DollarSign, Database, MapPin, Search, ShieldCheck,
-  TrendingUp, Loader2,
+  TrendingUp, Loader2, Trash2, RotateCcw,
 } from "lucide-react";
 import { UserDrawer } from "@/components/admin/UserDrawer";
 import { RoleManager } from "@/components/admin/RoleManager";
@@ -40,7 +40,7 @@ export default function Admin() {
     setLoading(true);
     const [{ data: pf }, { data: dl }, { data: by }, { data: ar }, { data: rl }, { data: lt }] = await Promise.all([
       supabase.from("profiles").select("*").order("created_at", { ascending: false }),
-      supabase.from("deals").select("*").order("created_at", { ascending: false }),
+      supabase.from("deals").select("*").is("deleted_at", null).order("created_at", { ascending: false }),
       supabase.from("buyers").select("*").order("created_at", { ascending: false }),
       supabase.from("buyer_archive").select("*").order("created_at", { ascending: false }),
       supabase.from("user_roles").select("*"),
@@ -114,6 +114,8 @@ export default function Admin() {
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="deals">Deals</TabsTrigger>
+            {isSuperAdmin && <TabsTrigger value="recently_deleted">Recently Deleted</TabsTrigger>}
+            
             
             <TabsTrigger value="roles">Roles</TabsTrigger>
             {showPricing && <TabsTrigger value="pricing">Pricing</TabsTrigger>}
@@ -213,6 +215,14 @@ export default function Admin() {
           <TabsContent value="deals">
             <DealsTab deals={deals} users={users} locationNames={locationNames} onOpenUser={setOpenUserId} />
           </TabsContent>
+
+          {/* RECENTLY DELETED */}
+          {isSuperAdmin && (
+            <TabsContent value="recently_deleted">
+              <RecentlyDeletedTab users={users} locationNames={locationNames} />
+            </TabsContent>
+          )}
+
 
           {/* ROLES */}
           <TabsContent value="roles">
@@ -474,6 +484,106 @@ function ArchiveTab({ archive, onChanged }: any) {
               </tr>
             ))}
             {filtered.length === 0 && <tr><td colSpan={6} className="text-center py-6 text-muted-foreground">No archive entries match.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ============== Recently Deleted ==============
+
+function RecentlyDeletedTab({ users, locationNames }: { users: any[]; locationNames: Record<string, string> }) {
+  const [rows, setRows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const userMap: Record<string, any> = Object.fromEntries(users.map((u: any) => [u.user_id, u]));
+
+  async function load() {
+    setLoading(true);
+    const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+    const { data } = await supabase
+      .from("deals")
+      .select("*")
+      .not("deleted_at", "is", null)
+      .gte("deleted_at", since)
+      .order("deleted_at", { ascending: false });
+    setRows((data as any) || []);
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, []);
+
+  async function undelete(id: string) {
+    if (!confirm("Restore this deal? It will reappear in the pipeline.")) return;
+    const { data, error } = await supabase
+      .from("deals")
+      .update({ deleted_at: null, deleted_by: null } as any)
+      .eq("id", id)
+      .select("id");
+    if (error) return alert(error.message);
+    if (!data || data.length === 0) return alert("Couldn't restore — check permissions.");
+    load();
+  }
+
+  async function hardDelete(id: string) {
+    if (!confirm("PERMANENTLY delete this deal and all related rows? This cannot be undone.")) return;
+    const { error } = await supabase.from("deals").delete().eq("id", id);
+    if (error) return alert(error.message);
+    load();
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Deals deleted in the last 90 days. Restore brings them back into the pipeline; permanent delete is irreversible.
+        </p>
+        <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+          {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+          Refresh
+        </Button>
+      </div>
+      <div className="rounded-lg border border-border overflow-hidden">
+        <table className="data-table w-full">
+          <thead>
+            <tr>
+              <th>Address / Homeowner</th>
+              <th>Location</th>
+              <th>Original status</th>
+              <th>Deleted</th>
+              <th>Deleted by</th>
+              <th className="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((d: any) => (
+              <tr key={d.id}>
+                <td className="font-medium">
+                  <div>{d.property_address || "—"}</div>
+                  {d.homeowner_name && <div className="text-xs text-muted-foreground">{d.homeowner_name}</div>}
+                </td>
+                <td className="text-xs text-muted-foreground">
+                  {d.ghl_location_id ? (locationNames?.[d.ghl_location_id] || d.ghl_location_id.slice(0, 8)) : "—"}
+                </td>
+                <td><Badge variant="outline" className="capitalize">{d.status}</Badge></td>
+                <td className="text-xs text-muted-foreground">{new Date(d.deleted_at).toLocaleString()}</td>
+                <td className="text-xs text-muted-foreground">
+                  {d.deleted_by ? (userMap[d.deleted_by]?.email || d.deleted_by.slice(0, 8)) : "—"}
+                </td>
+                <td className="text-right space-x-2">
+                  <Button size="sm" variant="outline" onClick={() => undelete(d.id)}>
+                    <RotateCcw className="h-3.5 w-3.5 mr-1" /> Restore
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-destructive" onClick={() => hardDelete(d.id)}>
+                    <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete forever
+                  </Button>
+                </td>
+              </tr>
+            ))}
+            {rows.length === 0 && (
+              <tr><td colSpan={6} className="text-center py-6 text-muted-foreground">
+                {loading ? "Loading…" : "Nothing in the trash."}
+              </td></tr>
+            )}
           </tbody>
         </table>
       </div>

@@ -161,10 +161,32 @@ Deno.serve(async (req) => {
 
     let written = false;
     let insertError: string | null = null;
+    let action: string = "noop";
+
+    // Normalize event type from GHL payload (varies by webhook config)
+    const eventType: string =
+      (body.type || body.eventType || body.event || "").toString();
+    const isStageEvent =
+      eventType === "OpportunityStageUpdate" ||
+      eventType === "OpportunityStageChange" ||
+      eventType === "OpportunityStatusUpdate";
+    const isCreateEvent = eventType === "OpportunityCreate";
+    // Treat unknown/empty event types as permissive (legacy / direct invocation),
+    // but explicitly known non-creating events block insertion.
+    const NON_CREATING_EVENTS = new Set([
+      "OpportunityUpdate",
+      "ContactUpdate",
+      "ContactCreate",
+      "ContactDelete",
+      "OpportunityDelete",
+      "NoteCreate",
+      "TaskCreate",
+      "AppointmentCreate",
+    ]);
 
     const { data: existing, error: selErr } = await admin
       .from("deals")
-      .select("id, seller_name, seller_phone, seller_email, ghl_contact_id, property_address, homeowner_name, lead_source")
+      .select("id, seller_name, seller_phone, seller_email, ghl_contact_id, property_address, homeowner_name, lead_source, deleted_at, ghl_pipeline_stage_id")
       .eq("ghl_opportunity_id", opportunityId)
       .eq("ghl_location_id", locationId)
       .maybeSingle();
@@ -173,7 +195,7 @@ Deno.serve(async (req) => {
       console.error("deal select failed", selErr);
       insertError = `select: ${selErr.message}`;
     } else if (existing) {
-      // UPSERT: keep seller fields in sync, but only overwrite when we got a fresh value.
+      // Build the field patch from current GHL payload
       const patch: Record<string, unknown> = {};
       if (sellerName) patch.seller_name = sellerName;
       if (sellerPhone) patch.seller_phone = sellerPhone;
@@ -185,15 +207,73 @@ Deno.serve(async (req) => {
       if (homeownerName) patch.homeowner_name = homeownerName;
       if (propertyAddress) patch.property_address = propertyAddress;
       if (leadSource) patch.lead_source = leadSource;
-      if (Object.keys(patch).length > 0) {
+
+      if (existing.deleted_at) {
+        const stageChanged = existing.ghl_pipeline_stage_id !== stageId;
+        if (!stageChanged) {
+          console.log(`skipped: soft-deleted, no stage change opp=${opportunityId}`);
+          return j({
+            ok: true,
+            skipped: "soft_deleted_no_stage_change",
+            dealId: existing.id,
+            eventType: eventType || null,
+          }, 200);
+        }
+        // Resurrect: clear deleted_at + apply patch + log activity
+        patch.deleted_at = null;
+        patch.deleted_by = null;
         const { error: updErr } = await admin.from("deals").update(patch).eq("id", existing.id);
         if (updErr) {
-          console.error("deal update failed", updErr);
-          insertError = `update: ${updErr.message}`;
+          console.error("deal resurrect failed", updErr);
+          insertError = `resurrect: ${updErr.message}`;
+        } else {
+          await admin.from("deal_activity").insert({
+            deal_id: existing.id,
+            user_id: null,
+            event_type: "resurrected_from_stage_change",
+            from_value: existing.ghl_pipeline_stage_id ?? null,
+            to_value: stageId,
+            metadata: {
+              source: "ghl_webhook",
+              event_type: eventType || null,
+              prior_stage: existing.ghl_pipeline_stage_id,
+              new_stage: stageId,
+              new_stage_name: mapping.ghl_stage_name ?? null,
+            },
+          });
+          action = "resurrected";
+          written = true;
+        }
+      } else {
+        if (Object.keys(patch).length > 0) {
+          const { error: updErr } = await admin.from("deals").update(patch).eq("id", existing.id);
+          if (updErr) {
+            console.error("deal update failed", updErr);
+            insertError = `update: ${updErr.message}`;
+          } else {
+            action = "patched";
+            written = true;
+          }
+        } else {
+          action = "patched_noop";
+          written = true;
         }
       }
-      written = true;
     } else {
+      // No existing row — gate inserts on event type so we don't ingest
+      // every contact/opportunity edit as a fresh Dispo deal.
+      if (eventType && NON_CREATING_EVENTS.has(eventType) && !isStageEvent && !isCreateEvent) {
+        console.log(`skipped insert: event_type=${eventType} for new opp=${opportunityId}`);
+        return j({
+          ok: true,
+          skipped: "insert_blocked_event_type",
+          eventType,
+          locationId,
+          pipelineId,
+          stageId,
+        }, 200);
+      }
+
       const { error: insErr } = await admin
         .from("deals")
         .insert({
@@ -211,18 +291,19 @@ Deno.serve(async (req) => {
           seller_name: sellerName,
           seller_phone: sellerPhone,
           seller_email: sellerEmail,
-          notes: `Imported from GHL stage "${mapping.ghl_stage_name ?? stageId}"`,
+          notes: `Imported from GHL stage "${mapping.ghl_stage_name ?? stageId}" (event=${eventType || "unknown"})`,
         });
       if (insErr) {
         console.error("deal insert failed", insErr);
         insertError = `insert: ${insErr.message}`;
       } else {
+        action = "inserted";
         written = true;
       }
     }
 
 
-    return j({ ok: true, written, stageId, stageName: mapping?.ghl_stage_name ?? null, mapped: !!mapping, ghlAssignedUserId, insertError }, 200);
+    return j({ ok: true, written, action, eventType: eventType || null, stageId, stageName: mapping?.ghl_stage_name ?? null, mapped: !!mapping, ghlAssignedUserId, insertError }, 200);
   } catch (err: any) {
     console.error("ghl-opportunity-webhook unhandled error", err);
     return j({ error: err?.message ?? "unexpected_error" }, 500);

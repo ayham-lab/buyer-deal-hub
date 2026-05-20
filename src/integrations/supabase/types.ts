@@ -661,6 +661,8 @@ export type Database = {
           closing_date: string | null
           contract_price: number | null
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
           emd_amount: number | null
           emd_received: boolean
           emd_received_at: string | null
@@ -709,6 +711,8 @@ export type Database = {
           closing_date?: string | null
           contract_price?: number | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           emd_amount?: number | null
           emd_received?: boolean
           emd_received_at?: string | null
@@ -757,6 +761,8 @@ export type Database = {
           closing_date?: string | null
           contract_price?: number | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           emd_amount?: number | null
           emd_received?: boolean
           emd_received_at?: string | null
