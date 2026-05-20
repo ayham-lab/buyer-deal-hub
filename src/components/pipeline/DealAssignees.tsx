@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { scopeToLocation } from "@/lib/locationScope";
+import { scopeToLocation, getActiveLocationId } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,9 +25,12 @@ export function DealAssignees({ dealId }: { dealId: string }) {
   const [split, setSplit] = useState("");
 
   async function load() {
+    const activeLoc = getActiveLocationId();
+    const teamBase = supabase.from("team_members").select("id,name,role").eq("is_active", true).order("name");
+    const teamQuery = (activeLoc || !user) ? teamBase : teamBase.eq("user_id", user.id);
     const [{ data: a }, { data: t }] = await Promise.all([
       supabase.from("deal_assignees").select("*").eq("deal_id", dealId),
-      user ? scopeToLocation(supabase.from("team_members").select("id,name,role").eq("user_id", user.id).order("name")) : Promise.resolve({ data: [] as any }),
+      scopeToLocation(teamQuery),
     ]);
     setAssignees((a as any) || []);
     setTeam((t as any) || []);
