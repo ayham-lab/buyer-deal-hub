@@ -28,7 +28,6 @@ export function ArchiveTitleCompaniesBrowser({ open, onClose, onAdded }: {
   const [loading, setLoading] = useState(false);
   const [adding, setAdding] = useState<string | null>(null);
   const [q, setQ] = useState("");
-  const [state, setState] = useState("all");
 
   useEffect(() => {
     if (!open || !user) return;
