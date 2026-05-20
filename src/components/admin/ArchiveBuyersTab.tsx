@@ -415,7 +415,7 @@ export function ArchiveBuyersTab() {
           <table className="data-table w-full">
             <thead>
               <tr>
-                <th>Name</th><th>Tier</th><th>Location</th><th>Markets</th><th>Price</th>
+                <th>Name</th><th>Status</th><th>System Deals</th><th>Location</th><th>Markets</th><th>Price</th>
                 <th>Email / Phone</th><th>Active</th><th></th>
               </tr>
             </thead>
