@@ -92,12 +92,15 @@ function useDebounced<T>(value: T, ms = 300): T {
 type SortKey = "newest" | "oldest" | "name_asc" | "name_desc" | "tier_desc";
 
 export function ArchiveBuyersTab() {
+  const { isSuperAdmin } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState<Partial<Row>>({ ...empty });
   const [editId, setEditId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<Partial<Row>>({});
+  const [statusModal, setStatusModal] = useState<Row | null>(null);
+  const [statusDraft, setStatusDraft] = useState<NonNullable<Row["status"]>>("not_vetted");
 
   // Filters
   const [search, setSearch] = useState("");
