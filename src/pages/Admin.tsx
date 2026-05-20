@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select";
 import {
   Users, Briefcase, DollarSign, Database, MapPin, Search, ShieldCheck,
-  TrendingUp, Loader2,
+  TrendingUp, Loader2, Trash2, RotateCcw,
 } from "lucide-react";
 import { UserDrawer } from "@/components/admin/UserDrawer";
 import { RoleManager } from "@/components/admin/RoleManager";
