@@ -17,6 +17,8 @@ interface LocationContextValue {
   handshakeReady: boolean;
   /** True while iframe-signin is in flight (prevents flash of standalone login). */
   iframeSigninPending: boolean;
+  /** Clears active workspace + cached operator-group state. Used by "Admin view". */
+  clearActiveLocation: () => void;
 }
 
 const LocationContext = createContext<LocationContextValue>({
@@ -24,6 +26,7 @@ const LocationContext = createContext<LocationContextValue>({
   isIframed: false,
   handshakeReady: true,
   iframeSigninPending: false,
+  clearActiveLocation: () => {},
 });
 
 export function useActiveLocation() {
