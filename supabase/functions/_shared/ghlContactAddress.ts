@@ -6,6 +6,7 @@ export interface ContactAddressResult {
   formatted: string | null;
   source: "ok" | "no_address" | "fetch_failed";
   detail?: string;
+  contact?: any;
 }
 
 export function formatContactAddress(contact: any): string | null {
