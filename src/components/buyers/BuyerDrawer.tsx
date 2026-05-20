@@ -83,6 +83,7 @@ export function BuyerDrawer({ buyer, onClose, onUpdated }: { buyer: Buyer | null
         price_max: form.price_max === "" || form.price_max === null ? null : Number(form.price_max),
         source: form.source || null,
         criteria_notes: form.criteria_notes || null,
+        deals_purchased: Math.max(0, Math.min(999, Number(form.deals_purchased) || 0)),
       })
       .eq("id", buyer!.id);
     setBusy(false);
