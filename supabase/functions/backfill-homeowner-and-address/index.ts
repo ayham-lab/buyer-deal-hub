@@ -125,6 +125,7 @@ Deno.serve(async (req) => {
   const counts = {
     homeowner_name_set: 0,
     address_refreshed: 0,
+    address_extracted_from_opp_name: 0,
     address_not_available: 0,
     source_set: 0,
     source_not_available: 0,
@@ -150,53 +151,80 @@ Deno.serve(async (req) => {
 
       const patch: Record<string, unknown> = {};
 
-      // 1) Move existing address → homeowner_name (only if homeowner_name is empty)
-      if (!d.homeowner_name && d.property_address && d.property_address.trim()) {
-        patch.homeowner_name = d.property_address.trim();
+      // Fetch opportunity (name + source) and contact (address + names).
+      let oppName: string | null = null;
+      let oppSource: string | null = null;
+      let oppFetchOk = false;
+      if (d.ghl_opportunity_id && d.ghl_location_id) {
+        const bearer = await locToken(d.ghl_location_id);
+        const or = await fetchOpportunityFull(d.ghl_opportunity_id, bearer);
+        if (or.ok) {
+          oppFetchOk = true;
+          oppName = or.name;
+          oppSource = or.source;
+        } else {
+          counts.fetch_failed++;
+          buckets.push(`fetch_failed:opp:${or.detail ?? ""}`);
+        }
+      }
+
+      let contactObj: any = null;
+      let contactFormattedAddress: string | null = null;
+      let contactFetchState: "ok" | "no_address" | "fetch_failed" | "skipped" = "skipped";
+      if (d.ghl_contact_id && d.ghl_location_id) {
+        const bearer = await locToken(d.ghl_location_id);
+        const r = await fetchContactAddress(d.ghl_contact_id, bearer);
+        contactFetchState = r.source;
+        if (r.contact) contactObj = r.contact;
+        if (r.formatted) contactFormattedAddress = r.formatted;
+      }
+
+      // Smart mapping
+      const mapping = resolveOppMapping({
+        oppName,
+        contact: contactObj,
+        contactFormattedAddress,
+      });
+      buckets.push(`path:${mapping.path}`);
+
+      if (mapping.homeowner_name) {
+        patch.homeowner_name = mapping.homeowner_name;
         counts.homeowner_name_set++;
         buckets.push("homeowner_name_set");
       }
 
-      // 2) Refresh property_address from linked contact (use location OAuth token; PIT lacks contact scope)
-      if (d.ghl_contact_id && d.ghl_location_id) {
-        const bearer = await locToken(d.ghl_location_id);
-        const r = await fetchContactAddress(d.ghl_contact_id, bearer);
-        if (r.source === "ok" && r.formatted) {
-          patch.property_address = r.formatted;
+      if (mapping.property_address) {
+        patch.property_address = mapping.property_address;
+        if (mapping.addressFromOppName) {
+          counts.address_extracted_from_opp_name++;
+          buckets.push("address_extracted_from_opp_name");
+        } else {
           counts.address_refreshed++;
           buckets.push("address_refreshed");
-        } else if (r.source === "no_address") {
-          patch.property_address = "";
-          counts.address_not_available++;
-          buckets.push("address_not_available");
-        } else {
-          counts.fetch_failed++;
-          buckets.push(`fetch_failed:address:${r.detail ?? ""}`);
         }
       } else {
+        // No address from either source
         patch.property_address = "";
         counts.address_not_available++;
-        buckets.push("address_not_available");
+        if (contactFetchState === "fetch_failed") {
+          counts.fetch_failed++;
+          buckets.push("fetch_failed:address");
+        } else {
+          buckets.push("address_not_available");
+        }
       }
 
-      // 3) Refresh lead_source from opportunity
-      if (d.ghl_opportunity_id && d.ghl_location_id) {
-        const bearer = await locToken(d.ghl_location_id);
-        const sr = await fetchOpportunitySource(d.ghl_opportunity_id, bearer);
-        if (sr.ok) {
-          if (sr.source) {
-            patch.lead_source = sr.source;
-            counts.source_set++;
-            buckets.push("source_set");
-          } else {
-            counts.source_not_available++;
-            buckets.push("source_not_available");
-          }
+      // Lead source
+      if (oppFetchOk) {
+        if (oppSource) {
+          patch.lead_source = oppSource;
+          counts.source_set++;
+          buckets.push("source_set");
         } else {
-          counts.fetch_failed++;
-          buckets.push("fetch_failed:source");
+          counts.source_not_available++;
+          buckets.push("source_not_available");
         }
-      } else {
+      } else if (!d.ghl_opportunity_id) {
         counts.source_not_available++;
         buckets.push("source_not_available");
       }
