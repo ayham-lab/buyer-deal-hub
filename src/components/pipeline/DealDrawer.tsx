@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { withLocation, scopeToLocation } from "@/lib/locationScope";
+import { withLocation, scopeToLocation, getActiveLocationId } from "@/lib/locationScope";
 import { toast } from "sonner";
 import { Plus, Trash2, ExternalLink } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -37,7 +37,7 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
   useEffect(() => {
     if (!dealId) { setDeal(null); return; }
     (async () => {
-      const activeLoc = (typeof window !== "undefined") ? (await import("@/lib/locationScope")).getActiveLocationId() : null;
+      const activeLoc = getActiveLocationId();
       const teamBase = supabase.from("team_members").select("id,name,role").eq("is_active", true).order("name");
       const teamQuery = (isIframed || activeLoc) ? teamBase : (user ? teamBase.eq("user_id", user.id) : null);
       const [{ data: d }, { data: c }, { data: t }, { data: tc }, ownRes, { data: tm }] = await Promise.all([
