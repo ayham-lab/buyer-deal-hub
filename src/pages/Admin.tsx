@@ -418,7 +418,10 @@ function BuyersTab({ buyers, users, onOpenUser }: any) {
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
             <SelectItem value="vetted">Vetted</SelectItem>
+            <SelectItem value="vetted_and_closed">Vetted + Closed</SelectItem>
             <SelectItem value="not_vetted">Not vetted</SelectItem>
+            <SelectItem value="repeat">Repeat Buyer</SelectItem>
+            <SelectItem value="recurring">Recurring Buyer</SelectItem>
           </SelectContent>
         </Select>
       </div>

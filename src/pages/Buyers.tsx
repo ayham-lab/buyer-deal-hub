@@ -32,7 +32,7 @@ export interface Buyer {
   first_name?: string | null;
   last_name?: string | null;
   company_name?: string | null;
-  buyer_status?: "not_vetted" | "vetted" | "repeat" | "recurring";
+  buyer_status?: "not_vetted" | "vetted" | "vetted_and_closed" | "repeat" | "recurring";
   buyer_types?: string[];
   buyer_frequency?: string[];
   other_property_type?: string | null;
@@ -44,12 +44,14 @@ export interface Buyer {
 const STATUS_LABEL: Record<string, string> = {
   not_vetted: "Not Vetted",
   vetted: "Vetted",
+  vetted_and_closed: "Vetted + Closed",
   repeat: "Repeat Buyer",
   recurring: "Recurring Buyer",
 };
 const STATUS_COLOR: Record<string, string> = {
   not_vetted: "bg-muted text-muted-foreground",
   vetted: "bg-green-100 text-green-700 border-green-200",
+  vetted_and_closed: "bg-amber-100 text-amber-800 border-amber-300",
   repeat: "bg-blue-100 text-blue-700 border-blue-200",
   recurring: "bg-purple-100 text-purple-700 border-purple-200",
 };

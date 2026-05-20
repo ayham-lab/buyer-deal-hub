@@ -1818,7 +1818,12 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user" | "super_admin"
-      buyer_status: "not_vetted" | "vetted" | "repeat" | "recurring"
+      buyer_status:
+        | "not_vetted"
+        | "vetted"
+        | "vetted_and_closed"
+        | "repeat"
+        | "recurring"
       deal_status:
         | "lead"
         | "active"
@@ -1958,7 +1963,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user", "super_admin"],
-      buyer_status: ["not_vetted", "vetted", "repeat", "recurring"],
+      buyer_status: [
+        "not_vetted",
+        "vetted",
+        "vetted_and_closed",
+        "repeat",
+        "recurring",
+      ],
       deal_status: [
         "lead",
         "active",

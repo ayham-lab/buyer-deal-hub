@@ -1,0 +1,1 @@
+ALTER TYPE public.buyer_status ADD VALUE IF NOT EXISTS 'vetted_and_closed' AFTER 'vetted';

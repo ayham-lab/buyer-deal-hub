@@ -20,6 +20,7 @@ const BUYER_FREQUENCY = ["Full-time Buyer", "Part-time Buyer", "Tax Write-off Bu
 const BUYER_STATUS = [
   { value: "not_vetted", label: "Not Vetted" },
   { value: "vetted", label: "Vetted" },
+  { value: "vetted_and_closed", label: "Vetted + Closed" },
   { value: "repeat", label: "Repeat Buyer" },
   { value: "recurring", label: "Recurring Buyer" },
 ];
