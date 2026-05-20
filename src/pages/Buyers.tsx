@@ -192,7 +192,7 @@ export default function Buyers() {
                     <td className="text-muted-foreground">
                       {b.last_contact_at ? format(new Date(b.last_contact_at), "MMM d") : "—"}
                     </td>
-                    <td>{b.deal_count}</td>
+                    <td>{b.deals_purchased ?? 0}</td>
                     <td className="text-muted-foreground">{b.source || "—"}</td>
                     <td onClick={(e) => e.stopPropagation()}>
                       <button
