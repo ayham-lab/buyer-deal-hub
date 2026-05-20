@@ -215,7 +215,7 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
                   <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Unassigned</SelectItem>
-                    {team.filter((t) => t.role === "acquisitions_manager" || t.role === "other").map((t) => (
+                    {team.map((t) => (
                       <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                     ))}
                   </SelectContent>
