@@ -150,14 +150,14 @@ Deno.serve(async (req) => {
     }
 
     const mappingContact = fetchedContact ?? contact;
-    const mapping = resolveOppMapping({
+    const fieldMapping = resolveOppMapping({
       oppName: rawOppName,
       contact: mappingContact,
       contactFormattedAddress,
     });
-    const homeownerName = mapping.homeowner_name;
-    const propertyAddress = mapping.property_address;
-    console.log(`opp-mapping path=${mapping.path} opp=${opportunityId} addr=${propertyAddress ?? ""} homeowner=${homeownerName ?? ""}`);
+    const homeownerName = fieldMapping.homeowner_name;
+    const propertyAddress = fieldMapping.property_address;
+    console.log(`opp-mapping path=${fieldMapping.path} opp=${opportunityId} addr=${propertyAddress ?? ""} homeowner=${homeownerName ?? ""}`);
 
     let written = false;
     let insertError: string | null = null;
