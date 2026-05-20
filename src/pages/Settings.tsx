@@ -11,8 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Trash2, Infinity as InfinityIcon, ExternalLink } from "lucide-react";
 import { useActiveLocation } from "@/contexts/LocationContext";
-import TeamMembersTab from "@/pages/settings/TeamMembersTab";
-import WholesalingTeamTab from "@/pages/settings/WholesalingTeamTab";
+import TeamTab from "@/pages/settings/TeamTab";
 import OperatorAccountTab from "@/pages/settings/OperatorAccountTab";
 
 export default function Settings() {
