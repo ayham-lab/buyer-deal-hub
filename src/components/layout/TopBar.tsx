@@ -149,9 +149,8 @@ export function TopBar() {
   }
 
   function pickAdminView() {
-    try { sessionStorage.removeItem("ghl_active_location"); } catch {}
-    // Hard nav so LocationContext re-initializes with no active location.
-    window.location.href = "/admin";
+    clearActiveLocation();
+    navigate("/admin");
   }
 
   return (
