@@ -28,7 +28,6 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
   const [checklist, setChecklist] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [titleCos, setTitleCos] = useState<{ id: string; name: string }[]>([]);
-  const [owners, setOwners] = useState<{ user_id: string; name: string | null; email: string | null }[]>([]);
   const [team, setTeam] = useState<{ id: string; name: string; role: string }[]>([]);
   const [locationName, setLocationName] = useState<string | null>(null);
   const [newTask, setNewTask] = useState("");
@@ -40,17 +39,14 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
       const activeLoc = getActiveLocationId();
       const teamBase = supabase.from("team_members").select("id,name,role").eq("is_active", true).order("name");
       const teamQuery = (isIframed || activeLoc) ? teamBase : (user ? teamBase.eq("user_id", user.id) : null);
-      const [{ data: d }, { data: c }, { data: t }, { data: tc }, ownRes, { data: tm }] = await Promise.all([
+      const [{ data: d }, { data: c }, { data: t }, { data: tc }, { data: tm }] = await Promise.all([
         supabase.from("deals").select("*").eq("id", dealId).single(),
         supabase.from("deal_checklist").select("*").eq("deal_id", dealId).order("sort_order"),
         supabase.from("tasks").select("*").eq("deal_id", dealId).order("created_at", { ascending: false }),
         user ? scopeToLocation(supabase.from("title_companies").select("id,name").eq("user_id", user.id).order("name")) : Promise.resolve({ data: [] as any }),
-        isIframed
-          ? Promise.resolve({ data: [] as any })
-          : supabase.from("profiles").select("user_id,name,email").order("name"),
         teamQuery ? scopeToLocation(teamQuery) : Promise.resolve({ data: [] as any }),
       ]);
-      setDeal(d); setChecklist(c || []); setTasks(t || []); setTitleCos((tc as any) || []); setOwners(((ownRes as any)?.data as any) || []); setTeam((tm as any) || []);
+      setDeal(d); setChecklist(c || []); setTasks(t || []); setTitleCos((tc as any) || []); setTeam((tm as any) || []);
 
       // Source location name
       if (d?.ghl_location_id) {
@@ -201,8 +197,8 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
                   <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Unassigned</SelectItem>
-                    {owners.map((o) => (
-                      <SelectItem key={o.user_id} value={o.user_id}>{o.name || o.email || o.user_id.slice(0, 8)}</SelectItem>
+                    {team.map((o) => (
+                      <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

@@ -11,8 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Trash2, Infinity as InfinityIcon, ExternalLink } from "lucide-react";
 import { useActiveLocation } from "@/contexts/LocationContext";
-import TeamMembersTab from "@/pages/settings/TeamMembersTab";
-import WholesalingTeamTab from "@/pages/settings/WholesalingTeamTab";
+import TeamTab from "@/pages/settings/TeamTab";
 import OperatorAccountTab from "@/pages/settings/OperatorAccountTab";
 
 export default function Settings() {
@@ -37,7 +36,6 @@ export default function Settings() {
             {showProfile && <TabsTrigger value="profile">Profile</TabsTrigger>}
             <TabsTrigger value="checklist">Checklist</TabsTrigger>
             <TabsTrigger value="team">Team</TabsTrigger>
-            <TabsTrigger value="wholesaling-team">Wholesaling Team</TabsTrigger>
             <TabsTrigger value="operator">Operator Account</TabsTrigger>
             {isIframed && <TabsTrigger value="billing">Billing</TabsTrigger>}
             {showGhl && <TabsTrigger value="ghl">GHL Connections</TabsTrigger>}
@@ -45,8 +43,7 @@ export default function Settings() {
           </TabsList>
           {showProfile && <TabsContent value="profile"><ProfileTab /></TabsContent>}
           <TabsContent value="checklist"><ChecklistTab /></TabsContent>
-          <TabsContent value="team"><TeamMembersTab /></TabsContent>
-          <TabsContent value="wholesaling-team"><WholesalingTeamTab /></TabsContent>
+          <TabsContent value="team"><TeamTab /></TabsContent>
           <TabsContent value="operator"><OperatorAccountTab /></TabsContent>
           {isIframed && <TabsContent value="billing"><BillingTab locationId={activeLocation?.locationId ?? null} /></TabsContent>}
           {showGhl && <TabsContent value="ghl"><GhlTab /></TabsContent>}
