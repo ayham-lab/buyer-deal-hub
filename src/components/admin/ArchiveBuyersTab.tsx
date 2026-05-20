@@ -2,6 +2,7 @@
 // Server-side search, filters, sort, pagination — built for 10k+ rows.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +13,10 @@ import {
 import {
   DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Loader2, Plus, Trash2, Save, X, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import { Loader2, Plus, Trash2, Save, X, Search, ChevronLeft, ChevronRight, Pencil, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 
 interface Row {
