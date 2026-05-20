@@ -126,19 +126,24 @@ Deno.serve(async (req) => {
       (opp.source ?? body.source ?? opp.opportunitySource ?? null) || null;
 
     // Property Address = formatted contact address. Resolve from inline payload first,
-    // then fall back to a PIT-backed /contacts/{id} fetch.
+    // then fall back to a /contacts/{id} fetch. Prefer the location's OAuth access_token
+    // (has contacts scope); only fall back to the agency PIT if the location token fails.
     let propertyAddress: string | null = null;
     const inlineAddress = formatContactAddress(contact);
 
     if (inlineAddress) {
       propertyAddress = inlineAddress;
     } else if (ghlContactId) {
-      const pit = Deno.env.get("GHL_AGENCY_PIT_TOKEN") ?? "";
-      if (pit) {
-        const r = await fetchContactAddress(ghlContactId, pit);
-        if (r.formatted) propertyAddress = r.formatted;
-        else console.log("contact address resolution:", r.source, r.detail ?? "");
+      let r = await fetchContactAddress(ghlContactId, tokenRow.access_token);
+      if (r.source !== "ok") {
+        const pit = Deno.env.get("GHL_AGENCY_PIT_TOKEN") ?? "";
+        if (pit) {
+          console.log("contact address: location token failed, falling back to PIT", r.source, r.detail ?? "");
+          r = await fetchContactAddress(ghlContactId, pit);
+        }
       }
+      if (r.formatted) propertyAddress = r.formatted;
+      else console.log("contact address resolution:", r.source, r.detail ?? "");
     }
 
     let written = false;
