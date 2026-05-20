@@ -8,6 +8,7 @@
 // Concurrency: 5 workers, 5-attempt exponential backoff on 429.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { fetchContactAddress } from "../_shared/ghlContactAddress.ts";
+import { resolveOppMapping } from "../_shared/oppFieldMapping.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
