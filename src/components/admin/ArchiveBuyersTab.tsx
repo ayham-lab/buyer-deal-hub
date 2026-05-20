@@ -522,7 +522,7 @@ export function ArchiveBuyersTab() {
                 );
               })}
               {rows.length === 0 && !loading && (
-                <tr><td colSpan={8} className="text-center py-6 text-muted-foreground">No buyers match your filters.</td></tr>
+                <tr><td colSpan={9} className="text-center py-6 text-muted-foreground">No buyers match your filters.</td></tr>
               )}
             </tbody>
           </table>
