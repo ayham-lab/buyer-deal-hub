@@ -61,11 +61,14 @@ export default function TitleCompanies() {
   useEffect(() => { load(); }, [user]);
 
   const filtered = items.filter((t) => {
-    const q = search.toLowerCase();
+    const q = search.toLowerCase().trim();
     if (!q) return true;
     return (
       t.name.toLowerCase().includes(q) ||
       (t.contact_name || "").toLowerCase().includes(q) ||
+      (t.email || "").toLowerCase().includes(q) ||
+      (t.phone || "").toLowerCase().includes(q) ||
+      (t.address || "").toLowerCase().includes(q) ||
       t.service_states.some((s) => s.toLowerCase().includes(q)) ||
       t.service_cities.some((c) => c.toLowerCase().includes(q))
     );
@@ -91,7 +94,7 @@ export default function TitleCompanies() {
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by name, state, city…"
+            placeholder="Search by name, contact, email, city, state…"
             className="pl-9"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
