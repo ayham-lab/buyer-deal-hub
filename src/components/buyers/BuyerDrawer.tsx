@@ -55,6 +55,7 @@ export function BuyerDrawer({ buyer, onClose, onUpdated }: { buyer: Buyer | null
       price_max: buyer.price_max ?? "",
       source: buyer.source || "",
       criteria_notes: buyer.criteria_notes || "",
+      deals_purchased: (buyer as any).deals_purchased ?? 0,
     });
   }, [buyer]);
 
