@@ -33,7 +33,19 @@ export function AppLayout({
   // Account/workspace settings are for the standalone Lovable session only.
   if (standaloneOnly && isIframed) return <Navigate to="/" replace />;
   // Admin Console is a cross-tenant tool — never expose it inside a GHL iframe.
-  if (requireAdmin && isIframed) return <Navigate to="/" replace />;
+  if (requireAdmin && isIframed) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="max-w-md text-center space-y-3">
+          <h1 className="text-lg font-semibold text-foreground">Admin Console unavailable here</h1>
+          <p className="text-sm text-muted-foreground">
+            The Admin Console is a cross-tenant tool and can't run inside the GHL embed.
+            Please open Dispo Tool in a separate browser tab to access it.
+          </p>
+        </div>
+      </div>
+    );
+  }
   if (requireAdmin && !isAdmin) return <Navigate to="/buyers" replace />;
 
   return (
