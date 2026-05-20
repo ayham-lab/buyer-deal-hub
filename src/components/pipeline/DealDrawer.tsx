@@ -197,8 +197,8 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
                   <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Unassigned</SelectItem>
-                    {owners.map((o) => (
-                      <SelectItem key={o.user_id} value={o.user_id}>{o.name || o.email || o.user_id.slice(0, 8)}</SelectItem>
+                    {team.map((o) => (
+                      <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
