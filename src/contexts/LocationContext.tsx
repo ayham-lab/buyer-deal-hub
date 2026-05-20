@@ -362,8 +362,17 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const clearActiveLocation = () => {
+    try {
+      sessionStorage.removeItem("ghl_active_location");
+      sessionStorage.removeItem("ghl_effective_locations");
+      sessionStorage.removeItem("ghl_location_names");
+    } catch {}
+    setActiveLocation(null);
+  };
+
   return (
-    <LocationContext.Provider value={{ activeLocation, isIframed, handshakeReady, iframeSigninPending }}>
+    <LocationContext.Provider value={{ activeLocation, isIframed, handshakeReady, iframeSigninPending, clearActiveLocation }}>
       {children}
       <DebugOverlay
         status={debugStatus}
