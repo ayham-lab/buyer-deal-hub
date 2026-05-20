@@ -31,6 +31,9 @@ interface Row {
   notes: string | null;
   is_active: boolean;
   quality_tier: string | null;
+  status: "not_vetted" | "vetted" | "vetted_and_closed" | "repeat" | "recurring" | null;
+  status_override_by_admin: boolean;
+  system_deals_purchased: number;
   sources: any;
   created_at: string;
 }
@@ -50,6 +53,22 @@ const US_STATES = [
   "Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont",
   "Virginia","Washington","West Virginia","Wisconsin","Wyoming","District of Columbia",
 ];
+const STATUS_OPTIONS: { value: NonNullable<Row["status"]>; label: string }[] = [
+  { value: "not_vetted",        label: "Not Vetted" },
+  { value: "vetted",            label: "Vetted" },
+  { value: "vetted_and_closed", label: "Vetted + Closed" },
+  { value: "repeat",            label: "Repeat Buyer" },
+  { value: "recurring",         label: "Recurring Buyer" },
+];
+const STATUS_LABEL: Record<string, string> = Object.fromEntries(STATUS_OPTIONS.map(s => [s.value, s.label]));
+const STATUS_COLOR: Record<string, string> = {
+  not_vetted: "bg-muted text-muted-foreground",
+  vetted: "bg-green-100 text-green-700 border-green-200",
+  vetted_and_closed: "bg-amber-100 text-amber-800 border-amber-300",
+  repeat: "bg-blue-100 text-blue-700 border-blue-200",
+  recurring: "bg-purple-100 text-purple-700 border-purple-200",
+};
+// Legacy filter keys retained for back-compat on quality_tier
 const QUALITY_TIERS = ["VIP BUYER", "Vetted", "Experienced", "Purchased a deal", "none"];
 const PAGE_SIZE = 50;
 
