@@ -167,7 +167,7 @@ export default function Buyers() {
                   <th>Price Range</th>
                   <th>Property Types</th>
                   <th>Last Contact</th>
-                  <th>Deals</th>
+                  <th title="Your personal count. System total combines all operators.">Deals</th>
                   <th>Source</th>
                   <th></th>
                 </tr>

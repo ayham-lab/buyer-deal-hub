@@ -2,6 +2,7 @@
 // Server-side search, filters, sort, pagination — built for 10k+ rows.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +13,10 @@ import {
 import {
   DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Loader2, Plus, Trash2, Save, X, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import { Loader2, Plus, Trash2, Save, X, Search, ChevronLeft, ChevronRight, Pencil, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 
 interface Row {
@@ -88,12 +92,15 @@ function useDebounced<T>(value: T, ms = 300): T {
 type SortKey = "newest" | "oldest" | "name_asc" | "name_desc" | "tier_desc";
 
 export function ArchiveBuyersTab() {
+  const { isSuperAdmin } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState<Partial<Row>>({ ...empty });
   const [editId, setEditId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<Partial<Row>>({});
+  const [statusModal, setStatusModal] = useState<Row | null>(null);
+  const [statusDraft, setStatusDraft] = useState<NonNullable<Row["status"]>>("not_vetted");
 
   // Filters
   const [search, setSearch] = useState("");
@@ -438,23 +445,30 @@ export function ArchiveBuyersTab() {
                       )}
                     </td>
                     <td className="text-xs">
-                      <div className="flex flex-col gap-1">
-                        <Select value={r.status ?? "__none__"} onValueChange={(v) => v !== "__none__" && setStatus(r.id, v as any)}>
-                          <SelectTrigger className={`h-7 w-[150px] text-[11px] ${r.status ? STATUS_COLOR[r.status] : ""}`}>
-                            <SelectValue placeholder="—" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {STATUS_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                        {r.status_override_by_admin && (
-                          <div className="flex items-center gap-1">
-                            <Badge variant="outline" className="text-[9px] border-amber-300 text-amber-700">Override</Badge>
-                            <button onClick={() => clearOverride(r.id)} className="text-[10px] text-primary hover:underline">Clear</button>
-                          </div>
+                      <div className="flex items-center gap-2">
+                        {r.status ? (
+                          <Badge variant="outline" className={`text-[10px] rounded ${STATUS_COLOR[r.status]}`}>
+                            {STATUS_LABEL[r.status]}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
                         )}
-                        {r.quality_tier && !r.status && (
-                          <span className="text-[9px] text-muted-foreground">legacy: {r.quality_tier}</span>
+                        {r.status_override_by_admin && (
+                          <span title="Admin override active" className="inline-flex items-center text-amber-600">
+                            <ShieldAlert className="h-3 w-3" />
+                          </span>
+                        )}
+                        {isSuperAdmin && (
+                          <button
+                            onClick={() => {
+                              setStatusModal(r);
+                              setStatusDraft((r.status ?? "not_vetted"));
+                            }}
+                            className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                            title="Edit status (super admin)"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </button>
                         )}
                       </div>
                     </td>
@@ -545,6 +559,55 @@ export function ArchiveBuyersTab() {
           </div>
         </div>
       )}
+
+      {/* Super-admin status override modal */}
+      <Dialog open={!!statusModal} onOpenChange={(o) => !o && setStatusModal(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Edit status — {statusModal?.full_name || [statusModal?.first_name, statusModal?.last_name].filter(Boolean).join(" ") || "buyer"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="text-xs text-muted-foreground">
+              Saving sets an admin override that prevents auto-sync from changing this status.
+              Current: <span className="font-medium text-foreground">{statusModal?.status ? STATUS_LABEL[statusModal.status] : "—"}</span>
+              {statusModal?.status_override_by_admin && <span className="ml-1 text-amber-600">(override active)</span>}
+            </div>
+            <Select value={statusDraft} onValueChange={(v) => setStatusDraft(v as any)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter className="flex sm:justify-between gap-2">
+            <Button
+              variant="outline"
+              disabled={!statusModal?.status_override_by_admin}
+              onClick={async () => {
+                if (!statusModal) return;
+                await clearOverride(statusModal.id);
+                setStatusModal(null);
+              }}
+            >
+              Clear override
+            </Button>
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={() => setStatusModal(null)}>Cancel</Button>
+              <Button
+                onClick={async () => {
+                  if (!statusModal) return;
+                  await setStatus(statusModal.id, statusDraft);
+                  setStatusModal(null);
+                }}
+              >
+                Save as override
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

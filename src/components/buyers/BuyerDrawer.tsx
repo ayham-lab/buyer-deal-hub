@@ -38,6 +38,21 @@ function Chips({ options, value, onChange }: { options: string[]; value: string[
 export function BuyerDrawer({ buyer, onClose, onUpdated }: { buyer: Buyer | null; onClose: () => void; onUpdated: () => void }) {
   const [form, setForm] = useState<any>(null);
   const [busy, setBusy] = useState(false);
+  const [systemDeals, setSystemDeals] = useState<number>(0);
+
+  useEffect(() => {
+    if (!buyer) { setSystemDeals(0); return; }
+    (async () => {
+      const email = (buyer.email || "").trim().toLowerCase();
+      const phone = (buyer.phone || "").trim();
+      let q = supabase.from("archive_buyers").select("system_deals_purchased").limit(1);
+      if (email) q = q.ilike("email", email);
+      else if (phone) q = q.eq("phone", phone);
+      else { setSystemDeals(0); return; }
+      const { data } = await q;
+      setSystemDeals((data?.[0] as any)?.system_deals_purchased ?? 0);
+    })();
+  }, [buyer?.id, buyer?.email, buyer?.phone]);
 
   useEffect(() => {
     if (!buyer) { setForm(null); return; }
@@ -160,7 +175,10 @@ export function BuyerDrawer({ buyer, onClose, onUpdated }: { buyer: Buyer | null
               onChange={(e) => set("deals_purchased", e.target.value)}
             />
             <p className="text-[11px] text-muted-foreground mt-1">
-              How many deals this buyer has closed with you. System-wide total is shown in the shared Archive.
+              Your personal count. System total combines all operators.
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              System-wide deals: <span className="font-medium text-foreground">{systemDeals}</span>
             </p>
           </div>
 
