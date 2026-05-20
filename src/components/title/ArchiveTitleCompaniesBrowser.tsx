@@ -45,15 +45,17 @@ export function ArchiveTitleCompaniesBrowser({ open, onClose, onAdded }: {
 
   const filtered = useMemo(() => {
     const s = q.toLowerCase().trim();
-    return items.filter((t) => {
-      const matchQ = !s || t.name.toLowerCase().includes(s) ||
-        (t.contact_name || "").toLowerCase().includes(s) ||
-        (t.email || "").toLowerCase().includes(s) ||
-        t.service_cities.some((c) => c.toLowerCase().includes(s));
-      const matchState = state === "all" || t.service_states.includes(state);
-      return matchQ && matchState;
-    });
-  }, [items, q, state]);
+    if (!s) return items;
+    return items.filter((t) =>
+      t.name.toLowerCase().includes(s) ||
+      (t.contact_name || "").toLowerCase().includes(s) ||
+      (t.email || "").toLowerCase().includes(s) ||
+      (t.phone || "").toLowerCase().includes(s) ||
+      (t.address || "").toLowerCase().includes(s) ||
+      t.service_states.some((v) => v.toLowerCase().includes(s)) ||
+      t.service_cities.some((v) => v.toLowerCase().includes(s))
+    );
+  }, [items, q]);
 
   async function addToRolodex(row: ArchiveRow) {
     if (!user) return;
@@ -89,18 +91,11 @@ export function ArchiveTitleCompaniesBrowser({ open, onClose, onAdded }: {
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex gap-3 pb-3">
-          <div className="relative flex-1">
+        <div className="pb-3">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input className="pl-9" placeholder="Search by name, contact, email, city…" value={q} onChange={(e) => setQ(e.target.value)} />
+            <Input className="pl-9" placeholder="Search by name, contact, email, city, state…" value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
-          <Select value={state} onValueChange={setState}>
-            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-            <SelectContent className="max-h-72">
-              <SelectItem value="all">All states</SelectItem>
-              {US_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
         </div>
 
         <div className="overflow-y-auto -mx-6 px-6 space-y-2">
