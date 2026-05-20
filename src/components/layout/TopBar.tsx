@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useActiveLocation } from "@/contexts/LocationContext";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { CreditsPill } from "@/components/credits/CreditsPill";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
@@ -23,7 +23,8 @@ interface MembershipOption {
 
 export function TopBar() {
   const { profile, signOut, isAdmin, isSuperAdmin, user } = useAuth();
-  const { activeLocation, isIframed } = useActiveLocation();
+  const { activeLocation, isIframed, clearActiveLocation } = useActiveLocation();
+  const navigate = useNavigate();
   const [memberships, setMemberships] = useState<MembershipOption[] | null>(null);
   const [loadingMemberships, setLoadingMemberships] = useState(false);
   const [iframeLocationName, setIframeLocationName] = useState<string | null>(null);
