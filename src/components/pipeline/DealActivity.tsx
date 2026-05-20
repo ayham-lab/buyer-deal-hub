@@ -88,6 +88,12 @@ function describe(a: Activity): string {
     }
     case "homeowner_address_backfilled":
       return "Homeowner / address backfilled from GHL";
+    case "soft_deleted":
+      return "Deal deleted (soft) — hidden from pipeline";
+    case "resurrected":
+      return "Deal restored from Recently Deleted";
+    case "resurrected_from_stage_change":
+      return `Deal restored automatically — GHL stage changed${a.metadata?.new_stage_name ? ` to "${a.metadata.new_stage_name}"` : ""}`;
     default:
       return a.event_type;
   }
