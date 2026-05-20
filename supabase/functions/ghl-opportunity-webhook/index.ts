@@ -3,6 +3,7 @@
 // to `deals` when the stage name contains "dispo".
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { fetchContactAddress, formatContactAddress } from "../_shared/ghlContactAddress.ts";
+import { resolveOppMapping } from "../_shared/oppFieldMapping.ts";
 
 
 const corsHeaders = {
@@ -120,31 +121,43 @@ Deno.serve(async (req) => {
     const sellerEmail = contact.email || body.email || null;
     const ghlContactId = body.contactId || opp.contactId || contact.id || contact._id || null;
 
-    // Homeowner Name = opportunity name. Lead Source = opportunity.source (whatever string GHL returns).
-    const homeownerName = (opp.name ?? body.name ?? "").toString().trim() || null;
+    const rawOppName = (opp.name ?? body.name ?? "").toString().trim() || null;
     const leadSource =
       (opp.source ?? body.source ?? opp.opportunitySource ?? null) || null;
 
-    // Property Address = formatted contact address. Resolve from inline payload first,
-    // then fall back to a /contacts/{id} fetch. Prefer the location's OAuth access_token
-    // (has contacts scope); only fall back to the agency PIT if the location token fails.
-    let propertyAddress: string | null = null;
+    // Resolve contact address (inline first, then /contacts/{id}); also capture
+    // the fetched contact so we can pull firstName/lastName when the opp.name
+    // turns out to be an address.
+    let contactFormattedAddress: string | null = null;
+    let fetchedContact: any = null;
     const inlineAddress = formatContactAddress(contact);
 
     if (inlineAddress) {
-      propertyAddress = inlineAddress;
-    } else if (ghlContactId) {
+      contactFormattedAddress = inlineAddress;
+    }
+    if (ghlContactId) {
       let r = await fetchContactAddress(ghlContactId, tokenRow.access_token);
-      if (r.source !== "ok") {
+      if (r.source === "fetch_failed") {
         const pit = Deno.env.get("GHL_AGENCY_PIT_TOKEN") ?? "";
         if (pit) {
           console.log("contact address: location token failed, falling back to PIT", r.source, r.detail ?? "");
           r = await fetchContactAddress(ghlContactId, pit);
         }
       }
-      if (r.formatted) propertyAddress = r.formatted;
-      else console.log("contact address resolution:", r.source, r.detail ?? "");
+      if (r.contact) fetchedContact = r.contact;
+      if (r.formatted) contactFormattedAddress = r.formatted;
+      else if (r.source === "fetch_failed") console.log("contact address resolution:", r.source, r.detail ?? "");
     }
+
+    const mappingContact = fetchedContact ?? contact;
+    const mapping = resolveOppMapping({
+      oppName: rawOppName,
+      contact: mappingContact,
+      contactFormattedAddress,
+    });
+    const homeownerName = mapping.homeowner_name;
+    const propertyAddress = mapping.property_address;
+    console.log(`opp-mapping path=${mapping.path} opp=${opportunityId} addr=${propertyAddress ?? ""} homeowner=${homeownerName ?? ""}`);
 
     let written = false;
     let insertError: string | null = null;
