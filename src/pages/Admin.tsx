@@ -114,6 +114,8 @@ export default function Admin() {
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="deals">Deals</TabsTrigger>
+            {isSuperAdmin && <TabsTrigger value="recently_deleted">Recently Deleted</TabsTrigger>}
+            
             
             <TabsTrigger value="roles">Roles</TabsTrigger>
             {showPricing && <TabsTrigger value="pricing">Pricing</TabsTrigger>}
