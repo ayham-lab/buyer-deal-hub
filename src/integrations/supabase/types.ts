@@ -1098,6 +1098,30 @@ export type Database = {
         }
         Relationships: []
       }
+      merge_audit_log: {
+        Row: {
+          executed_at: string
+          id: string
+          phase: number
+          status: string
+          summary: Json
+        }
+        Insert: {
+          executed_at?: string
+          id?: string
+          phase: number
+          status?: string
+          summary?: Json
+        }
+        Update: {
+          executed_at?: string
+          id?: string
+          phase?: number
+          status?: string
+          summary?: Json
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string | null
@@ -1562,6 +1586,7 @@ export type Database = {
           ghl_location_id: string | null
           id: string
           is_active: boolean
+          linked_user_id: string | null
           name: string
           notes: string | null
           phone: string | null
@@ -1575,6 +1600,7 @@ export type Database = {
           ghl_location_id?: string | null
           id?: string
           is_active?: boolean
+          linked_user_id?: string | null
           name: string
           notes?: string | null
           phone?: string | null
@@ -1588,6 +1614,7 @@ export type Database = {
           ghl_location_id?: string | null
           id?: string
           is_active?: boolean
+          linked_user_id?: string | null
           name?: string
           notes?: string | null
           phone?: string | null
