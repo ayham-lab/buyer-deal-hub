@@ -25,6 +25,10 @@ export function ExitStrategyPicker({
   const initialOnOpenRef = useRef<string[]>(value || []);
   const openRef = useRef(false);
   const onChangeRef = useRef(onChange);
+  // Dedupe: once we've committed for the current open session, ignore further close events.
+  const savedThisSessionRef = useRef(false);
+  // Track previous open value so we only re-sync from value on the open transition (false → true).
+  const prevOpenRef = useRef(false);
 
   useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
   useEffect(() => { openRef.current = open; }, [open]);
@@ -36,15 +40,27 @@ export function ExitStrategyPicker({
     console.log("[ExitStrategyPicker local change]", { from: prev, to: local, refAfter: localRef.current });
   }, [local]);
 
-  // Sync from parent only when closed.
+  // Architectural fix (C): only sync from parent on the open transition. Once open=false,
+  // we do NOT react to value changes — this prevents a stale parent refetch from clobbering
+  // our just-committed local state and re-saving the pre-save value.
   useEffect(() => {
-    if (!open) {
+    const wasOpen = prevOpenRef.current;
+    prevOpenRef.current = open;
+    if (open && !wasOpen) {
+      // Opening: reseed from parent.
+      initialOnOpenRef.current = value || [];
       setLocal(value || []);
       localRef.current = value || [];
+      savedThisSessionRef.current = false;
+      console.log("[ExitStrategyPicker open]", { initialValue: value || [], setLocalTo: value || [] });
     }
-  }, [value, open]);
+  }, [open, value]);
 
   function commitFromRef(reason: string) {
+    if (savedThisSessionRef.current) {
+      console.log("[ExitStrategyPicker close skipped]", { reason, why: "already saved this session" });
+      return;
+    }
     const before = initialOnOpenRef.current;
     const current = localRef.current;
     const changed = !arraysEqual(before, current);
@@ -56,9 +72,10 @@ export function ExitStrategyPicker({
       changed,
       willCallOnChange: changed,
     });
+    // Mark as saved regardless of whether the value changed — we've handled this close.
+    savedThisSessionRef.current = true;
     if (changed) {
       onChangeRef.current(current);
-      // Treat committed value as the new baseline so subsequent fallback commits don't double-fire.
       initialOnOpenRef.current = current;
     }
   }
@@ -74,24 +91,22 @@ export function ExitStrategyPicker({
   function toggle(key: string) {
     setLocal((prev) => {
       const next = prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key];
-      localRef.current = next; // update ref synchronously so rapid clicks see latest
+      localRef.current = next;
       return next;
     });
   }
 
   function handleOpenChange(next: boolean) {
-    if (next) {
-      initialOnOpenRef.current = value || [];
-      setLocal(value || []);
-      localRef.current = value || [];
-      console.log("[ExitStrategyPicker open]", { initialValue: value || [], setLocalTo: value || [] });
-    } else {
+    if (!next && openRef.current) {
+      // True open → close transition. Commit once.
       commitFromRef("openChange");
     }
     setOpen(next);
   }
 
-  const selected = open ? local : value || [];
+  // While open, render from local. While closed, render from local too (we don't trust
+  // the value prop to be fresh — it may arrive stale before the DB commit completes).
+  const selected = open ? local : (savedThisSessionRef.current ? local : (value || []));
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
