@@ -67,6 +67,7 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
     buyer_types: [] as string[],
     buyer_frequency: [] as string[],
     price_min: "", price_max: "",
+    deals_purchased: "0",
     source: "",
     criteria_notes: "",
     previous_deals: "", experience: "",
