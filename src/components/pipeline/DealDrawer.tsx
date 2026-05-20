@@ -115,10 +115,24 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
   }
 
   async function deleteDeal() {
-    if (!confirm("Delete this deal?")) return;
-    const { error } = await supabase.from("deals").delete().eq("id", dealId);
-    if (error) toast.error(error.message);
-    else { toast.success("Deal deleted"); onClose(); onUpdated(); }
+    if (!confirm("Delete this deal? It will be hidden from the pipeline and can be restored from Admin → Recently Deleted.")) return;
+    const { data, error } = await supabase
+      .from("deals")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: user?.id ?? null } as any)
+      .eq("id", dealId)
+      .is("deleted_at", null)
+      .select("id");
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    if (!data || data.length === 0) {
+      toast.error("Couldn't delete — check your permissions or try again");
+      return;
+    }
+    toast.success("Deal deleted");
+    onClose();
+    onUpdated();
   }
 
   return (
