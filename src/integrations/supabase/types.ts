@@ -1561,6 +1561,7 @@ export type Database = {
           email: string | null
           ghl_location_id: string | null
           id: string
+          is_active: boolean
           name: string
           notes: string | null
           phone: string | null
@@ -1573,6 +1574,7 @@ export type Database = {
           email?: string | null
           ghl_location_id?: string | null
           id?: string
+          is_active?: boolean
           name: string
           notes?: string | null
           phone?: string | null
@@ -1585,6 +1587,7 @@ export type Database = {
           email?: string | null
           ghl_location_id?: string | null
           id?: string
+          is_active?: boolean
           name?: string
           notes?: string | null
           phone?: string | null

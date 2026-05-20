@@ -10,6 +10,7 @@ import { withLocation } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 export const TEAM_ROLES = [
   { value: "dispo_manager", label: "Dispo Manager" },
@@ -21,18 +22,18 @@ export const TEAM_ROLES = [
 export function TeamMemberModal({ open, onClose, member, onSaved }: { open: boolean; onClose: () => void; member: any | null; onSaved: () => void }) {
   const { user } = useAuth();
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", phone: "", role: "other", notes: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", role: "other", notes: "", is_active: true });
 
   useEffect(() => {
-    if (member) setForm({ name: member.name || "", email: member.email || "", phone: member.phone || "", role: member.role || "other", notes: member.notes || "" });
-    else setForm({ name: "", email: "", phone: "", role: "other", notes: "" });
+    if (member) setForm({ name: member.name || "", email: member.email || "", phone: member.phone || "", role: member.role || "other", notes: member.notes || "", is_active: member.is_active ?? true });
+    else setForm({ name: "", email: "", phone: "", role: "other", notes: "", is_active: true });
   }, [member, open]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!user) return;
     setBusy(true);
-    const payload = { name: form.name, email: form.email || null, phone: form.phone || null, role: form.role, notes: form.notes || null };
+    const payload = { name: form.name, email: form.email || null, phone: form.phone || null, role: form.role, notes: form.notes || null, is_active: form.is_active };
     const { error } = member
       ? await supabase.from("team_members").update(payload).eq("id", member.id)
       : await supabase.from("team_members").insert(withLocation({ ...payload, user_id: user.id }));
@@ -69,6 +70,13 @@ export function TeamMemberModal({ open, onClose, member, onSaved }: { open: bool
             <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
           </div>
           <div><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} /></div>
+          <div className="flex items-center justify-between rounded-md border border-border p-3">
+            <div>
+              <Label className="text-sm">Active</Label>
+              <p className="text-xs text-muted-foreground">Inactive members are hidden from deal dropdowns.</p>
+            </div>
+            <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: !!v })} />
+          </div>
           <div className="flex justify-between pt-2">
             {member ? <Button type="button" variant="outline" onClick={remove} className="text-destructive border-destructive/30"><Trash2 className="h-4 w-4 mr-1" />Delete</Button> : <span />}
             <div className="flex gap-2">
