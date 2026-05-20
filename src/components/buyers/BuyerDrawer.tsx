@@ -16,6 +16,7 @@ const BUYER_TYPES = ["Flipper", "Landlord", "Developer", "Section 8", "Hedge Fun
 const BUYER_STATUS = [
   { value: "not_vetted", label: "Not Vetted" },
   { value: "vetted", label: "Vetted" },
+  { value: "vetted_and_closed", label: "Vetted + Closed" },
   { value: "repeat", label: "Repeat Buyer" },
   { value: "recurring", label: "Recurring Buyer" },
 ];
