@@ -1,0 +1,1 @@
+UPDATE public.title_companies SET service_states = ARRAY['PA'], service_cities = ARRAY['Philadelphia'] WHERE name = 'Prosperity Abstract Title';
