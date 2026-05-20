@@ -55,6 +55,7 @@ export function BuyerDrawer({ buyer, onClose, onUpdated }: { buyer: Buyer | null
       price_max: buyer.price_max ?? "",
       source: buyer.source || "",
       criteria_notes: buyer.criteria_notes || "",
+      deals_purchased: (buyer as any).deals_purchased ?? 0,
     });
   }, [buyer]);
 
@@ -82,6 +83,7 @@ export function BuyerDrawer({ buyer, onClose, onUpdated }: { buyer: Buyer | null
         price_max: form.price_max === "" || form.price_max === null ? null : Number(form.price_max),
         source: form.source || null,
         criteria_notes: form.criteria_notes || null,
+        deals_purchased: Math.max(0, Math.min(999, Number(form.deals_purchased) || 0)),
       })
       .eq("id", buyer!.id);
     setBusy(false);
@@ -148,6 +150,18 @@ export function BuyerDrawer({ buyer, onClose, onUpdated }: { buyer: Buyer | null
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Price Min</Label><Input type="number" value={form.price_min} onChange={(e) => set("price_min", e.target.value)} /></div>
             <div><Label>Price Max</Label><Input type="number" value={form.price_max} onChange={(e) => set("price_max", e.target.value)} /></div>
+          </div>
+
+          <div>
+            <Label>Deals Purchased (your count)</Label>
+            <Input
+              type="number" min={0} max={999}
+              value={form.deals_purchased}
+              onChange={(e) => set("deals_purchased", e.target.value)}
+            />
+            <p className="text-[11px] text-muted-foreground mt-1">
+              How many deals this buyer has closed with you. System-wide total is shown in the shared Archive.
+            </p>
           </div>
 
           <div><Label>Source</Label><Input value={form.source} onChange={(e) => set("source", e.target.value)} placeholder="REIA, Facebook, Referral" /></div>

@@ -31,6 +31,9 @@ interface Row {
   notes: string | null;
   is_active: boolean;
   quality_tier: string | null;
+  status: "not_vetted" | "vetted" | "vetted_and_closed" | "repeat" | "recurring" | null;
+  status_override_by_admin: boolean;
+  system_deals_purchased: number;
   sources: any;
   created_at: string;
 }
@@ -50,6 +53,22 @@ const US_STATES = [
   "Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont",
   "Virginia","Washington","West Virginia","Wisconsin","Wyoming","District of Columbia",
 ];
+const STATUS_OPTIONS: { value: NonNullable<Row["status"]>; label: string }[] = [
+  { value: "not_vetted",        label: "Not Vetted" },
+  { value: "vetted",            label: "Vetted" },
+  { value: "vetted_and_closed", label: "Vetted + Closed" },
+  { value: "repeat",            label: "Repeat Buyer" },
+  { value: "recurring",         label: "Recurring Buyer" },
+];
+const STATUS_LABEL: Record<string, string> = Object.fromEntries(STATUS_OPTIONS.map(s => [s.value, s.label]));
+const STATUS_COLOR: Record<string, string> = {
+  not_vetted: "bg-muted text-muted-foreground",
+  vetted: "bg-green-100 text-green-700 border-green-200",
+  vetted_and_closed: "bg-amber-100 text-amber-800 border-amber-300",
+  repeat: "bg-blue-100 text-blue-700 border-blue-200",
+  recurring: "bg-purple-100 text-purple-700 border-purple-200",
+};
+// Legacy filter keys retained for back-compat on quality_tier
 const QUALITY_TIERS = ["VIP BUYER", "Vetted", "Experienced", "Purchased a deal", "none"];
 const PAGE_SIZE = 50;
 
@@ -227,6 +246,20 @@ export function ArchiveBuyersTab() {
     load();
   }
 
+  async function setStatus(id: string, status: NonNullable<Row["status"]>) {
+    const { data, error } = await supabase.rpc("set_archive_buyer_status" as any, { p_id: id, p_status: status });
+    if (error || !data) return toast.error(error?.message || "Failed (super-admin only)");
+    toast.success("Status set (override active)");
+    load();
+  }
+
+  async function clearOverride(id: string) {
+    const { data, error } = await supabase.rpc("clear_archive_buyer_status_override" as any, { p_id: id });
+    if (error || !data) return toast.error(error?.message || "Failed (super-admin only)");
+    toast.success("Override cleared — auto-sync restored");
+    load();
+  }
+
   function clearFilters() {
     setSearch(""); setStateF("__any__"); setTiers([]);
     setHasEmail("any"); setHasPhone("any"); setSourceTags([]); setSort("newest");
@@ -382,7 +415,7 @@ export function ArchiveBuyersTab() {
           <table className="data-table w-full">
             <thead>
               <tr>
-                <th>Name</th><th>Tier</th><th>Location</th><th>Markets</th><th>Price</th>
+                <th>Name</th><th>Status</th><th>System Deals</th><th>Location</th><th>Markets</th><th>Price</th>
                 <th>Email / Phone</th><th>Active</th><th></th>
               </tr>
             </thead>
@@ -405,8 +438,27 @@ export function ArchiveBuyersTab() {
                       )}
                     </td>
                     <td className="text-xs">
-                      {r.quality_tier ? <Badge variant="secondary" className="text-[10px]">{r.quality_tier}</Badge> : <span className="text-muted-foreground">—</span>}
+                      <div className="flex flex-col gap-1">
+                        <Select value={r.status ?? "__none__"} onValueChange={(v) => v !== "__none__" && setStatus(r.id, v as any)}>
+                          <SelectTrigger className={`h-7 w-[150px] text-[11px] ${r.status ? STATUS_COLOR[r.status] : ""}`}>
+                            <SelectValue placeholder="—" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {STATUS_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        {r.status_override_by_admin && (
+                          <div className="flex items-center gap-1">
+                            <Badge variant="outline" className="text-[9px] border-amber-300 text-amber-700">Override</Badge>
+                            <button onClick={() => clearOverride(r.id)} className="text-[10px] text-primary hover:underline">Clear</button>
+                          </div>
+                        )}
+                        {r.quality_tier && !r.status && (
+                          <span className="text-[9px] text-muted-foreground">legacy: {r.quality_tier}</span>
+                        )}
+                      </div>
                     </td>
+                    <td className="text-xs font-medium">{r.system_deals_purchased ?? 0}</td>
                     <td className="text-xs">
                       {isEdit ? (
                         <div className="flex gap-1">
@@ -470,7 +522,7 @@ export function ArchiveBuyersTab() {
                 );
               })}
               {rows.length === 0 && !loading && (
-                <tr><td colSpan={8} className="text-center py-6 text-muted-foreground">No buyers match your filters.</td></tr>
+                <tr><td colSpan={9} className="text-center py-6 text-muted-foreground">No buyers match your filters.</td></tr>
               )}
             </tbody>
           </table>

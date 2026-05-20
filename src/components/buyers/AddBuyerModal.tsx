@@ -67,6 +67,7 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
     buyer_types: [] as string[],
     buyer_frequency: [] as string[],
     price_min: "", price_max: "",
+    deals_purchased: "0",
     source: "",
     criteria_notes: "",
     previous_deals: "", experience: "",
@@ -116,6 +117,7 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
       buyer_frequency: form.buyer_frequency,
       price_min: form.price_min ? Number(form.price_min) : null,
       price_max: form.price_max ? Number(form.price_max) : null,
+      deals_purchased: Math.max(0, Math.min(999, Number(form.deals_purchased) || 0)),
       source: form.source || null,
       criteria_notes: form.criteria_notes || null,
       previous_deals: form.previous_deals || null,
@@ -173,6 +175,11 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
 
           <div><Label>Price Min</Label><Input type="number" value={form.price_min} onChange={(e) => set("price_min", e.target.value)} /></div>
           <div><Label>Price Max</Label><Input type="number" value={form.price_max} onChange={(e) => set("price_max", e.target.value)} /></div>
+
+          <div className="col-span-2">
+            <Label>Deals Purchased (your count)</Label>
+            <Input type="number" min={0} max={999} value={form.deals_purchased} onChange={(e) => set("deals_purchased", e.target.value)} />
+          </div>
 
           <div className="col-span-2"><Label>Source</Label><Input value={form.source} onChange={(e) => set("source", e.target.value)} placeholder="REIA, Facebook, Referral" /></div>
           <div className="col-span-2"><Label>Criteria Notes</Label><Textarea value={form.criteria_notes} onChange={(e) => set("criteria_notes", e.target.value)} /></div>

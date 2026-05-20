@@ -63,6 +63,9 @@ export type Database = {
           quality_tier: string | null
           sources: Json
           state: string | null
+          status: Database["public"]["Enums"]["buyer_status"] | null
+          status_override_by_admin: boolean
+          system_deals_purchased: number
           updated_at: string
         }
         Insert: {
@@ -92,6 +95,9 @@ export type Database = {
           quality_tier?: string | null
           sources?: Json
           state?: string | null
+          status?: Database["public"]["Enums"]["buyer_status"] | null
+          status_override_by_admin?: boolean
+          system_deals_purchased?: number
           updated_at?: string
         }
         Update: {
@@ -121,6 +127,9 @@ export type Database = {
           quality_tier?: string | null
           sources?: Json
           state?: string | null
+          status?: Database["public"]["Enums"]["buyer_status"] | null
+          status_override_by_admin?: boolean
+          system_deals_purchased?: number
           updated_at?: string
         }
         Relationships: []
@@ -239,6 +248,7 @@ export type Database = {
           created_at: string
           criteria_notes: string | null
           deal_count: number
+          deals_purchased: number
           email: string | null
           experience: string | null
           first_name: string | null
@@ -268,6 +278,7 @@ export type Database = {
           created_at?: string
           criteria_notes?: string | null
           deal_count?: number
+          deals_purchased?: number
           email?: string | null
           experience?: string | null
           first_name?: string | null
@@ -297,6 +308,7 @@ export type Database = {
           created_at?: string
           criteria_notes?: string | null
           deal_count?: number
+          deals_purchased?: number
           email?: string | null
           experience?: string | null
           first_name?: string | null
@@ -1746,13 +1758,29 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _buyer_status_rank: {
+        Args: { s: Database["public"]["Enums"]["buyer_status"] }
+        Returns: number
+      }
+      _find_archive_for_buyer: {
+        Args: { p_email: string; p_phone: string }
+        Returns: string
+      }
       _state_abbr_to_full: { Args: { p: string }; Returns: string }
       _state_full_to_abbr: { Args: { p: string }; Returns: string }
+      _sync_archive_from_buyers: {
+        Args: { p_archive_id: string }
+        Returns: undefined
+      }
       archive_buyer_distinct_sources: {
         Args: never
         Returns: {
           source: string
         }[]
+      }
+      clear_archive_buyer_status_override: {
+        Args: { p_id: string }
+        Returns: boolean
       }
       consume_credits: {
         Args: { p_action: string; p_location: string; p_related_id?: string }
@@ -1811,6 +1839,13 @@ export type Database = {
       reveal_archive_buyer: {
         Args: { p_buyer_id: string; p_location: string }
         Returns: Json
+      }
+      set_archive_buyer_status: {
+        Args: {
+          p_id: string
+          p_status: Database["public"]["Enums"]["buyer_status"]
+        }
+        Returns: boolean
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }

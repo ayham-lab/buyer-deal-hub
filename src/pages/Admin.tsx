@@ -440,7 +440,7 @@ function BuyersTab({ buyers, users, onOpenUser }: any) {
                 <td className="text-muted-foreground">{b.email || "—"}</td>
                 <td><Badge variant="outline" className="capitalize">{b.buyer_status}</Badge></td>
                 <td className="text-xs text-muted-foreground truncate max-w-[200px]">{(b.markets || []).join(", ") || "—"}</td>
-                <td>{b.deal_count || 0}</td>
+                <td>{b.deals_purchased ?? 0}</td>
               </tr>
             ))}
             {filtered.length === 0 && <tr><td colSpan={6} className="text-center py-6 text-muted-foreground">No buyers match.</td></tr>}

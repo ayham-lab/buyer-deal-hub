@@ -27,6 +27,7 @@ export interface Buyer {
   source: string | null;
   last_contact_at: string | null;
   deal_count: number;
+  deals_purchased: number;
   criteria_notes: string | null;
   created_at: string;
   first_name?: string | null;
@@ -112,7 +113,7 @@ export default function Buyers() {
               markets: (b.markets || []).join("|"),
               property_types: (b.property_types || []).join("|"),
               price_min: b.price_min, price_max: b.price_max,
-              source: b.source, status: b.buyer_status, deal_count: b.deal_count,
+              source: b.source, status: b.buyer_status, deals_purchased: b.deals_purchased,
               created_at: b.created_at,
             })), `buyers-${new Date().toISOString().slice(0,10)}`)}>
               <Download className="h-4 w-4 mr-1" /> Export CSV
@@ -191,7 +192,7 @@ export default function Buyers() {
                     <td className="text-muted-foreground">
                       {b.last_contact_at ? format(new Date(b.last_contact_at), "MMM d") : "—"}
                     </td>
-                    <td>{b.deal_count}</td>
+                    <td>{b.deals_purchased ?? 0}</td>
                     <td className="text-muted-foreground">{b.source || "—"}</td>
                     <td onClick={(e) => e.stopPropagation()}>
                       <button
