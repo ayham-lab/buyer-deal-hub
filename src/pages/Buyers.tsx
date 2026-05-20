@@ -113,7 +113,7 @@ export default function Buyers() {
               markets: (b.markets || []).join("|"),
               property_types: (b.property_types || []).join("|"),
               price_min: b.price_min, price_max: b.price_max,
-              source: b.source, status: b.buyer_status, deal_count: b.deal_count,
+              source: b.source, status: b.buyer_status, deals_purchased: b.deals_purchased,
               created_at: b.created_at,
             })), `buyers-${new Date().toISOString().slice(0,10)}`)}>
               <Download className="h-4 w-4 mr-1" /> Export CSV
