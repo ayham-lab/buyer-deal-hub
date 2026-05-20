@@ -216,6 +216,14 @@ export default function Admin() {
             <DealsTab deals={deals} users={users} locationNames={locationNames} onOpenUser={setOpenUserId} />
           </TabsContent>
 
+          {/* RECENTLY DELETED */}
+          {isSuperAdmin && (
+            <TabsContent value="recently_deleted">
+              <RecentlyDeletedTab users={users} locationNames={locationNames} />
+            </TabsContent>
+          )}
+
+
           {/* ROLES */}
           <TabsContent value="roles">
             <RoleManager users={usersWithRoles} onChanged={load} />
