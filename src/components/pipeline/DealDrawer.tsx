@@ -37,6 +37,9 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
   useEffect(() => {
     if (!dealId) { setDeal(null); return; }
     (async () => {
+      const activeLoc = (typeof window !== "undefined") ? (await import("@/lib/locationScope")).getActiveLocationId() : null;
+      const teamBase = supabase.from("team_members").select("id,name,role").eq("is_active", true).order("name");
+      const teamQuery = (isIframed || activeLoc) ? teamBase : (user ? teamBase.eq("user_id", user.id) : null);
       const [{ data: d }, { data: c }, { data: t }, { data: tc }, ownRes, { data: tm }] = await Promise.all([
         supabase.from("deals").select("*").eq("id", dealId).single(),
         supabase.from("deal_checklist").select("*").eq("deal_id", dealId).order("sort_order"),
@@ -45,7 +48,7 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
         isIframed
           ? Promise.resolve({ data: [] as any })
           : supabase.from("profiles").select("user_id,name,email").order("name"),
-        user ? scopeToLocation(supabase.from("team_members").select("id,name,role").eq("user_id", user.id).order("name")) : Promise.resolve({ data: [] as any }),
+        teamQuery ? scopeToLocation(teamQuery) : Promise.resolve({ data: [] as any }),
       ]);
       setDeal(d); setChecklist(c || []); setTasks(t || []); setTitleCos((tc as any) || []); setOwners(((ownRes as any)?.data as any) || []); setTeam((tm as any) || []);
 
