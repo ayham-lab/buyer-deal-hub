@@ -5,6 +5,7 @@ import { useActiveLocation } from "@/contexts/LocationContext";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import logo from "@/assets/logo.png";
+import { Launchpad } from "./Launchpad";
 
 const items = [
   { to: "/", label: "Dashboard", icon: Home, exact: true },
