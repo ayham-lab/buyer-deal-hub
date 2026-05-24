@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Upload, Download, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { BUYER_TEMPLATE_CSV, BUYER_STATUS_VALUES } from "@/lib/buyerCsv";
+import { normalizeBuyerActivity } from "@/lib/buyerActivity";
 
 type Row = Record<string, string>;
 
