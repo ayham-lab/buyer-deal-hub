@@ -43,6 +43,7 @@ export function TitleCompanyModal({
     if (existing) {
       setForm({
         name: existing.name,
+        entity_type: (existing.entity_type || "title_company") as EntityType,
         contact_name: existing.contact_name || "",
         email: existing.email || "",
         phone: existing.phone || "",
