@@ -65,6 +65,26 @@ export function DealFiles({ dealId }: { dealId: string }) {
     toast.success("Uploaded");
   }
 
+  async function saveLink() {
+    if (!user || !linkCat) return;
+    const url = linkUrl.trim();
+    if (!/^https?:\/\//i.test(url)) {
+      toast.error("Please enter a valid URL starting with http(s)://");
+      return;
+    }
+    const provider = detectProvider(url);
+    const name = linkLabel.trim() || provider.name;
+    const { error } = await supabase.from("deal_files").insert(withLocation({
+      deal_id: dealId, user_id: user.id, category: linkCat,
+      file_path: url, file_name: name, mime_type: "link/external", size_bytes: null,
+    }));
+    if (error) { toast.error(error.message); return; }
+    setLinkCat(null); setLinkUrl(""); setLinkLabel("");
+    load();
+    toast.success(`${provider.label} link added`);
+  }
+
+
   async function openFile(f: DealFile) {
     if (/^https?:\/\//i.test(f.file_path)) { window.open(f.file_path, "_blank"); return; }
     const { data } = await supabase.storage.from("deal-files").createSignedUrl(f.file_path, 300);
