@@ -50,6 +50,7 @@ export function ArchiveTitleCompaniesTab() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [stateFilter, setStateFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | EntityType>("all");
   const [editing, setEditing] = useState<ArchiveTitleCompany | "new" | null>(null);
 
   async function load() {
