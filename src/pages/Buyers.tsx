@@ -70,6 +70,9 @@ export default function Buyers() {
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [active, setActive] = useState<Buyer | null>(null);
+  const [activityFilter, setActivityFilter] = useState<"all" | BuyerActivity>("all");
+
+
 
   async function load() {
     if (!user) return;
