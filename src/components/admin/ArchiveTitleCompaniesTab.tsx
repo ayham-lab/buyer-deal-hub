@@ -100,6 +100,14 @@ export function ArchiveTitleCompaniesTab() {
               {US_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
+            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              <SelectItem value="title_company">Title Companies</SelectItem>
+              <SelectItem value="attorney">Attorney Offices</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <Button onClick={() => setEditing("new")} className="bg-primary hover:bg-primary-hover">
           <Plus className="h-4 w-4 mr-1" /> Add Title Company
