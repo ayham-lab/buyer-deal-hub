@@ -151,6 +151,23 @@ export default function Buyers() {
           </div>
         </div>
 
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-muted-foreground mr-1">Activity:</span>
+          {(["all", ...BUYER_ACTIVITY_OPTIONS.map((o) => o.value)] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setActivityFilter(v as any)}
+              className={`px-2.5 py-1 rounded-full text-[11px] border transition ${
+                activityFilter === v
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background border-border text-muted-foreground hover:border-primary/40"
+              }`}
+            >
+              {v === "all" ? "All" : BUYER_ACTIVITY_LABEL[v]}
+            </button>
+          ))}
+        </div>
+
         {loading ? (
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
