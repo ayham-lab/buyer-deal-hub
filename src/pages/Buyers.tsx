@@ -94,6 +94,7 @@ export default function Buyers() {
   useEffect(() => { load(); }, [user]);
 
   const filtered = buyers.filter((b) => {
+    if (activityFilter !== "all" && (b.buyer_activity || "currently_buying") !== activityFilter) return false;
     const q = search.trim().toLowerCase();
     if (!q) return true;
     const digits = q.replace(/\D/g, "");
