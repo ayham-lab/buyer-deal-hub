@@ -15,6 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { exportToCsv } from "@/lib/csv";
 import { BUYER_CSV_COLUMNS, buyerToCsvRow } from "@/lib/buyerCsv";
+import { BUYER_ACTIVITY_OPTIONS, BUYER_ACTIVITY_LABEL, BUYER_ACTIVITY_COLOR, type BuyerActivity } from "@/lib/buyerActivity";
+import { format as fmtDate } from "date-fns";
 
 export interface Buyer {
   id: string;
