@@ -19,6 +19,7 @@ import { DealActivity } from "./DealActivity";
 import { DealMarketing } from "./DealMarketing";
 import { DealOffers } from "./DealOffers";
 import { ExitStrategyPicker } from "./ExitStrategyPicker";
+import { StageProgressBar } from "./StageProgressBar";
 import { format } from "date-fns";
 
 export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | null; onClose: () => void; onUpdated: () => void }) {
@@ -156,6 +157,14 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
             )}
           </div>
         </SheetHeader>
+
+        <div className="mt-4">
+          <label className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1 block">Stage</label>
+          <StageProgressBar
+            value={deal.status}
+            onChange={(s) => saveField("status", s)}
+          />
+        </div>
 
         <Tabs defaultValue="overview" className="mt-6">
           <TabsList className="bg-secondary flex-wrap h-auto">
