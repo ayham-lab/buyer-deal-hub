@@ -88,6 +88,7 @@ export function TitleCompanyModal({
     const payload = {
       user_id: user.id,
       name: form.name.trim(),
+      entity_type: form.entity_type,
       contact_name: form.contact_name.trim() || null,
       email: form.email.trim() || null,
       phone: form.phone.trim() || null,
