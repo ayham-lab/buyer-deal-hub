@@ -79,6 +79,8 @@ export function buyerToCsvRow(b: Buyer): Record<BuyerCsvColumn, unknown> {
     price_min: b.price_min ?? "",
     price_max: b.price_max ?? "",
     buyer_status: b.buyer_status ?? "",
+    buyer_activity: (b as any).buyer_activity ?? "currently_buying",
+    activity_resume_date: (b as any).activity_resume_date ?? "",
     source: b.source ?? "",
     criteria_notes: b.criteria_notes ?? "",
     previous_deals: b.previous_deals ?? "",
