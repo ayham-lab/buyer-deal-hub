@@ -7,7 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Copy, Trash2, Upload, ExternalLink } from "lucide-react";
+import { Copy, Trash2, Upload, ExternalLink, Sparkles } from "lucide-react";
+import {
+  generateMarketingTemplate,
+  MARKETING_PROPERTY_FIELDS,
+  MARKETING_CONDITION_FIELDS,
+} from "@/lib/marketingTemplate";
 
 interface Props {
   dealId: string;
