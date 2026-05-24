@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, Plus, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { TitleCompany, DEAL_TYPE_LABELS } from "@/pages/TitleCompanies";
+import { TitleCompany, DEAL_TYPE_LABELS, ENTITY_TYPE_LABELS, EntityType } from "@/pages/TitleCompanies";
 
 const US_STATES = [
   "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD",
@@ -23,7 +23,8 @@ const US_STATES = [
 const DEAL_TYPES = ["cash", "novation", "sub2", "owner_financing", "commercial"];
 
 const empty = {
-  name: "", contact_name: "", email: "", phone: "", address: "",
+  name: "", entity_type: "title_company" as EntityType,
+  contact_name: "", email: "", phone: "", address: "",
   service_states: [] as string[], service_cities: [] as string[],
   charges_file_fee: false, file_fee_amount: "",
   deal_types: [] as string[], notes: "",
@@ -42,6 +43,7 @@ export function TitleCompanyModal({
     if (existing) {
       setForm({
         name: existing.name,
+        entity_type: (existing.entity_type || "title_company") as EntityType,
         contact_name: existing.contact_name || "",
         email: existing.email || "",
         phone: existing.phone || "",
@@ -86,6 +88,7 @@ export function TitleCompanyModal({
     const payload = {
       user_id: user.id,
       name: form.name.trim(),
+      entity_type: form.entity_type,
       contact_name: form.contact_name.trim() || null,
       email: form.email.trim() || null,
       phone: form.phone.trim() || null,
@@ -131,8 +134,18 @@ export function TitleCompanyModal({
         </DialogHeader>
         <form onSubmit={save} className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
-            <Label>Company Name *</Label>
+            <Label>Name *</Label>
             <Input required maxLength={120} value={form.name} onChange={(e) => set("name", e.target.value)} />
+          </div>
+          <div className="col-span-2">
+            <Label>Type</Label>
+            <Select value={form.entity_type} onValueChange={(v) => set("entity_type", v as EntityType)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="title_company">{ENTITY_TYPE_LABELS.title_company}</SelectItem>
+                <SelectItem value="attorney">{ENTITY_TYPE_LABELS.attorney}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <Label>Contact Name</Label>

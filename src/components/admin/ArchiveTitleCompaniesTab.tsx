@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Trash2, X, Loader2, Pencil } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { DEAL_TYPE_LABELS } from "@/pages/TitleCompanies";
+import { DEAL_TYPE_LABELS, ENTITY_TYPE_LABELS, EntityType } from "@/pages/TitleCompanies";
 
 const US_STATES = [
   "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD",
@@ -22,6 +22,7 @@ const DEAL_TYPES = ["cash", "novation", "sub2", "owner_financing", "commercial"]
 export interface ArchiveTitleCompany {
   id: string;
   name: string;
+  entity_type: EntityType;
   contact_name: string | null;
   email: string | null;
   phone: string | null;
@@ -37,7 +38,8 @@ export interface ArchiveTitleCompany {
 }
 
 const empty: Partial<ArchiveTitleCompany> = {
-  name: "", contact_name: "", email: "", phone: "", address: "",
+  name: "", entity_type: "title_company",
+  contact_name: "", email: "", phone: "", address: "",
   service_states: [], service_cities: [],
   charges_file_fee: false, file_fee_amount: null,
   deal_types: [], notes: "", is_active: true,
@@ -48,6 +50,7 @@ export function ArchiveTitleCompaniesTab() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [stateFilter, setStateFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | EntityType>("all");
   const [editing, setEditing] = useState<ArchiveTitleCompany | "new" | null>(null);
 
   async function load() {
@@ -70,7 +73,8 @@ export function ArchiveTitleCompaniesTab() {
       (t.email || "").toLowerCase().includes(s) ||
       (t.phone || "").includes(s);
     const matchState = stateFilter === "all" || t.service_states.includes(stateFilter);
-    return matchQ && matchState;
+    const matchType = typeFilter === "all" || (t.entity_type || "title_company") === typeFilter;
+    return matchQ && matchState && matchType;
   });
 
   async function remove(id: string, name: string) {
@@ -96,6 +100,14 @@ export function ArchiveTitleCompaniesTab() {
               {US_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
+            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              <SelectItem value="title_company">Title Companies</SelectItem>
+              <SelectItem value="attorney">Attorney Offices</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <Button onClick={() => setEditing("new")} className="bg-primary hover:bg-primary-hover">
           <Plus className="h-4 w-4 mr-1" /> Add Title Company
@@ -106,18 +118,19 @@ export function ArchiveTitleCompaniesTab() {
         <table className="data-table w-full">
           <thead>
             <tr>
-              <th>Name</th><th>Contact</th><th>States</th><th>Cities</th>
+              <th>Name</th><th>Type</th><th>Contact</th><th>States</th><th>Cities</th>
               <th>Deal Types</th><th>File Fee</th><th>Phone</th><th>Active</th><th></th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={9} className="text-center py-6"><Loader2 className="inline h-4 w-4 animate-spin" /></td></tr>
+              <tr><td colSpan={10} className="text-center py-6"><Loader2 className="inline h-4 w-4 animate-spin" /></td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={9} className="text-center py-6 text-muted-foreground">No archive title companies yet.</td></tr>
+              <tr><td colSpan={10} className="text-center py-6 text-muted-foreground">No archive entries yet.</td></tr>
             ) : filtered.map((t) => (
               <tr key={t.id}>
                 <td className="font-medium">{t.name}</td>
+                <td><Badge variant={(t.entity_type || "title_company") === "attorney" ? "secondary" : "outline"} className="text-[10px]">{ENTITY_TYPE_LABELS[(t.entity_type || "title_company") as EntityType]}</Badge></td>
                 <td className="text-muted-foreground">{t.contact_name || "—"}</td>
                 <td className="text-muted-foreground">{t.service_states.join(", ") || "—"}</td>
                 <td className="text-muted-foreground">{t.service_cities.join(", ") || "—"}</td>
@@ -182,6 +195,7 @@ function EditModal({ open, existing, onClose, onSaved }: {
     setSaving(true);
     const payload = {
       name: form.name.trim(),
+      entity_type: (form.entity_type || "title_company") as EntityType,
       contact_name: form.contact_name?.trim() || null,
       email: form.email?.trim() || null,
       phone: form.phone?.trim() || null,
@@ -210,8 +224,17 @@ function EditModal({ open, existing, onClose, onSaved }: {
           <DialogTitle>{existing ? "Edit Archive Title Company" : "Add Archive Title Company"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={save} className="grid grid-cols-2 gap-4">
-          <div className="col-span-2"><Label>Company Name *</Label>
+          <div className="col-span-2"><Label>Name *</Label>
             <Input required value={form.name} onChange={(e) => set("name", e.target.value)} />
+          </div>
+          <div className="col-span-2"><Label>Type</Label>
+            <Select value={form.entity_type || "title_company"} onValueChange={(v) => set("entity_type", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="title_company">{ENTITY_TYPE_LABELS.title_company}</SelectItem>
+                <SelectItem value="attorney">{ENTITY_TYPE_LABELS.attorney}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div><Label>Contact Name</Label><Input value={form.contact_name} onChange={(e) => set("contact_name", e.target.value)} /></div>
           <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => set("phone", e.target.value)} /></div>

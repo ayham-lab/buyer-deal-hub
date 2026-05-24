@@ -142,6 +142,7 @@ export type Database = {
           created_at: string
           deal_types: string[]
           email: string | null
+          entity_type: string
           file_fee_amount: number | null
           id: string
           is_active: boolean
@@ -160,6 +161,7 @@ export type Database = {
           created_at?: string
           deal_types?: string[]
           email?: string | null
+          entity_type?: string
           file_fee_amount?: number | null
           id?: string
           is_active?: boolean
@@ -178,6 +180,7 @@ export type Database = {
           created_at?: string
           deal_types?: string[]
           email?: string | null
+          entity_type?: string
           file_fee_amount?: number | null
           id?: string
           is_active?: boolean
@@ -1653,6 +1656,7 @@ export type Database = {
           created_at: string
           deal_types: string[]
           email: string | null
+          entity_type: string
           file_fee_amount: number | null
           ghl_location_id: string | null
           id: string
@@ -1671,6 +1675,7 @@ export type Database = {
           created_at?: string
           deal_types?: string[]
           email?: string | null
+          entity_type?: string
           file_fee_amount?: number | null
           ghl_location_id?: string | null
           id?: string
@@ -1689,6 +1694,7 @@ export type Database = {
           created_at?: string
           deal_types?: string[]
           email?: string | null
+          entity_type?: string
           file_fee_amount?: number | null
           ghl_location_id?: string | null
           id?: string
@@ -1819,6 +1825,7 @@ export type Database = {
           contact_name: string
           deal_types: string[]
           email: string
+          entity_type: string
           file_fee_amount: number
           id: string
           name: string

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, Plus, Check, Loader2, Building2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { DEAL_TYPE_LABELS } from "@/pages/TitleCompanies";
+import { DEAL_TYPE_LABELS, ENTITY_TYPE_LABELS, EntityType } from "@/pages/TitleCompanies";
 
 type ArchiveRow = {
   id: string; source: string; name: string; contact_name: string | null; email: string | null;
@@ -16,6 +16,7 @@ type ArchiveRow = {
   service_states: string[]; service_cities: string[];
   charges_file_fee: boolean; file_fee_amount: number | null;
   deal_types: string[]; notes: string | null;
+  entity_type: EntityType | null;
   usage_count: number;
 };
 
@@ -63,6 +64,7 @@ export function ArchiveTitleCompaniesBrowser({ open, onClose, onAdded }: {
     const payload = withLocation({
       user_id: user.id,
       name: row.name,
+      entity_type: row.entity_type || "title_company",
       contact_name: row.contact_name,
       email: row.email,
       phone: row.phone,
@@ -113,6 +115,9 @@ export function ArchiveTitleCompaniesBrowser({ open, onClose, onAdded }: {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="font-semibold">{t.name}</h4>
+                      <Badge variant={(t.entity_type || "title_company") === "attorney" ? "secondary" : "outline"} className="text-[10px]">
+                        {ENTITY_TYPE_LABELS[(t.entity_type || "title_company") as EntityType]}
+                      </Badge>
                       {t.contact_name && <span className="text-sm text-muted-foreground">· {t.contact_name}</span>}
                       {t.source === "archive" && <Badge variant="secondary" className="text-[10px]">Curated</Badge>}
                       {t.usage_count > 1 && <Badge variant="outline" className="text-[10px]">Used by {t.usage_count}</Badge>}
