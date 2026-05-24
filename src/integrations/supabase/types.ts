@@ -37,8 +37,10 @@ export type Database = {
       }
       archive_buyers: {
         Row: {
+          activity_resume_date: string | null
           budget_notes: string | null
           buy_box: Json
+          buyer_activity: Database["public"]["Enums"]["buyer_activity"]
           city: string | null
           completed_transaction: boolean
           created_at: string
@@ -69,8 +71,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          activity_resume_date?: string | null
           budget_notes?: string | null
           buy_box?: Json
+          buyer_activity?: Database["public"]["Enums"]["buyer_activity"]
           city?: string | null
           completed_transaction?: boolean
           created_at?: string
@@ -101,8 +105,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          activity_resume_date?: string | null
           budget_notes?: string | null
           buy_box?: Json
+          buyer_activity?: Database["public"]["Enums"]["buyer_activity"]
           city?: string | null
           completed_transaction?: boolean
           created_at?: string
@@ -244,6 +250,8 @@ export type Database = {
       }
       buyers: {
         Row: {
+          activity_resume_date: string | null
+          buyer_activity: Database["public"]["Enums"]["buyer_activity"]
           buyer_frequency: string[]
           buyer_status: Database["public"]["Enums"]["buyer_status"]
           buyer_types: string[]
@@ -274,6 +282,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          activity_resume_date?: string | null
+          buyer_activity?: Database["public"]["Enums"]["buyer_activity"]
           buyer_frequency?: string[]
           buyer_status?: Database["public"]["Enums"]["buyer_status"]
           buyer_types?: string[]
@@ -304,6 +314,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          activity_resume_date?: string | null
+          buyer_activity?: Database["public"]["Enums"]["buyer_activity"]
           buyer_frequency?: string[]
           buyer_status?: Database["public"]["Enums"]["buyer_status"]
           buyer_types?: string[]
@@ -1914,6 +1926,11 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user" | "super_admin"
+      buyer_activity:
+        | "currently_buying"
+        | "inactive"
+        | "not_buying_now"
+        | "uncertain"
       buyer_status:
         | "not_vetted"
         | "vetted"
@@ -2059,6 +2076,12 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user", "super_admin"],
+      buyer_activity: [
+        "currently_buying",
+        "inactive",
+        "not_buying_now",
+        "uncertain",
+      ],
       buyer_status: [
         "not_vetted",
         "vetted",
