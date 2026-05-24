@@ -157,6 +157,40 @@ export function DealFiles({ dealId }: { dealId: string }) {
           </div>
         );
       })}
+
+      <Dialog open={linkCat !== null} onOpenChange={(o) => !o && setLinkCat(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add a link</DialogTitle>
+            <DialogDescription>
+              Paste a Google Drive, OneDrive, Dropbox, or any shareable URL. Make sure the link is set to "Anyone with the link can view" so your team can open it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">URL</label>
+              <Input
+                autoFocus
+                placeholder="https://drive.google.com/..."
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Label (optional)</label>
+              <Input
+                placeholder="e.g. Property photos folder"
+                value={linkLabel}
+                onChange={(e) => setLinkLabel(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLinkCat(null)}>Cancel</Button>
+            <Button onClick={saveLink} disabled={!linkUrl.trim()}>Add link</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
