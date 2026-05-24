@@ -144,6 +144,7 @@ export default function TitleCompanies() {
               <thead>
                 <tr>
                   <th>Name</th>
+                  <th>Type</th>
                   <th>Contact</th>
                   <th>States</th>
                   <th>Cities</th>
@@ -153,9 +154,21 @@ export default function TitleCompanies() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((t) => (
+                {filtered.map((t) => {
+                  const et = (t.entity_type || "title_company") as EntityType;
+                  return (
                   <tr key={t.id} onClick={() => setActive(t)} className="cursor-pointer">
-                    <td className="font-medium">{t.name}</td>
+                    <td className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {et === "attorney" ? <Scale className="h-3.5 w-3.5 text-muted-foreground" /> : <Building2 className="h-3.5 w-3.5 text-muted-foreground" />}
+                        {t.name}
+                      </div>
+                    </td>
+                    <td>
+                      <Badge variant={et === "attorney" ? "secondary" : "outline"} className="text-[10px]">
+                        {ENTITY_TYPE_LABELS[et]}
+                      </Badge>
+                    </td>
                     <td className="text-muted-foreground">{t.contact_name || "—"}</td>
                     <td className="text-muted-foreground">{t.service_states.join(", ") || "—"}</td>
                     <td className="text-muted-foreground">{t.service_cities.join(", ") || "—"}</td>
@@ -172,7 +185,8 @@ export default function TitleCompanies() {
                     </td>
                     <td className="text-muted-foreground">{t.phone || "—"}</td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
