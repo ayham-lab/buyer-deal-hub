@@ -182,3 +182,106 @@ export function DealMarketing({ dealId, deal, onChange }: Props) {
     </div>
   );
 }
+
+function PropertyConditionEditor({
+  deal,
+  save,
+}: {
+  deal: any;
+  save: (patch: Record<string, any>) => Promise<void>;
+}) {
+  const [local, setLocal] = useState<Record<string, any>>(() => {
+    const o: Record<string, any> = {};
+    [...MARKETING_PROPERTY_FIELDS, ...MARKETING_CONDITION_FIELDS, { key: "sold_comps" } as any, { key: "non_refundable_emd" } as any].forEach((f) => {
+      o[f.key] = deal[f.key] ?? "";
+    });
+    return o;
+  });
+
+  useEffect(() => {
+    const o: Record<string, any> = {};
+    [...MARKETING_PROPERTY_FIELDS, ...MARKETING_CONDITION_FIELDS, { key: "sold_comps" } as any, { key: "non_refundable_emd" } as any].forEach((f) => {
+      o[f.key] = deal[f.key] ?? "";
+    });
+    setLocal(o);
+  }, [deal.id]);
+
+  function commit(key: string, type: "text" | "number" = "text") {
+    const raw = local[key];
+    const original = deal[key] ?? "";
+    if (raw === original || (raw === "" && original === null)) return;
+    let val: any = raw;
+    if (type === "number") {
+      val = raw === "" ? null : Number(raw);
+      if (Number.isNaN(val)) return;
+    } else if (raw === "") {
+      val = null;
+    }
+    save({ [key]: val });
+  }
+
+  return (
+    <div className="rounded-lg border border-border p-3 space-y-4">
+      <div>
+        <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Property Details</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {MARKETING_PROPERTY_FIELDS.map((f) => (
+            <div key={f.key}>
+              <label className="text-[10px] text-muted-foreground">{f.label}</label>
+              <Input
+                type={f.type === "number" ? "number" : "text"}
+                value={local[f.key] ?? ""}
+                onChange={(e) => setLocal({ ...local, [f.key]: e.target.value })}
+                onBlur={() => commit(f.key, f.type)}
+                className="h-8 text-sm"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Property Condition</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {MARKETING_CONDITION_FIELDS.map((f) => (
+            <div key={f.key}>
+              <label className="text-[10px] text-muted-foreground">{f.label}</label>
+              <Input
+                value={local[f.key] ?? ""}
+                onChange={(e) => setLocal({ ...local, [f.key]: e.target.value })}
+                onBlur={() => commit(f.key)}
+                className="h-8 text-sm"
+                placeholder="e.g. 5 yrs"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <div className="sm:col-span-2">
+          <label className="text-[10px] text-muted-foreground">Sold Comps</label>
+          <Textarea
+            rows={2}
+            value={local.sold_comps ?? ""}
+            onChange={(e) => setLocal({ ...local, sold_comps: e.target.value })}
+            onBlur={() => commit("sold_comps")}
+            placeholder="Address — $XXX,XXX; Address — $XXX,XXX"
+            className="text-sm"
+          />
+        </div>
+        <div>
+          <label className="text-[10px] text-muted-foreground">Non-Refundable EMD</label>
+          <Input
+            type="number"
+            value={local.non_refundable_emd ?? ""}
+            onChange={(e) => setLocal({ ...local, non_refundable_emd: e.target.value })}
+            onBlur={() => commit("non_refundable_emd", "number")}
+            className="h-8 text-sm"
+            placeholder="5000"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
