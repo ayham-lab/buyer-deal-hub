@@ -111,25 +111,47 @@ export function DealFiles({ dealId }: { dealId: string }) {
                 <span className="text-sm font-semibold">{c.label}</span>
                 <Badge variant="outline" className="text-[10px]">{items.length}</Badge>
               </div>
-              <label className="cursor-pointer">
-                <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-border hover:bg-muted">
-                  <Upload className="h-3.5 w-3.5" /> {busy === c.key ? "Uploading…" : "Upload"}
-                </span>
-                <input hidden type="file" multiple accept={c.accept} onChange={(e) => upload(c.key, e.target.files)} />
-              </label>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => { setLinkCat(c.key); setLinkUrl(""); setLinkLabel(""); }}
+                  className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-border hover:bg-muted"
+                  title="Paste a Google Drive, OneDrive, Dropbox, or any URL"
+                >
+                  <Link2 className="h-3.5 w-3.5" /> Add link
+                </button>
+                <label className="cursor-pointer">
+                  <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-border hover:bg-muted">
+                    <Upload className="h-3.5 w-3.5" /> {busy === c.key ? "Uploading…" : "Upload"}
+                  </span>
+                  <input hidden type="file" multiple accept={c.accept} onChange={(e) => upload(c.key, e.target.files)} />
+                </label>
+              </div>
             </div>
             {items.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No files yet.</p>
+              <p className="text-xs text-muted-foreground">No files yet. Upload from your device or paste a Google Drive / OneDrive link.</p>
             ) : (
               <ul className="space-y-1">
-                {items.map((f) => (
-                  <li key={f.id} className="flex items-center gap-2 text-sm group">
-                    {f.mime_type?.startsWith("image/") ? <ImageIcon className="h-4 w-4 text-muted-foreground" /> : <FileText className="h-4 w-4 text-muted-foreground" />}
-                    <button onClick={() => openFile(f)} className="flex-1 text-left truncate hover:text-primary">{f.file_name}</button>
-                    <button onClick={() => openFile(f)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary"><Download className="h-3.5 w-3.5" /></button>
-                    <button onClick={() => remove(f)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
-                  </li>
-                ))}
+                {items.map((f) => {
+                  const isLink = /^https?:\/\//i.test(f.file_path);
+                  const provider = isLink ? detectProvider(f.file_path) : null;
+                  return (
+                    <li key={f.id} className="flex items-center gap-2 text-sm group">
+                      {isLink
+                        ? <ExternalLink className="h-4 w-4 text-primary" />
+                        : f.mime_type?.startsWith("image/")
+                          ? <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                          : <FileText className="h-4 w-4 text-muted-foreground" />}
+                      <button onClick={() => openFile(f)} className="flex-1 text-left truncate hover:text-primary">
+                        {f.file_name}
+                        {provider && <span className="ml-2 text-[10px] text-muted-foreground">· {provider.label}</span>}
+                      </button>
+                      <button onClick={() => openFile(f)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary">
+                        {isLink ? <ExternalLink className="h-3.5 w-3.5" /> : <Download className="h-3.5 w-3.5" />}
+                      </button>
+                      <button onClick={() => remove(f)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
