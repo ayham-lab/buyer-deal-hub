@@ -71,6 +71,7 @@ export default function TitleCompanies() {
   useEffect(() => { load(); }, [user]);
 
   const filtered = items.filter((t) => {
+    if (typeFilter !== "all" && (t.entity_type || "title_company") !== typeFilter) return false;
     const q = search.toLowerCase().trim();
     if (!q) return true;
     return (
