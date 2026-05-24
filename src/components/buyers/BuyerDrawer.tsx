@@ -159,6 +159,43 @@ export function BuyerDrawer({ buyer, onClose, onUpdated }: { buyer: Buyer | null
             </Select>
           </div>
 
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Current Activity</Label>
+              <Select value={form.buyer_activity} onValueChange={(v) => set("buyer_activity", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {BUYER_ACTIVITY_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>{form.buyer_activity === "not_buying_now" ? "Expected Resume" : "Resume Date (N/A)"}</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={form.buyer_activity !== "not_buying_now"}
+                    className={cn("w-full justify-start text-left font-normal", !form.activity_resume_date && "text-muted-foreground")}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {form.activity_resume_date ? format(new Date(form.activity_resume_date + "T00:00:00"), "PPP") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={form.activity_resume_date ? new Date(form.activity_resume_date + "T00:00:00") : undefined}
+                    onSelect={(d) => set("activity_resume_date", d ? format(d, "yyyy-MM-dd") : "")}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label>Markets</Label>
             <MarketsInput value={form.markets} onChange={(v) => set("markets", v)} />
