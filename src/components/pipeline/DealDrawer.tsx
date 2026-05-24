@@ -87,6 +87,12 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
     await supabase.from("deal_checklist").update({ is_completed: !current }).eq("id", id);
   }
 
+  async function setCheckDueDate(id: string, value: string) {
+    const v = value || null;
+    setChecklist((cs) => cs.map((c) => c.id === id ? { ...c, due_date: v } : c));
+    await supabase.from("deal_checklist").update({ due_date: v }).eq("id", id);
+  }
+
   async function addCheckItem() {
     if (!newCheck.trim()) return;
     const { data } = await supabase.from("deal_checklist").insert({ deal_id: dealId, item_text: newCheck, sort_order: checklist.length }).select().single();
