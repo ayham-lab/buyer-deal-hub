@@ -22,6 +22,7 @@ const DEAL_TYPES = ["cash", "novation", "sub2", "owner_financing", "commercial"]
 export interface ArchiveTitleCompany {
   id: string;
   name: string;
+  entity_type: EntityType;
   contact_name: string | null;
   email: string | null;
   phone: string | null;
@@ -37,7 +38,8 @@ export interface ArchiveTitleCompany {
 }
 
 const empty: Partial<ArchiveTitleCompany> = {
-  name: "", contact_name: "", email: "", phone: "", address: "",
+  name: "", entity_type: "title_company",
+  contact_name: "", email: "", phone: "", address: "",
   service_states: [], service_cities: [],
   charges_file_fee: false, file_fee_amount: null,
   deal_types: [], notes: "", is_active: true,
