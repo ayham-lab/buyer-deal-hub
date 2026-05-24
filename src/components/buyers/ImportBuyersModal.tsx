@@ -73,12 +73,16 @@ export function ImportBuyersModal({
         company_name: r.company_name?.trim() || null,
         markets: splitList(r.markets),
         property_types: splitList(r.property_types),
+        other_property_type: r.other_property_type?.trim() || null,
         buyer_types: splitList(r.buyer_types),
         buyer_frequency: splitList(r.buyer_frequency),
         price_min: num(r.price_min),
         price_max: num(r.price_max),
+        buyer_status: normStatus(r.buyer_status || r.status),
         source: r.source?.trim() || "CSV Import",
         criteria_notes: r.criteria_notes?.trim() || null,
+        previous_deals: r.previous_deals?.trim() || null,
+        experience: r.experience?.trim() || null,
       };
     });
 
