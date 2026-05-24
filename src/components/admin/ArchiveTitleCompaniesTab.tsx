@@ -118,18 +118,19 @@ export function ArchiveTitleCompaniesTab() {
         <table className="data-table w-full">
           <thead>
             <tr>
-              <th>Name</th><th>Contact</th><th>States</th><th>Cities</th>
+              <th>Name</th><th>Type</th><th>Contact</th><th>States</th><th>Cities</th>
               <th>Deal Types</th><th>File Fee</th><th>Phone</th><th>Active</th><th></th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={9} className="text-center py-6"><Loader2 className="inline h-4 w-4 animate-spin" /></td></tr>
+              <tr><td colSpan={10} className="text-center py-6"><Loader2 className="inline h-4 w-4 animate-spin" /></td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={9} className="text-center py-6 text-muted-foreground">No archive title companies yet.</td></tr>
+              <tr><td colSpan={10} className="text-center py-6 text-muted-foreground">No archive entries yet.</td></tr>
             ) : filtered.map((t) => (
               <tr key={t.id}>
                 <td className="font-medium">{t.name}</td>
+                <td><Badge variant={(t.entity_type || "title_company") === "attorney" ? "secondary" : "outline"} className="text-[10px]">{ENTITY_TYPE_LABELS[(t.entity_type || "title_company") as EntityType]}</Badge></td>
                 <td className="text-muted-foreground">{t.contact_name || "—"}</td>
                 <td className="text-muted-foreground">{t.service_states.join(", ") || "—"}</td>
                 <td className="text-muted-foreground">{t.service_cities.join(", ") || "—"}</td>
