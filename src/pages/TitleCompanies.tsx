@@ -12,9 +12,17 @@ import { Badge } from "@/components/ui/badge";
 import { TitleCompanyModal } from "@/components/title/TitleCompanyModal";
 import { ArchiveTitleCompaniesBrowser } from "@/components/title/ArchiveTitleCompaniesBrowser";
 
+export type EntityType = "title_company" | "attorney";
+
+export const ENTITY_TYPE_LABELS: Record<EntityType, string> = {
+  title_company: "Title Company",
+  attorney: "Attorney Office",
+};
+
 export interface TitleCompany {
   id: string;
   name: string;
+  entity_type: EntityType;
   contact_name: string | null;
   email: string | null;
   phone: string | null;
