@@ -102,15 +102,26 @@ export default function TitleCompanies() {
         }
       />
       <div className="p-8 space-y-4">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name, contact, email, city, state…"
-            className="pl-9"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="relative flex-1 max-w-md min-w-[240px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name, contact, email, city, state…"
+              className="pl-9"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
+            <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              <SelectItem value="title_company">Title Companies</SelectItem>
+              <SelectItem value="attorney">Attorney Offices</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
+
 
         {loading ? (
           <div className="space-y-2">
