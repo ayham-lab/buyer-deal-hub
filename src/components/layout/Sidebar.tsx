@@ -5,6 +5,7 @@ import { useActiveLocation } from "@/contexts/LocationContext";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import logo from "@/assets/logo.png";
+import { Launchpad } from "./Launchpad";
 
 const items = [
   { to: "/", label: "Dashboard", icon: Home, exact: true },
@@ -47,6 +48,9 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
+        <div className="pb-2 mb-2 border-b border-sidebar-border">
+          <Launchpad collapsed={collapsed} />
+        </div>
         {items.map((it) => {
           // Settings is now visible in iframe too — Settings.tsx filters tabs
           // (hides Profile + GHL Connections, shows Checklist/Team/Notifs).
