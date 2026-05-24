@@ -49,6 +49,7 @@ export default function TitleCompanies() {
   const [items, setItems] = useState<TitleCompany[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<"all" | EntityType>("all");
   const [active, setActive] = useState<TitleCompany | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showArchive, setShowArchive] = useState(false);
