@@ -134,8 +134,18 @@ export function TitleCompanyModal({
         </DialogHeader>
         <form onSubmit={save} className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
-            <Label>Company Name *</Label>
+            <Label>Name *</Label>
             <Input required maxLength={120} value={form.name} onChange={(e) => set("name", e.target.value)} />
+          </div>
+          <div className="col-span-2">
+            <Label>Type</Label>
+            <Select value={form.entity_type} onValueChange={(v) => set("entity_type", v as EntityType)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="title_company">{ENTITY_TYPE_LABELS.title_company}</SelectItem>
+                <SelectItem value="attorney">{ENTITY_TYPE_LABELS.attorney}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <Label>Contact Name</Label>
