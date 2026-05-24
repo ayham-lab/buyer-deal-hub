@@ -195,6 +195,7 @@ function EditModal({ open, existing, onClose, onSaved }: {
     setSaving(true);
     const payload = {
       name: form.name.trim(),
+      entity_type: (form.entity_type || "title_company") as EntityType,
       contact_name: form.contact_name?.trim() || null,
       email: form.email?.trim() || null,
       phone: form.phone?.trim() || null,
