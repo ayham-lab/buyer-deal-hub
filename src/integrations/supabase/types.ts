@@ -973,6 +973,7 @@ export type Database = {
       ghl_location_tokens: {
         Row: {
           access_token: string
+          archive_contributions_enabled: boolean
           created_at: string
           expires_at: string | null
           ghl_company_id: string | null
@@ -985,6 +986,7 @@ export type Database = {
         }
         Insert: {
           access_token: string
+          archive_contributions_enabled?: boolean
           created_at?: string
           expires_at?: string | null
           ghl_company_id?: string | null
@@ -997,6 +999,7 @@ export type Database = {
         }
         Update: {
           access_token?: string
+          archive_contributions_enabled?: boolean
           created_at?: string
           expires_at?: string | null
           ghl_company_id?: string | null
@@ -1918,6 +1921,10 @@ export type Database = {
           p_id: string
           p_status: Database["public"]["Enums"]["buyer_status"]
         }
+        Returns: boolean
+      }
+      set_location_archive_contributions: {
+        Args: { p_enabled: boolean; p_location: string }
         Returns: boolean
       }
       show_limit: { Args: never; Returns: number }
