@@ -115,6 +115,9 @@ export function ArchiveTitleCompaniesBrowser({ open, onClose, onAdded }: {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="font-semibold">{t.name}</h4>
+                      <Badge variant={(t.entity_type || "title_company") === "attorney" ? "secondary" : "outline"} className="text-[10px]">
+                        {ENTITY_TYPE_LABELS[(t.entity_type || "title_company") as EntityType]}
+                      </Badge>
                       {t.contact_name && <span className="text-sm text-muted-foreground">· {t.contact_name}</span>}
                       {t.source === "archive" && <Badge variant="secondary" className="text-[10px]">Curated</Badge>}
                       {t.usage_count > 1 && <Badge variant="outline" className="text-[10px]">Used by {t.usage_count}</Badge>}
