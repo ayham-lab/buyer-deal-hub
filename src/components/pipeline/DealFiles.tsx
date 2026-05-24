@@ -4,8 +4,19 @@ import { withLocation } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Upload, Trash2, FileText, Image as ImageIcon, Download } from "lucide-react";
+import { Upload, Trash2, FileText, Image as ImageIcon, Download, Link2, ExternalLink } from "lucide-react";
+
+function detectProvider(url: string): { label: string; name: string } {
+  const u = url.toLowerCase();
+  if (u.includes("drive.google.com") || u.includes("docs.google.com")) return { label: "Google Drive", name: "Google Drive link" };
+  if (u.includes("1drv.ms") || u.includes("onedrive.live.com") || u.includes("sharepoint.com")) return { label: "OneDrive", name: "OneDrive link" };
+  if (u.includes("dropbox.com")) return { label: "Dropbox", name: "Dropbox link" };
+  if (u.includes("box.com")) return { label: "Box", name: "Box link" };
+  return { label: "Link", name: "External link" };
+}
 
 type Category = "photo" | "psa" | "assignment" | "jv_contract" | "addendum" | "other";
 const CATEGORIES: { key: Category; label: string; accept: string }[] = [
@@ -26,6 +37,9 @@ export function DealFiles({ dealId }: { dealId: string }) {
   const { user } = useAuth();
   const [files, setFiles] = useState<DealFile[]>([]);
   const [busy, setBusy] = useState<Category | null>(null);
+  const [linkCat, setLinkCat] = useState<Category | null>(null);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkLabel, setLinkLabel] = useState("");
 
   async function load() {
     const { data } = await supabase.from("deal_files").select("*").eq("deal_id", dealId).order("created_at", { ascending: false });
@@ -50,6 +64,26 @@ export function DealFiles({ dealId }: { dealId: string }) {
     load();
     toast.success("Uploaded");
   }
+
+  async function saveLink() {
+    if (!user || !linkCat) return;
+    const url = linkUrl.trim();
+    if (!/^https?:\/\//i.test(url)) {
+      toast.error("Please enter a valid URL starting with http(s)://");
+      return;
+    }
+    const provider = detectProvider(url);
+    const name = linkLabel.trim() || provider.name;
+    const { error } = await supabase.from("deal_files").insert(withLocation({
+      deal_id: dealId, user_id: user.id, category: linkCat,
+      file_path: url, file_name: name, mime_type: "link/external", size_bytes: null,
+    }));
+    if (error) { toast.error(error.message); return; }
+    setLinkCat(null); setLinkUrl(""); setLinkLabel("");
+    load();
+    toast.success(`${provider.label} link added`);
+  }
+
 
   async function openFile(f: DealFile) {
     if (/^https?:\/\//i.test(f.file_path)) { window.open(f.file_path, "_blank"); return; }
@@ -77,30 +111,86 @@ export function DealFiles({ dealId }: { dealId: string }) {
                 <span className="text-sm font-semibold">{c.label}</span>
                 <Badge variant="outline" className="text-[10px]">{items.length}</Badge>
               </div>
-              <label className="cursor-pointer">
-                <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-border hover:bg-muted">
-                  <Upload className="h-3.5 w-3.5" /> {busy === c.key ? "Uploading…" : "Upload"}
-                </span>
-                <input hidden type="file" multiple accept={c.accept} onChange={(e) => upload(c.key, e.target.files)} />
-              </label>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => { setLinkCat(c.key); setLinkUrl(""); setLinkLabel(""); }}
+                  className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-border hover:bg-muted"
+                  title="Paste a Google Drive, OneDrive, Dropbox, or any URL"
+                >
+                  <Link2 className="h-3.5 w-3.5" /> Add link
+                </button>
+                <label className="cursor-pointer">
+                  <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-border hover:bg-muted">
+                    <Upload className="h-3.5 w-3.5" /> {busy === c.key ? "Uploading…" : "Upload"}
+                  </span>
+                  <input hidden type="file" multiple accept={c.accept} onChange={(e) => upload(c.key, e.target.files)} />
+                </label>
+              </div>
             </div>
             {items.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No files yet.</p>
+              <p className="text-xs text-muted-foreground">No files yet. Upload from your device or paste a Google Drive / OneDrive link.</p>
             ) : (
               <ul className="space-y-1">
-                {items.map((f) => (
-                  <li key={f.id} className="flex items-center gap-2 text-sm group">
-                    {f.mime_type?.startsWith("image/") ? <ImageIcon className="h-4 w-4 text-muted-foreground" /> : <FileText className="h-4 w-4 text-muted-foreground" />}
-                    <button onClick={() => openFile(f)} className="flex-1 text-left truncate hover:text-primary">{f.file_name}</button>
-                    <button onClick={() => openFile(f)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary"><Download className="h-3.5 w-3.5" /></button>
-                    <button onClick={() => remove(f)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
-                  </li>
-                ))}
+                {items.map((f) => {
+                  const isLink = /^https?:\/\//i.test(f.file_path);
+                  const provider = isLink ? detectProvider(f.file_path) : null;
+                  return (
+                    <li key={f.id} className="flex items-center gap-2 text-sm group">
+                      {isLink
+                        ? <ExternalLink className="h-4 w-4 text-primary" />
+                        : f.mime_type?.startsWith("image/")
+                          ? <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                          : <FileText className="h-4 w-4 text-muted-foreground" />}
+                      <button onClick={() => openFile(f)} className="flex-1 text-left truncate hover:text-primary">
+                        {f.file_name}
+                        {provider && <span className="ml-2 text-[10px] text-muted-foreground">· {provider.label}</span>}
+                      </button>
+                      <button onClick={() => openFile(f)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary">
+                        {isLink ? <ExternalLink className="h-3.5 w-3.5" /> : <Download className="h-3.5 w-3.5" />}
+                      </button>
+                      <button onClick={() => remove(f)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
         );
       })}
+
+      <Dialog open={linkCat !== null} onOpenChange={(o) => !o && setLinkCat(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add a link</DialogTitle>
+            <DialogDescription>
+              Paste a Google Drive, OneDrive, Dropbox, or any shareable URL. Make sure the link is set to "Anyone with the link can view" so your team can open it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">URL</label>
+              <Input
+                autoFocus
+                placeholder="https://drive.google.com/..."
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Label (optional)</label>
+              <Input
+                placeholder="e.g. Property photos folder"
+                value={linkLabel}
+                onChange={(e) => setLinkLabel(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLinkCat(null)}>Cancel</Button>
+            <Button onClick={saveLink} disabled={!linkUrl.trim()}>Add link</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
