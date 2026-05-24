@@ -23,6 +23,8 @@ export const BUYER_CSV_COLUMNS = [
   "price_min",
   "price_max",
   "buyer_status",
+  "buyer_activity",
+  "activity_resume_date",
   "source",
   "criteria_notes",
   "previous_deals",
