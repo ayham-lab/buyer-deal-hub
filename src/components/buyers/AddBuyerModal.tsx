@@ -181,6 +181,41 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
             </Select>
           </div>
 
+          <div>
+            <Label>Current Activity</Label>
+            <Select value={form.buyer_activity} onValueChange={(v) => set("buyer_activity", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {BUYER_ACTIVITY_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Expected Resume Date {form.buyer_activity === "not_buying_now" ? "" : "(N/A)"}</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={form.buyer_activity !== "not_buying_now"}
+                  className={cn("w-full justify-start text-left font-normal", !form.activity_resume_date && "text-muted-foreground")}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {form.activity_resume_date ? format(new Date(form.activity_resume_date + "T00:00:00"), "PPP") : "Pick a date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={form.activity_resume_date ? new Date(form.activity_resume_date + "T00:00:00") : undefined}
+                  onSelect={(d) => set("activity_resume_date", d ? format(d, "yyyy-MM-dd") : "")}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
           <MultiChips label="Buyer Type" options={BUYER_TYPES} value={form.buyer_types} onChange={(v) => set("buyer_types", v)} />
           <MultiChips label="Buyer Frequency" options={BUYER_FREQUENCY} value={form.buyer_frequency} onChange={(v) => set("buyer_frequency", v)} />
 
