@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, Plus, Check, Loader2, Building2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { DEAL_TYPE_LABELS } from "@/pages/TitleCompanies";
+import { DEAL_TYPE_LABELS, ENTITY_TYPE_LABELS, EntityType } from "@/pages/TitleCompanies";
 
 type ArchiveRow = {
   id: string; source: string; name: string; contact_name: string | null; email: string | null;
@@ -16,6 +16,7 @@ type ArchiveRow = {
   service_states: string[]; service_cities: string[];
   charges_file_fee: boolean; file_fee_amount: number | null;
   deal_types: string[]; notes: string | null;
+  entity_type: EntityType | null;
   usage_count: number;
 };
 
