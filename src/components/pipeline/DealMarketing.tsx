@@ -7,7 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Copy, Trash2, Upload, ExternalLink } from "lucide-react";
+import { Copy, Trash2, Upload, ExternalLink, Sparkles } from "lucide-react";
+import {
+  generateMarketingTemplate,
+  MARKETING_PROPERTY_FIELDS,
+  MARKETING_CONDITION_FIELDS,
+} from "@/lib/marketingTemplate";
 
 interface Props {
   dealId: string;
@@ -32,7 +37,7 @@ export function DealMarketing({ dealId, deal, onChange }: Props) {
 
   async function save(patch: Record<string, any>) {
     const { error } = await supabase.from("deals").update(patch as any).eq("id", dealId);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     onChange(patch);
   }
 
@@ -92,14 +97,43 @@ export function DealMarketing({ dealId, deal, onChange }: Props) {
         />
       </div>
 
+      <PropertyConditionEditor deal={deal} save={save} />
+
       <div>
-        <label className="text-[11px] uppercase tracking-wider text-muted-foreground">Marketing Description</label>
+        <div className="flex items-center justify-between mb-1">
+          <label className="text-[11px] uppercase tracking-wider text-muted-foreground">Marketing Description</label>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-7 gap-1.5"
+            onClick={async () => {
+              const { data: prof } = await supabase
+                .from("profiles")
+                .select("name, email, phone_number")
+                .eq("user_id", user?.id ?? "")
+                .maybeSingle();
+              const tpl = generateMarketingTemplate(deal, {
+                name: prof?.name,
+                email: prof?.email,
+                phone: prof?.phone_number,
+              });
+              setDesc(tpl);
+              await save({ marketing_description: tpl });
+              toast.success("Template generated. Fill in any [ADD] placeholders.");
+            }}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            Generate template
+          </Button>
+        </div>
         <Textarea
-          rows={6}
+          rows={18}
           value={desc}
           onChange={(e) => setDesc(e.target.value)}
           onBlur={() => desc !== (deal.marketing_description ?? "") && save({ marketing_description: desc })}
-          placeholder="Property highlights, comps, repair notes, anything buyers should know…"
+          placeholder="Click Generate template to auto-fill, or write your own…"
+          className="font-mono text-xs"
         />
       </div>
 
@@ -144,6 +178,109 @@ export function DealMarketing({ dealId, deal, onChange }: Props) {
             </Button>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function PropertyConditionEditor({
+  deal,
+  save,
+}: {
+  deal: any;
+  save: (patch: Record<string, any>) => Promise<void>;
+}) {
+  const [local, setLocal] = useState<Record<string, any>>(() => {
+    const o: Record<string, any> = {};
+    [...MARKETING_PROPERTY_FIELDS, ...MARKETING_CONDITION_FIELDS, { key: "sold_comps" } as any, { key: "non_refundable_emd" } as any].forEach((f) => {
+      o[f.key] = deal[f.key] ?? "";
+    });
+    return o;
+  });
+
+  useEffect(() => {
+    const o: Record<string, any> = {};
+    [...MARKETING_PROPERTY_FIELDS, ...MARKETING_CONDITION_FIELDS, { key: "sold_comps" } as any, { key: "non_refundable_emd" } as any].forEach((f) => {
+      o[f.key] = deal[f.key] ?? "";
+    });
+    setLocal(o);
+  }, [deal.id]);
+
+  function commit(key: string, type: "text" | "number" = "text") {
+    const raw = local[key];
+    const original = deal[key] ?? "";
+    if (raw === original || (raw === "" && original === null)) return;
+    let val: any = raw;
+    if (type === "number") {
+      val = raw === "" ? null : Number(raw);
+      if (Number.isNaN(val)) return;
+    } else if (raw === "") {
+      val = null;
+    }
+    save({ [key]: val });
+  }
+
+  return (
+    <div className="rounded-lg border border-border p-3 space-y-4">
+      <div>
+        <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Property Details</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {MARKETING_PROPERTY_FIELDS.map((f) => (
+            <div key={f.key}>
+              <label className="text-[10px] text-muted-foreground">{f.label}</label>
+              <Input
+                type={f.type === "number" ? "number" : "text"}
+                value={local[f.key] ?? ""}
+                onChange={(e) => setLocal({ ...local, [f.key]: e.target.value })}
+                onBlur={() => commit(f.key, f.type)}
+                className="h-8 text-sm"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Property Condition</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {MARKETING_CONDITION_FIELDS.map((f) => (
+            <div key={f.key}>
+              <label className="text-[10px] text-muted-foreground">{f.label}</label>
+              <Input
+                value={local[f.key] ?? ""}
+                onChange={(e) => setLocal({ ...local, [f.key]: e.target.value })}
+                onBlur={() => commit(f.key)}
+                className="h-8 text-sm"
+                placeholder="e.g. 5 yrs"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <div className="sm:col-span-2">
+          <label className="text-[10px] text-muted-foreground">Sold Comps</label>
+          <Textarea
+            rows={2}
+            value={local.sold_comps ?? ""}
+            onChange={(e) => setLocal({ ...local, sold_comps: e.target.value })}
+            onBlur={() => commit("sold_comps")}
+            placeholder="Address — $XXX,XXX; Address — $XXX,XXX"
+            className="text-sm"
+          />
+        </div>
+        <div>
+          <label className="text-[10px] text-muted-foreground">Non-Refundable EMD</label>
+          <Input
+            type="number"
+            value={local.non_refundable_emd ?? ""}
+            onChange={(e) => setLocal({ ...local, non_refundable_emd: e.target.value })}
+            onBlur={() => commit("non_refundable_emd", "number")}
+            className="h-8 text-sm"
+            placeholder="5000"
+          />
+        </div>
       </div>
     </div>
   );

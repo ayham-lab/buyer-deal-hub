@@ -665,11 +665,15 @@ export type Database = {
       }
       deals: {
         Row: {
+          ac_age: string | null
+          access: string | null
           acquisitions_manager_id: string | null
           arv: number | null
           asking_price: number | null
           assigned_at: string | null
           assignment_fee: number | null
+          baths: number | null
+          beds: number | null
           buyer_id: string | null
           city: string | null
           closed_at: string | null
@@ -678,6 +682,7 @@ export type Database = {
           created_at: string
           deleted_at: string | null
           deleted_by: string | null
+          electrical_age: string | null
           emd_amount: number | null
           emd_received: boolean
           emd_received_at: string | null
@@ -690,36 +695,52 @@ export type Database = {
           ghl_pipeline_id: string | null
           ghl_pipeline_stage_id: string | null
           homeowner_name: string | null
+          hvac_age: string | null
           id: string
           ip_expiry_date: string | null
           jv_partner_id: string | null
           jv_partner_name: string | null
           lead_source: string | null
+          living_sqft: number | null
+          lot_size: string | null
           marketing_description: string | null
           marketing_name: string | null
           marketing_photos: string[]
           marketing_published: boolean
           minimum_sale_price: number | null
+          non_refundable_emd: number | null
           notes: string | null
+          occupancy: string | null
           owner_id: string | null
+          plumbing_age: string | null
           price_under_contract: number | null
           property_address: string
+          property_type: string | null
+          rehab_level: string | null
+          roof_age: string | null
           seller_email: string | null
           seller_name: string | null
           seller_phone: string | null
+          sold_comps: string | null
           state: string | null
           status: Database["public"]["Enums"]["deal_status"]
           title_company_id: string | null
           updated_at: string
           user_id: string | null
           va_id: string | null
+          water_heater_age: string | null
+          year_built: number | null
         }
         Insert: {
+          ac_age?: string | null
+          access?: string | null
           acquisitions_manager_id?: string | null
           arv?: number | null
           asking_price?: number | null
           assigned_at?: string | null
           assignment_fee?: number | null
+          baths?: number | null
+          beds?: number | null
           buyer_id?: string | null
           city?: string | null
           closed_at?: string | null
@@ -728,6 +749,7 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           deleted_by?: string | null
+          electrical_age?: string | null
           emd_amount?: number | null
           emd_received?: boolean
           emd_received_at?: string | null
@@ -740,36 +762,52 @@ export type Database = {
           ghl_pipeline_id?: string | null
           ghl_pipeline_stage_id?: string | null
           homeowner_name?: string | null
+          hvac_age?: string | null
           id?: string
           ip_expiry_date?: string | null
           jv_partner_id?: string | null
           jv_partner_name?: string | null
           lead_source?: string | null
+          living_sqft?: number | null
+          lot_size?: string | null
           marketing_description?: string | null
           marketing_name?: string | null
           marketing_photos?: string[]
           marketing_published?: boolean
           minimum_sale_price?: number | null
+          non_refundable_emd?: number | null
           notes?: string | null
+          occupancy?: string | null
           owner_id?: string | null
+          plumbing_age?: string | null
           price_under_contract?: number | null
           property_address: string
+          property_type?: string | null
+          rehab_level?: string | null
+          roof_age?: string | null
           seller_email?: string | null
           seller_name?: string | null
           seller_phone?: string | null
+          sold_comps?: string | null
           state?: string | null
           status?: Database["public"]["Enums"]["deal_status"]
           title_company_id?: string | null
           updated_at?: string
           user_id?: string | null
           va_id?: string | null
+          water_heater_age?: string | null
+          year_built?: number | null
         }
         Update: {
+          ac_age?: string | null
+          access?: string | null
           acquisitions_manager_id?: string | null
           arv?: number | null
           asking_price?: number | null
           assigned_at?: string | null
           assignment_fee?: number | null
+          baths?: number | null
+          beds?: number | null
           buyer_id?: string | null
           city?: string | null
           closed_at?: string | null
@@ -778,6 +816,7 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           deleted_by?: string | null
+          electrical_age?: string | null
           emd_amount?: number | null
           emd_received?: boolean
           emd_received_at?: string | null
@@ -790,29 +829,41 @@ export type Database = {
           ghl_pipeline_id?: string | null
           ghl_pipeline_stage_id?: string | null
           homeowner_name?: string | null
+          hvac_age?: string | null
           id?: string
           ip_expiry_date?: string | null
           jv_partner_id?: string | null
           jv_partner_name?: string | null
           lead_source?: string | null
+          living_sqft?: number | null
+          lot_size?: string | null
           marketing_description?: string | null
           marketing_name?: string | null
           marketing_photos?: string[]
           marketing_published?: boolean
           minimum_sale_price?: number | null
+          non_refundable_emd?: number | null
           notes?: string | null
+          occupancy?: string | null
           owner_id?: string | null
+          plumbing_age?: string | null
           price_under_contract?: number | null
           property_address?: string
+          property_type?: string | null
+          rehab_level?: string | null
+          roof_age?: string | null
           seller_email?: string | null
           seller_name?: string | null
           seller_phone?: string | null
+          sold_comps?: string | null
           state?: string | null
           status?: Database["public"]["Enums"]["deal_status"]
           title_company_id?: string | null
           updated_at?: string
           user_id?: string | null
           va_id?: string | null
+          water_heater_age?: string | null
+          year_built?: number | null
         }
         Relationships: [
           {
