@@ -13,7 +13,7 @@ export default function PublicDeal() {
     (async () => {
       const { data } = await supabase
         .from("deals")
-        .select("property_address, city, state, asking_price, minimum_sale_price, arv, marketing_name, marketing_description, marketing_photos, marketing_published")
+        .select("*")
         .eq("id", id!)
         .maybeSingle();
       setDeal(data);
