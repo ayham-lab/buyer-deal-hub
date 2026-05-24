@@ -76,6 +76,8 @@ export function BuyerDrawer({ buyer, onClose, onUpdated }: { buyer: Buyer | null
       source: buyer.source || "",
       criteria_notes: buyer.criteria_notes || "",
       deals_purchased: (buyer as any).deals_purchased ?? 0,
+      buyer_activity: (buyer as any).buyer_activity || "currently_buying",
+      activity_resume_date: (buyer as any).activity_resume_date || "",
     });
   }, [buyer]);
 
