@@ -87,6 +87,12 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
     await supabase.from("deal_checklist").update({ is_completed: !current }).eq("id", id);
   }
 
+  async function setCheckDueDate(id: string, value: string) {
+    const v = value || null;
+    setChecklist((cs) => cs.map((c) => c.id === id ? { ...c, due_date: v } : c));
+    await supabase.from("deal_checklist").update({ due_date: v }).eq("id", id);
+  }
+
   async function addCheckItem() {
     if (!newCheck.trim()) return;
     const { data } = await supabase.from("deal_checklist").insert({ deal_id: dealId, item_text: newCheck, sort_order: checklist.length }).select().single();
@@ -318,15 +324,24 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
           </TabsContent>
 
           <TabsContent value="checklist" className="space-y-2 mt-4">
-            {checklist.map((c) => (
-              <div key={c.id} className="flex items-center gap-2 group">
-                <Checkbox checked={c.is_completed} onCheckedChange={() => toggleCheck(c.id, c.is_completed)} />
-                <span className={`text-sm flex-1 ${c.is_completed ? "line-through text-muted-foreground" : ""}`}>{c.item_text}</span>
-                <button onClick={() => removeCheck(c.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive">
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))}
+            {checklist.map((c) => {
+              const overdue = c.due_date && !c.is_completed && new Date(c.due_date) < new Date(new Date().toDateString());
+              return (
+                <div key={c.id} className="flex items-center gap-2 group">
+                  <Checkbox checked={c.is_completed} onCheckedChange={() => toggleCheck(c.id, c.is_completed)} />
+                  <span className={`text-sm flex-1 ${c.is_completed ? "line-through text-muted-foreground" : ""}`}>{c.item_text}</span>
+                  <Input
+                    type="date"
+                    value={c.due_date ?? ""}
+                    onChange={(e) => setCheckDueDate(c.id, e.target.value)}
+                    className={`h-7 w-[140px] text-xs ${overdue ? "border-destructive text-destructive" : ""}`}
+                  />
+                  <button onClick={() => removeCheck(c.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              );
+            })}
             <div className="flex gap-2 pt-2">
               <Input value={newCheck} onChange={(e) => setNewCheck(e.target.value)} placeholder="Add item…" onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCheckItem())} />
               <Button onClick={addCheckItem} size="icon" className="bg-primary hover:bg-primary-hover"><Plus className="h-4 w-4" /></Button>

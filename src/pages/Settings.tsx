@@ -54,26 +54,70 @@ export default function Settings() {
   );
 }
 
+type ChecklistTplItem = { text: string; offset_minutes: number | null };
+
+const OFFSET_PRESETS: { label: string; value: number | null }[] = [
+  { label: "No due date", value: null },
+  { label: "1 hour after", value: 60 },
+  { label: "2 hours after", value: 120 },
+  { label: "4 hours after", value: 240 },
+  { label: "Same day", value: 60 * 8 },
+  { label: "1 day after", value: 60 * 24 },
+  { label: "2 days after", value: 60 * 24 * 2 },
+  { label: "3 days after", value: 60 * 24 * 3 },
+  { label: "1 week after", value: 60 * 24 * 7 },
+  { label: "2 weeks after", value: 60 * 24 * 14 },
+  { label: "30 days after", value: 60 * 24 * 30 },
+];
+
+function offsetLabel(v: number | null | undefined): string {
+  if (v == null) return "No due date";
+  const match = OFFSET_PRESETS.find((p) => p.value === v);
+  return match ? match.label : `${v} min after`;
+}
+
 function ChecklistTab() {
   const { user } = useAuth();
-  const [items, setItems] = useState<string[]>([]);
+  const [items, setItems] = useState<ChecklistTplItem[]>([]);
   const [newItem, setNewItem] = useState("");
+  const [newOffset, setNewOffset] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("default_checklist").eq("user_id", user.id).maybeSingle()
+    supabase
+      .from("profiles")
+      .select("default_checklist_items, default_checklist")
+      .eq("user_id", user.id)
+      .maybeSingle()
       .then(({ data }) => {
-        setItems(((data as any)?.default_checklist as string[]) ?? []);
+        const raw = (data as any)?.default_checklist_items;
+        if (Array.isArray(raw) && raw.length) {
+          setItems(
+            raw.map((r: any) => ({
+              text: String(r?.text ?? ""),
+              offset_minutes: r?.offset_minutes ?? null,
+            }))
+          );
+        } else {
+          const legacy = ((data as any)?.default_checklist as string[]) ?? [];
+          setItems(legacy.map((t) => ({ text: t, offset_minutes: null })));
+        }
         setLoading(false);
       });
   }, [user]);
 
-  async function persist(next: string[]) {
+  async function persist(next: ChecklistTplItem[]) {
     if (!user) return;
     setBusy(true);
-    const { error } = await supabase.from("profiles").update({ default_checklist: next } as any).eq("user_id", user.id);
+    const clean = next
+      .map((i) => ({ text: i.text.trim(), offset_minutes: i.offset_minutes }))
+      .filter((i) => i.text.length > 0);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ default_checklist_items: clean as any } as any)
+      .eq("user_id", user.id);
     setBusy(false);
     if (error) toast.error(error.message);
     else toast.success("Saved");
@@ -82,16 +126,24 @@ function ChecklistTab() {
   function add() {
     const v = newItem.trim();
     if (!v) return;
-    const next = [...items, v];
-    setItems(next); setNewItem("");
+    const next = [...items, { text: v, offset_minutes: newOffset }];
+    setItems(next);
+    setNewItem("");
+    setNewOffset(null);
     persist(next);
   }
   function remove(i: number) {
     const next = items.filter((_, idx) => idx !== i);
-    setItems(next); persist(next);
+    setItems(next);
+    persist(next);
   }
-  function updateLocal(i: number, v: string) {
-    setItems((arr) => arr.map((x, idx) => idx === i ? v : x));
+  function updateText(i: number, v: string) {
+    setItems((arr) => arr.map((x, idx) => (idx === i ? { ...x, text: v } : x)));
+  }
+  function updateOffset(i: number, v: number | null) {
+    const next = items.map((x, idx) => (idx === i ? { ...x, offset_minutes: v } : x));
+    setItems(next);
+    persist(next);
   }
 
   if (loading) return <Loader2 className="h-4 w-4 animate-spin mt-6" />;
@@ -99,26 +151,66 @@ function ChecklistTab() {
   return (
     <div className="space-y-4 mt-6">
       <p className="text-sm text-muted-foreground">
-        These items are added to every new deal's checklist. Changes apply to future deals only.
+        These items are added to every new deal's checklist. Pick a due-date preset to auto-assign a due date relative to deal creation. Changes apply to future deals only.
       </p>
       <div className="space-y-2">
         {items.map((item, i) => (
-          <div key={i} className="flex gap-2">
-            <Input value={item} onChange={(e) => updateLocal(i, e.target.value)} onBlur={() => persist(items)} />
+          <div key={i} className="flex gap-2 items-center">
+            <Input
+              className="flex-1"
+              value={item.text}
+              onChange={(e) => updateText(i, e.target.value)}
+              onBlur={() => persist(items)}
+            />
+            <select
+              className="h-9 rounded-md border border-border bg-background px-2 text-sm min-w-[160px]"
+              value={item.offset_minutes ?? ""}
+              onChange={(e) => updateOffset(i, e.target.value === "" ? null : Number(e.target.value))}
+            >
+              {OFFSET_PRESETS.map((p) => (
+                <option key={String(p.value)} value={p.value ?? ""}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
             <Button variant="ghost" size="icon" onClick={() => remove(i)} disabled={busy}>
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         ))}
       </div>
-      <div className="flex gap-2 pt-2 border-t">
-        <Input placeholder="New checklist item" value={newItem} onChange={(e) => setNewItem(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }} />
-        <Button onClick={add} disabled={busy || !newItem.trim()}>Add</Button>
+      <div className="flex gap-2 pt-2 border-t items-center">
+        <Input
+          className="flex-1"
+          placeholder="New checklist item"
+          value={newItem}
+          onChange={(e) => setNewItem(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              add();
+            }
+          }}
+        />
+        <select
+          className="h-9 rounded-md border border-border bg-background px-2 text-sm min-w-[160px]"
+          value={newOffset ?? ""}
+          onChange={(e) => setNewOffset(e.target.value === "" ? null : Number(e.target.value))}
+        >
+          {OFFSET_PRESETS.map((p) => (
+            <option key={String(p.value)} value={p.value ?? ""}>
+              {p.label}
+            </option>
+          ))}
+        </select>
+        <Button onClick={add} disabled={busy || !newItem.trim()}>
+          Add
+        </Button>
       </div>
     </div>
   );
 }
+
 
 function ProfileTab() {
   const { user, profile, refreshRoles } = useAuth();
