@@ -80,6 +80,11 @@ export function ImportBuyersModal({
         price_min: num(r.price_min),
         price_max: num(r.price_max),
         buyer_status: normStatus(r.buyer_status || r.status),
+        buyer_activity: normalizeBuyerActivity(r.buyer_activity),
+        activity_resume_date:
+          normalizeBuyerActivity(r.buyer_activity) === "not_buying_now" && r.activity_resume_date?.trim()
+            ? r.activity_resume_date.trim()
+            : null,
         source: r.source?.trim() || "CSV Import",
         criteria_notes: r.criteria_notes?.trim() || null,
         previous_deals: r.previous_deals?.trim() || null,
