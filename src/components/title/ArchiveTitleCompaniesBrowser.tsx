@@ -64,6 +64,7 @@ export function ArchiveTitleCompaniesBrowser({ open, onClose, onAdded }: {
     const payload = withLocation({
       user_id: user.id,
       name: row.name,
+      entity_type: row.entity_type || "title_company",
       contact_name: row.contact_name,
       email: row.email,
       phone: row.phone,
