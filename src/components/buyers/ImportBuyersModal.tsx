@@ -47,7 +47,7 @@ export function ImportBuyersModal({
   }
 
   function downloadTemplate() {
-    const blob = new Blob([TEMPLATE_CSV], { type: "text/csv" });
+    const blob = new Blob([BUYER_TEMPLATE_CSV], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
