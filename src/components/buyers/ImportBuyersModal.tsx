@@ -8,16 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Upload, Download, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
-
-const TEMPLATE_HEADERS = [
-  "first_name","last_name","email","phone","company_name",
-  "markets","property_types","buyer_types","buyer_frequency",
-  "price_min","price_max","source","criteria_notes",
-];
-
-const TEMPLATE_CSV =
-  TEMPLATE_HEADERS.join(",") + "\n" +
-  `John,Doe,john@example.com,555-1234,Acme Capital,"Atlanta, GA; Tampa, FL","SFH; MFH 2-4","Fix & Flip; Buy & Hold","Full time Buyer",75000,250000,Referral,Cash buyer prefers off-market\n`;
+import { BUYER_TEMPLATE_CSV, BUYER_STATUS_VALUES } from "@/lib/buyerCsv";
 
 type Row = Record<string, string>;
 
@@ -28,6 +19,12 @@ const num = (v?: string) => {
   if (!v) return null;
   const n = Number(String(v).replace(/[^0-9.\-]/g, ""));
   return isNaN(n) ? null : n;
+};
+
+const STATUS_SET = new Set<string>(BUYER_STATUS_VALUES);
+const normStatus = (v?: string) => {
+  const s = (v || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+  return STATUS_SET.has(s) ? s : "not_vetted";
 };
 
 export function ImportBuyersModal({
