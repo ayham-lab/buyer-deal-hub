@@ -73,7 +73,8 @@ export function ArchiveTitleCompaniesTab() {
       (t.email || "").toLowerCase().includes(s) ||
       (t.phone || "").includes(s);
     const matchState = stateFilter === "all" || t.service_states.includes(stateFilter);
-    return matchQ && matchState;
+    const matchType = typeFilter === "all" || (t.entity_type || "title_company") === typeFilter;
+    return matchQ && matchState && matchType;
   });
 
   async function remove(id: string, name: string) {
