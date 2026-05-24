@@ -211,6 +211,23 @@ export default function Buyers() {
                         {STATUS_LABEL[b.buyer_status || "not_vetted"]}
                       </Badge>
                     </td>
+                    <td>
+                      {(() => {
+                        const act = b.buyer_activity || "currently_buying";
+                        return (
+                          <div className="flex flex-col gap-0.5">
+                            <Badge variant="outline" className={`text-[10px] rounded w-fit ${BUYER_ACTIVITY_COLOR[act]}`}>
+                              {BUYER_ACTIVITY_LABEL[act]}
+                            </Badge>
+                            {act === "not_buying_now" && b.activity_resume_date && (
+                              <span className="text-[10px] text-muted-foreground">
+                                Resumes {fmtDate(new Date(b.activity_resume_date + "T00:00:00"), "MMM d, yyyy")}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </td>
                     <td className="text-muted-foreground">{b.markets.join(", ") || "—"}</td>
                     <td className="text-muted-foreground">
                       {b.price_min || b.price_max
