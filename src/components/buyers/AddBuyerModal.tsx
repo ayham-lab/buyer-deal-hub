@@ -128,6 +128,11 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
       criteria_notes: form.criteria_notes || null,
       previous_deals: form.previous_deals || null,
       experience: form.experience || null,
+      buyer_activity: form.buyer_activity as any,
+      activity_resume_date:
+        form.buyer_activity === "not_buying_now" && form.activity_resume_date
+          ? form.activity_resume_date
+          : null,
     };
     const { data: inserted, error } = await supabase.from("buyers").insert(withLocation(payload)).select("id").single();
     if (error) { toast.error(error.message); setBusy(false); return; }
