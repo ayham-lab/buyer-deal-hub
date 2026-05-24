@@ -11,8 +11,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { withLocation } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { X, Upload } from "lucide-react";
+import { X, Upload, CalendarIcon } from "lucide-react";
 import { MarketsInput } from "./MarketsInput";
+import { BUYER_ACTIVITY_OPTIONS } from "@/lib/buyerActivity";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const PROPERTY_TYPES = ["SFH", "MFH 2-4", "MFH 5+", "Commercial", "Land", "Mobile"];
 const BUYER_TYPES = ["Flipper", "Landlord", "Developer", "Section 8", "Hedge Fund", "Airbnb / Rooming House", "Padsplit", "Mobile Homes"];
@@ -71,7 +76,8 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
     source: "",
     criteria_notes: "",
     previous_deals: "", experience: "",
-    
+    buyer_activity: "currently_buying",
+    activity_resume_date: "" as string,
   };
   const [form, setForm] = useState(initial);
   const [pofFiles, setPofFiles] = useState<File[]>([]);
@@ -122,6 +128,11 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
       criteria_notes: form.criteria_notes || null,
       previous_deals: form.previous_deals || null,
       experience: form.experience || null,
+      buyer_activity: form.buyer_activity as any,
+      activity_resume_date:
+        form.buyer_activity === "not_buying_now" && form.activity_resume_date
+          ? form.activity_resume_date
+          : null,
     };
     const { data: inserted, error } = await supabase.from("buyers").insert(withLocation(payload)).select("id").single();
     if (error) { toast.error(error.message); setBusy(false); return; }
@@ -168,6 +179,41 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
                 {BUYER_STATUS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
               </SelectContent>
             </Select>
+          </div>
+
+          <div>
+            <Label>Current Activity</Label>
+            <Select value={form.buyer_activity} onValueChange={(v) => set("buyer_activity", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {BUYER_ACTIVITY_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Expected Resume Date {form.buyer_activity === "not_buying_now" ? "" : "(N/A)"}</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={form.buyer_activity !== "not_buying_now"}
+                  className={cn("w-full justify-start text-left font-normal", !form.activity_resume_date && "text-muted-foreground")}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {form.activity_resume_date ? format(new Date(form.activity_resume_date + "T00:00:00"), "PPP") : "Pick a date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={form.activity_resume_date ? new Date(form.activity_resume_date + "T00:00:00") : undefined}
+                  onSelect={(d) => set("activity_resume_date", d ? format(d, "yyyy-MM-dd") : "")}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
           <MultiChips label="Buyer Type" options={BUYER_TYPES} value={form.buyer_types} onChange={(v) => set("buyer_types", v)} />

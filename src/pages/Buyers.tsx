@@ -15,6 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { exportToCsv } from "@/lib/csv";
 import { BUYER_CSV_COLUMNS, buyerToCsvRow } from "@/lib/buyerCsv";
+import { BUYER_ACTIVITY_OPTIONS, BUYER_ACTIVITY_LABEL, BUYER_ACTIVITY_COLOR, type BuyerActivity } from "@/lib/buyerActivity";
+import { format as fmtDate } from "date-fns";
 
 export interface Buyer {
   id: string;
@@ -41,6 +43,8 @@ export interface Buyer {
   proof_of_funds_files?: string[];
   previous_deals?: string | null;
   experience?: string | null;
+  buyer_activity?: BuyerActivity;
+  activity_resume_date?: string | null;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -66,6 +70,9 @@ export default function Buyers() {
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [active, setActive] = useState<Buyer | null>(null);
+  const [activityFilter, setActivityFilter] = useState<"all" | BuyerActivity>("all");
+
+
 
   async function load() {
     if (!user) return;
@@ -87,6 +94,7 @@ export default function Buyers() {
   useEffect(() => { load(); }, [user]);
 
   const filtered = buyers.filter((b) => {
+    if (activityFilter !== "all" && (b.buyer_activity || "currently_buying") !== activityFilter) return false;
     const q = search.trim().toLowerCase();
     if (!q) return true;
     const digits = q.replace(/\D/g, "");
@@ -143,6 +151,23 @@ export default function Buyers() {
           </div>
         </div>
 
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-muted-foreground mr-1">Activity:</span>
+          {(["all", ...BUYER_ACTIVITY_OPTIONS.map((o) => o.value)] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setActivityFilter(v as any)}
+              className={`px-2.5 py-1 rounded-full text-[11px] border transition ${
+                activityFilter === v
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background border-border text-muted-foreground hover:border-primary/40"
+              }`}
+            >
+              {v === "all" ? "All" : BUYER_ACTIVITY_LABEL[v]}
+            </button>
+          ))}
+        </div>
+
         {loading ? (
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
@@ -166,6 +191,7 @@ export default function Buyers() {
                   <th>Name</th>
                   <th>Company</th>
                   <th>Status</th>
+                  <th>Activity</th>
                   <th>Markets</th>
                   <th>Price Range</th>
                   <th>Property Types</th>
@@ -184,6 +210,23 @@ export default function Buyers() {
                       <Badge variant="outline" className={`text-[10px] rounded ${STATUS_COLOR[b.buyer_status || "not_vetted"]}`}>
                         {STATUS_LABEL[b.buyer_status || "not_vetted"]}
                       </Badge>
+                    </td>
+                    <td>
+                      {(() => {
+                        const act = b.buyer_activity || "currently_buying";
+                        return (
+                          <div className="flex flex-col gap-0.5">
+                            <Badge variant="outline" className={`text-[10px] rounded w-fit ${BUYER_ACTIVITY_COLOR[act]}`}>
+                              {BUYER_ACTIVITY_LABEL[act]}
+                            </Badge>
+                            {act === "not_buying_now" && b.activity_resume_date && (
+                              <span className="text-[10px] text-muted-foreground">
+                                Resumes {fmtDate(new Date(b.activity_resume_date + "T00:00:00"), "MMM d, yyyy")}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="text-muted-foreground">{b.markets.join(", ") || "—"}</td>
                     <td className="text-muted-foreground">

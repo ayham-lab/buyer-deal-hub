@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Upload, Download, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { BUYER_TEMPLATE_CSV, BUYER_STATUS_VALUES } from "@/lib/buyerCsv";
+import { normalizeBuyerActivity } from "@/lib/buyerActivity";
 
 type Row = Record<string, string>;
 
@@ -79,6 +80,11 @@ export function ImportBuyersModal({
         price_min: num(r.price_min),
         price_max: num(r.price_max),
         buyer_status: normStatus(r.buyer_status || r.status),
+        buyer_activity: normalizeBuyerActivity(r.buyer_activity),
+        activity_resume_date:
+          normalizeBuyerActivity(r.buyer_activity) === "not_buying_now" && r.activity_resume_date?.trim()
+            ? r.activity_resume_date.trim()
+            : null,
         source: r.source?.trim() || "CSV Import",
         criteria_notes: r.criteria_notes?.trim() || null,
         previous_deals: r.previous_deals?.trim() || null,

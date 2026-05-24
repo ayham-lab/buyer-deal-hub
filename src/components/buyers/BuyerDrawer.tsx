@@ -7,9 +7,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Trash2, Clock } from "lucide-react";
+import { Trash2, Clock, CalendarIcon } from "lucide-react";
 import { MarketsInput } from "./MarketsInput";
 import type { Buyer } from "@/pages/Buyers";
+import { BUYER_ACTIVITY_OPTIONS } from "@/lib/buyerActivity";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const PROPERTY_TYPES = ["SFH", "MFH 2-4", "MFH 5+", "Commercial", "Land", "Mobile"];
 const BUYER_TYPES = ["Flipper", "Landlord", "Developer", "Section 8", "Hedge Fund", "Airbnb / Rooming House", "Padsplit", "Mobile Homes"];
@@ -71,6 +76,8 @@ export function BuyerDrawer({ buyer, onClose, onUpdated }: { buyer: Buyer | null
       source: buyer.source || "",
       criteria_notes: buyer.criteria_notes || "",
       deals_purchased: (buyer as any).deals_purchased ?? 0,
+      buyer_activity: (buyer as any).buyer_activity || "currently_buying",
+      activity_resume_date: (buyer as any).activity_resume_date || "",
     });
   }, [buyer]);
 
@@ -99,6 +106,11 @@ export function BuyerDrawer({ buyer, onClose, onUpdated }: { buyer: Buyer | null
         source: form.source || null,
         criteria_notes: form.criteria_notes || null,
         deals_purchased: Math.max(0, Math.min(999, Number(form.deals_purchased) || 0)),
+        buyer_activity: form.buyer_activity,
+        activity_resume_date:
+          form.buyer_activity === "not_buying_now" && form.activity_resume_date
+            ? form.activity_resume_date
+            : null,
       })
       .eq("id", buyer!.id);
     setBusy(false);
@@ -145,6 +157,43 @@ export function BuyerDrawer({ buyer, onClose, onUpdated }: { buyer: Buyer | null
                 {BUYER_STATUS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Current Activity</Label>
+              <Select value={form.buyer_activity} onValueChange={(v) => set("buyer_activity", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {BUYER_ACTIVITY_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>{form.buyer_activity === "not_buying_now" ? "Expected Resume" : "Resume Date (N/A)"}</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={form.buyer_activity !== "not_buying_now"}
+                    className={cn("w-full justify-start text-left font-normal", !form.activity_resume_date && "text-muted-foreground")}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {form.activity_resume_date ? format(new Date(form.activity_resume_date + "T00:00:00"), "PPP") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={form.activity_resume_date ? new Date(form.activity_resume_date + "T00:00:00") : undefined}
+                    onSelect={(d) => set("activity_resume_date", d ? format(d, "yyyy-MM-dd") : "")}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
 
           <div className="space-y-2">
