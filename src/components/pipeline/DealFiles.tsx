@@ -4,8 +4,19 @@ import { withLocation } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Upload, Trash2, FileText, Image as ImageIcon, Download } from "lucide-react";
+import { Upload, Trash2, FileText, Image as ImageIcon, Download, Link2, ExternalLink } from "lucide-react";
+
+function detectProvider(url: string): { label: string; name: string } {
+  const u = url.toLowerCase();
+  if (u.includes("drive.google.com") || u.includes("docs.google.com")) return { label: "Google Drive", name: "Google Drive link" };
+  if (u.includes("1drv.ms") || u.includes("onedrive.live.com") || u.includes("sharepoint.com")) return { label: "OneDrive", name: "OneDrive link" };
+  if (u.includes("dropbox.com")) return { label: "Dropbox", name: "Dropbox link" };
+  if (u.includes("box.com")) return { label: "Box", name: "Box link" };
+  return { label: "Link", name: "External link" };
+}
 
 type Category = "photo" | "psa" | "assignment" | "jv_contract" | "addendum" | "other";
 const CATEGORIES: { key: Category; label: string; accept: string }[] = [
