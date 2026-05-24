@@ -106,6 +106,11 @@ export function BuyerDrawer({ buyer, onClose, onUpdated }: { buyer: Buyer | null
         source: form.source || null,
         criteria_notes: form.criteria_notes || null,
         deals_purchased: Math.max(0, Math.min(999, Number(form.deals_purchased) || 0)),
+        buyer_activity: form.buyer_activity,
+        activity_resume_date:
+          form.buyer_activity === "not_buying_now" && form.activity_resume_date
+            ? form.activity_resume_date
+            : null,
       })
       .eq("id", buyer!.id);
     setBusy(false);
