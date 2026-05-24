@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Trash2, X, Loader2, Pencil } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { DEAL_TYPE_LABELS } from "@/pages/TitleCompanies";
+import { DEAL_TYPE_LABELS, ENTITY_TYPE_LABELS, EntityType } from "@/pages/TitleCompanies";
 
 const US_STATES = [
   "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD",
