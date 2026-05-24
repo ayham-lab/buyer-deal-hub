@@ -97,14 +97,43 @@ export function DealMarketing({ dealId, deal, onChange }: Props) {
         />
       </div>
 
+      <PropertyConditionEditor deal={deal} save={save} />
+
       <div>
-        <label className="text-[11px] uppercase tracking-wider text-muted-foreground">Marketing Description</label>
+        <div className="flex items-center justify-between mb-1">
+          <label className="text-[11px] uppercase tracking-wider text-muted-foreground">Marketing Description</label>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-7 gap-1.5"
+            onClick={async () => {
+              const { data: prof } = await supabase
+                .from("profiles")
+                .select("name, email, phone_number")
+                .eq("user_id", user?.id ?? "")
+                .maybeSingle();
+              const tpl = generateMarketingTemplate(deal, {
+                name: prof?.name,
+                email: prof?.email,
+                phone: prof?.phone_number,
+              });
+              setDesc(tpl);
+              await save({ marketing_description: tpl });
+              toast.success("Template generated. Fill in any [ADD] placeholders.");
+            }}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            Generate template
+          </Button>
+        </div>
         <Textarea
-          rows={6}
+          rows={18}
           value={desc}
           onChange={(e) => setDesc(e.target.value)}
           onBlur={() => desc !== (deal.marketing_description ?? "") && save({ marketing_description: desc })}
-          placeholder="Property highlights, comps, repair notes, anything buyers should know…"
+          placeholder="Click Generate template to auto-fill, or write your own…"
+          className="font-mono text-xs"
         />
       </div>
 
