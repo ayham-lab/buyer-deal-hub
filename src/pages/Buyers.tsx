@@ -43,6 +43,8 @@ export interface Buyer {
   proof_of_funds_files?: string[];
   previous_deals?: string | null;
   experience?: string | null;
+  buyer_activity?: BuyerActivity;
+  activity_resume_date?: string | null;
 }
 
 const STATUS_LABEL: Record<string, string> = {
