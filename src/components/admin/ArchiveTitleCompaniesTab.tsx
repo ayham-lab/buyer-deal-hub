@@ -224,8 +224,17 @@ function EditModal({ open, existing, onClose, onSaved }: {
           <DialogTitle>{existing ? "Edit Archive Title Company" : "Add Archive Title Company"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={save} className="grid grid-cols-2 gap-4">
-          <div className="col-span-2"><Label>Company Name *</Label>
+          <div className="col-span-2"><Label>Name *</Label>
             <Input required value={form.name} onChange={(e) => set("name", e.target.value)} />
+          </div>
+          <div className="col-span-2"><Label>Type</Label>
+            <Select value={form.entity_type || "title_company"} onValueChange={(v) => set("entity_type", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="title_company">{ENTITY_TYPE_LABELS.title_company}</SelectItem>
+                <SelectItem value="attorney">{ENTITY_TYPE_LABELS.attorney}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div><Label>Contact Name</Label><Input value={form.contact_name} onChange={(e) => set("contact_name", e.target.value)} /></div>
           <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => set("phone", e.target.value)} /></div>
