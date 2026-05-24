@@ -158,6 +158,14 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
           </div>
         </SheetHeader>
 
+        <div className="mt-4">
+          <label className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1 block">Stage</label>
+          <StageProgressBar
+            value={deal.status}
+            onChange={(s) => saveField("status", s)}
+          />
+        </div>
+
         <Tabs defaultValue="overview" className="mt-6">
           <TabsList className="bg-secondary flex-wrap h-auto">
             <TabsTrigger value="overview">Overview</TabsTrigger>
