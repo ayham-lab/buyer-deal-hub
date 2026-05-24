@@ -191,6 +191,7 @@ export default function Buyers() {
                   <th>Name</th>
                   <th>Company</th>
                   <th>Status</th>
+                  <th>Activity</th>
                   <th>Markets</th>
                   <th>Price Range</th>
                   <th>Property Types</th>
