@@ -76,13 +76,11 @@ export function AddDealModal({ open, onClose, onCreated }: { open: boolean; onCl
 
     if (error) { toast.error(error.message); setBusy(false); return; }
 
-    const { data: prof } = await supabase.from("profiles").select("default_checklist").eq("user_id", user.id).maybeSingle();
-    const items = ((prof as any)?.default_checklist?.length ? (prof as any).default_checklist : DEFAULT_CHECKLIST) as string[];
-    await supabase.from("deal_checklist").insert(
-      items.map((t, i) => ({ deal_id: data.id, item_text: t, sort_order: i }))
-    );
+    // Checklist is auto-seeded by the `trg_seed_deal_checklist` DB trigger
+    // using the workspace owner's default_checklist. Do NOT insert client-side
+    // or duplicates will appear.
 
-    toast.success("Deal created with checklist");
+    toast.success("Deal created");
     setBusy(false); onClose(); onCreated();
     setForm({ property_address: "", status: "lead", asking_price: "", contract_price: "", minimum_sale_price: "", arv: "", ip_expiry_date: "", closing_date: "", lead_source: "", jv_partner_name: "", title_company_id: "", owner_id: user.id, acquisitions_manager_id: "", va_id: "" });
   }
