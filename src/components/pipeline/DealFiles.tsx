@@ -37,6 +37,9 @@ export function DealFiles({ dealId }: { dealId: string }) {
   const { user } = useAuth();
   const [files, setFiles] = useState<DealFile[]>([]);
   const [busy, setBusy] = useState<Category | null>(null);
+  const [linkCat, setLinkCat] = useState<Category | null>(null);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkLabel, setLinkLabel] = useState("");
 
   async function load() {
     const { data } = await supabase.from("deal_files").select("*").eq("deal_id", dealId).order("created_at", { ascending: false });
