@@ -109,14 +109,16 @@ export default function Buyers() {
         subtitle="Your private buyer database"
         actions={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => exportToCsv(filtered.map((b) => ({
-              name: b.name, email: b.email, phone: b.phone,
-              markets: (b.markets || []).join("|"),
-              property_types: (b.property_types || []).join("|"),
-              price_min: b.price_min, price_max: b.price_max,
-              source: b.source, status: b.buyer_status, deals_purchased: b.deals_purchased,
-              created_at: b.created_at,
-            })), `buyers-${new Date().toISOString().slice(0,10)}`)}>
+            <Button
+              variant="outline"
+              onClick={() =>
+                exportToCsv(
+                  filtered.map((b) => buyerToCsvRow(b)) as unknown as Record<string, unknown>[],
+                  `buyers-${new Date().toISOString().slice(0, 10)}`,
+                  [...BUYER_CSV_COLUMNS]
+                )
+              }
+            >
               <Download className="h-4 w-4 mr-1" /> Export CSV
             </Button>
             <Button variant="outline" onClick={() => setShowImport(true)}>
