@@ -8,16 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Upload, Download, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
-
-const TEMPLATE_HEADERS = [
-  "first_name","last_name","email","phone","company_name",
-  "markets","property_types","buyer_types","buyer_frequency",
-  "price_min","price_max","source","criteria_notes",
-];
-
-const TEMPLATE_CSV =
-  TEMPLATE_HEADERS.join(",") + "\n" +
-  `John,Doe,john@example.com,555-1234,Acme Capital,"Atlanta, GA; Tampa, FL","SFH; MFH 2-4","Fix & Flip; Buy & Hold","Full time Buyer",75000,250000,Referral,Cash buyer prefers off-market\n`;
+import { BUYER_TEMPLATE_CSV, BUYER_STATUS_VALUES } from "@/lib/buyerCsv";
 
 type Row = Record<string, string>;
 
@@ -28,6 +19,12 @@ const num = (v?: string) => {
   if (!v) return null;
   const n = Number(String(v).replace(/[^0-9.\-]/g, ""));
   return isNaN(n) ? null : n;
+};
+
+const STATUS_SET = new Set<string>(BUYER_STATUS_VALUES);
+const normStatus = (v?: string) => {
+  const s = (v || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+  return STATUS_SET.has(s) ? s : "not_vetted";
 };
 
 export function ImportBuyersModal({
@@ -50,7 +47,7 @@ export function ImportBuyersModal({
   }
 
   function downloadTemplate() {
-    const blob = new Blob([TEMPLATE_CSV], { type: "text/csv" });
+    const blob = new Blob([BUYER_TEMPLATE_CSV], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -76,12 +73,16 @@ export function ImportBuyersModal({
         company_name: r.company_name?.trim() || null,
         markets: splitList(r.markets),
         property_types: splitList(r.property_types),
+        other_property_type: r.other_property_type?.trim() || null,
         buyer_types: splitList(r.buyer_types),
         buyer_frequency: splitList(r.buyer_frequency),
         price_min: num(r.price_min),
         price_max: num(r.price_max),
+        buyer_status: normStatus(r.buyer_status || r.status),
         source: r.source?.trim() || "CSV Import",
         criteria_notes: r.criteria_notes?.trim() || null,
+        previous_deals: r.previous_deals?.trim() || null,
+        experience: r.experience?.trim() || null,
       };
     });
 
@@ -114,6 +115,8 @@ export function ImportBuyersModal({
           <DialogDescription>
             Upload a CSV to bulk-add buyers to your Rolodex. Multi-value fields
             (markets, property types, etc.) should be separated by <code>;</code>.
+            You can also re-import a previously exported CSV — read-only fields
+            like deal counts and timestamps are ignored automatically.
           </DialogDescription>
         </DialogHeader>
 
