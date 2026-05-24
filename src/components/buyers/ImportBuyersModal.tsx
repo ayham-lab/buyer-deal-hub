@@ -115,6 +115,8 @@ export function ImportBuyersModal({
           <DialogDescription>
             Upload a CSV to bulk-add buyers to your Rolodex. Multi-value fields
             (markets, property types, etc.) should be separated by <code>;</code>.
+            You can also re-import a previously exported CSV — read-only fields
+            like deal counts and timestamps are ignored automatically.
           </DialogDescription>
         </DialogHeader>
 
