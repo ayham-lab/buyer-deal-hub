@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { exportToCsv } from "@/lib/csv";
+import { BUYER_CSV_COLUMNS, buyerToCsvRow } from "@/lib/buyerCsv";
 
 export interface Buyer {
   id: string;
