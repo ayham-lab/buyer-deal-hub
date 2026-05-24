@@ -115,6 +115,8 @@ const TEMPLATE_EXAMPLE: Record<string, string> = {
   price_min: "75000",
   price_max: "250000",
   buyer_status: "not_vetted",
+  buyer_activity: "currently_buying",
+  activity_resume_date: "",
   source: "Referral",
   criteria_notes: "Cash buyer prefers off-market",
   previous_deals: "",
