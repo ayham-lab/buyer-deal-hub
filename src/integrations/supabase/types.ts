@@ -1866,6 +1866,14 @@ export type Database = {
         Args: { p_location: string }
         Returns: string[]
       }
+      get_archive_buyer_contact: {
+        Args: { p_id: string; p_location: string }
+        Returns: Json
+      }
+      get_archive_buyer_system_deals: {
+        Args: { p_email: string; p_phone: string }
+        Returns: number
+      }
       get_public_marketing_deal: { Args: { p_id: string }; Returns: Json }
       has_role: {
         Args: {
