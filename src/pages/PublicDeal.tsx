@@ -11,11 +11,7 @@ export default function PublicDeal() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from("deals")
-        .select("*")
-        .eq("id", id!)
-        .maybeSingle();
+      const { data } = await supabase.rpc("get_public_marketing_deal" as any, { p_id: id });
       setDeal(data);
       setLoading(false);
     })();
