@@ -133,7 +133,7 @@ export default function Finder() {
       ...results,
       archive: results.archive.map((m) =>
         m.id === b.id
-          ? { ...m, revealed: true, email: row?.email ?? null, phone: row?.phone ?? null }
+          ? { ...m, revealed: true, email: contact.email ?? null, phone: contact.phone ?? null }
           : m,
       ),
       archive_credit_balance: Math.max(0, (results.archive_credit_balance ?? 0) - results.archive_reveal_cost),
