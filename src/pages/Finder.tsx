@@ -124,16 +124,16 @@ export default function Finder() {
       }
       return;
     }
-    const { data: row } = await supabase
-      .from("archive_buyers")
-      .select("email, phone")
-      .eq("id", b.id)
-      .maybeSingle();
+    const { data: row } = await supabase.rpc("get_archive_buyer_contact" as any, {
+      p_location: activeLocation.locationId,
+      p_id: b.id,
+    });
+    const contact = (row && typeof row === "object") ? (row as any) : {};
     setResults({
       ...results,
       archive: results.archive.map((m) =>
         m.id === b.id
-          ? { ...m, revealed: true, email: row?.email ?? null, phone: row?.phone ?? null }
+          ? { ...m, revealed: true, email: contact.email ?? null, phone: contact.phone ?? null }
           : m,
       ),
       archive_credit_balance: Math.max(0, (results.archive_credit_balance ?? 0) - results.archive_reveal_cost),

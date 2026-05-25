@@ -50,12 +50,12 @@ export function BuyerDrawer({ buyer, onClose, onUpdated }: { buyer: Buyer | null
     (async () => {
       const email = (buyer.email || "").trim().toLowerCase();
       const phone = (buyer.phone || "").trim();
-      let q = supabase.from("archive_buyers").select("system_deals_purchased").limit(1);
-      if (email) q = q.ilike("email", email);
-      else if (phone) q = q.eq("phone", phone);
-      else { setSystemDeals(0); return; }
-      const { data } = await q;
-      setSystemDeals((data?.[0] as any)?.system_deals_purchased ?? 0);
+      if (!email && !phone) { setSystemDeals(0); return; }
+      const { data } = await supabase.rpc("get_archive_buyer_system_deals" as any, {
+        p_email: email || null,
+        p_phone: phone || null,
+      });
+      setSystemDeals(typeof data === "number" ? data : 0);
     })();
   }, [buyer?.id, buyer?.email, buyer?.phone]);
 
