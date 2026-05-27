@@ -63,7 +63,7 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export default function Buyers() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [buyers, setBuyers] = useState<Buyer[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
