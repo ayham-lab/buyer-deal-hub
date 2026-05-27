@@ -26,6 +26,8 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
   const { user } = useAuth();
   const { isIframed, activeLocation } = useActiveLocation();
   const [deal, setDeal] = useState<any>(null);
+  const [pending, setPending] = useState<Record<string, any>>({});
+  const [saving, setSaving] = useState(false);
   const [checklist, setChecklist] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [titleCos, setTitleCos] = useState<{ id: string; name: string }[]>([]);
@@ -34,8 +36,12 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
   const [newTask, setNewTask] = useState("");
   const [newCheck, setNewCheck] = useState("");
 
+  const dirty = Object.keys(pending).length > 0;
+  const view: any = deal ? { ...deal, ...pending } : deal;
+
   useEffect(() => {
-    if (!dealId) { setDeal(null); return; }
+    if (!dealId) { setDeal(null); setPending({}); return; }
+    setPending({});
     (async () => {
       const activeLoc = getActiveLocationId();
       const teamBase = supabase.from("team_members").select("id,name,role").eq("is_active", true).order("name");
@@ -49,7 +55,6 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
       ]);
       setDeal(d); setChecklist(c || []); setTasks(t || []); setTitleCos((tc as any) || []); setTeam((tm as any) || []);
 
-      // Source location name
       if (d?.ghl_location_id) {
         const { data: loc } = await supabase
           .from("ghl_location_tokens")
@@ -65,22 +70,56 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
 
   if (!dealId || !deal) return null;
 
+  function editField(field: string, value: any) {
+    setPending((p) => {
+      const next = { ...p, [field]: value };
+      if (JSON.stringify(deal?.[field] ?? null) === JSON.stringify(value ?? null)) {
+        delete next[field];
+      }
+      return next;
+    });
+  }
+
   async function saveField(field: string, value: any) {
     const { data, error } = await supabase
       .from("deals")
       .update({ [field]: value } as any)
       .eq("id", dealId)
       .select("id");
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+    if (error) { toast.error(error.message); return; }
     if (!data || data.length === 0) {
       toast.error("Couldn't save — check your permissions or try again");
       return;
     }
     setDeal((prev: any) => prev ? { ...prev, [field]: value } : prev);
+    setPending((p) => { const n = { ...p }; delete n[field]; return n; });
     onUpdated();
+  }
+
+  async function saveAll() {
+    if (!dirty) return;
+    setSaving(true);
+    const { data, error } = await supabase
+      .from("deals")
+      .update(pending as any)
+      .eq("id", dealId)
+      .select("id");
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    if (!data || data.length === 0) {
+      toast.error("Couldn't save — check your permissions or try again");
+      return;
+    }
+    setDeal((prev: any) => prev ? { ...prev, ...pending } : prev);
+    setPending({});
+    toast.success("Changes saved");
+    onUpdated();
+  }
+
+  function handleClose() {
+    if (dirty && !confirm("You have unsaved changes. Discard them?")) { return; }
+    setPending({});
+    onClose();
   }
 
   async function toggleCheck(id: string, current: boolean) {
@@ -135,10 +174,10 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
   }
 
   return (
-    <Sheet open={!!dealId} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent className="bg-card border-border w-[560px] sm:max-w-[560px] overflow-y-auto">
+    <Sheet open={!!dealId} onOpenChange={(o) => !o && handleClose()}>
+      <SheetContent className="bg-card border-border w-[560px] sm:max-w-[560px] overflow-y-auto pb-24">
         <SheetHeader>
-          <SheetTitle className="text-lg">{deal.property_address}</SheetTitle>
+          <SheetTitle className="text-lg">{view.property_address}</SheetTitle>
           <div className="flex items-center justify-between gap-2 mt-1">
             {(locationName || deal.ghl_location_id) ? (
               <p className="text-xs text-muted-foreground">
@@ -179,19 +218,19 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4 mt-4">
-            <Field label="Homeowner Name" value={deal.homeowner_name ?? ""} onSave={(v) => saveField("homeowner_name", v || null)} />
-            <Field label="Address" value={deal.property_address ?? ""} onSave={(v) => saveField("property_address", v)} />
+            <Field label="Homeowner Name" value={view.homeowner_name ?? ""} onChange={(v) => editField("homeowner_name", v || null)} />
+            <Field label="Address" value={view.property_address ?? ""} onChange={(v) => editField("property_address", v)} />
 
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Asking Price" type="number" value={deal.asking_price ?? ""} onSave={(v) => saveField("asking_price", v ? Number(v) : null)} />
-              <Field label="Price Under Contract" type="number" value={deal.price_under_contract ?? ""} onSave={(v) => saveField("price_under_contract", v ? Number(v) : null)} />
-              <Field label="ARV" type="number" value={deal.arv ?? ""} onSave={(v) => saveField("arv", v ? Number(v) : null)} />
-              <Field label="EMD Amount" type="number" value={deal.emd_amount ?? ""} onSave={(v) => saveField("emd_amount", v ? Number(v) : null)} />
-              <Field label="Expected Assignment" type="number" value={deal.expected_assignment ?? ""} onSave={(v) => saveField("expected_assignment", v ? Number(v) : null)} />
-              <Field label="Actual Assignment" type="number" value={deal.assignment_fee ?? ""} onSave={(v) => saveField("assignment_fee", v ? Number(v) : null)} />
-              <Field label="IP Expiry" type="date" value={deal.ip_expiry_date ?? ""} onSave={(v) => saveField("ip_expiry_date", v || null)} />
-              <Field label="Closing" type="date" value={deal.closing_date ?? ""} onSave={(v) => saveField("closing_date", v || null)} />
-              <Field label="Lead Source" value={deal.lead_source ?? ""} onSave={(v) => saveField("lead_source", v)} />
+              <Field label="Asking Price" type="number" value={view.asking_price ?? ""} onChange={(v) => editField("asking_price", v ? Number(v) : null)} />
+              <Field label="Price Under Contract" type="number" value={view.price_under_contract ?? ""} onChange={(v) => editField("price_under_contract", v ? Number(v) : null)} />
+              <Field label="ARV" type="number" value={view.arv ?? ""} onChange={(v) => editField("arv", v ? Number(v) : null)} />
+              <Field label="EMD Amount" type="number" value={view.emd_amount ?? ""} onChange={(v) => editField("emd_amount", v ? Number(v) : null)} />
+              <Field label="Expected Assignment" type="number" value={view.expected_assignment ?? ""} onChange={(v) => editField("expected_assignment", v ? Number(v) : null)} />
+              <Field label="Actual Assignment" type="number" value={view.assignment_fee ?? ""} onChange={(v) => editField("assignment_fee", v ? Number(v) : null)} />
+              <Field label="IP Expiry" type="date" value={view.ip_expiry_date ?? ""} onChange={(v) => editField("ip_expiry_date", v || null)} />
+              <Field label="Closing" type="date" value={view.closing_date ?? ""} onChange={(v) => editField("closing_date", v || null)} />
+              <Field label="Lead Source" value={view.lead_source ?? ""} onChange={(v) => editField("lead_source", v)} />
             </div>
             <div>
               <label className="text-[11px] uppercase tracking-wider text-muted-foreground">Exit Strategy</label>
@@ -289,9 +328,10 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
                 )}
               </div>
               <div className="grid grid-cols-1 gap-2">
-                <Field label="Seller Name" value={deal.seller_name ?? ""} onSave={(v) => saveField("seller_name", v || null)} />
-                <Field label="Phone" value={deal.seller_phone ?? ""} onSave={(v) => saveField("seller_phone", v || null)} />
-                <Field label="Email" value={deal.seller_email ?? ""} onSave={(v) => saveField("seller_email", v || null)} />
+                <Field label="Seller Name" value={view.seller_name ?? ""} onChange={(v) => editField("seller_name", v || null)} />
+                <Field label="Phone" value={view.seller_phone ?? ""} onChange={(v) => editField("seller_phone", v || null)} />
+                <Field label="Email" value={view.seller_email ?? ""} onChange={(v) => editField("seller_email", v || null)} />
+
               </div>
               <div className="flex flex-wrap gap-2 text-xs">
                 {deal.seller_phone && (
@@ -372,9 +412,8 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
 
           <TabsContent value="notes" className="mt-4">
             <Textarea
-              value={deal.notes || ""}
-              onChange={(e) => setDeal({ ...deal, notes: e.target.value })}
-              onBlur={(e) => saveField("notes", e.target.value)}
+              value={view.notes || ""}
+              onChange={(e) => editField("notes", e.target.value)}
               rows={10}
               placeholder="Deal notes…"
             />
@@ -388,18 +427,32 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
             <DealActivity dealId={dealId} />
           </TabsContent>
         </Tabs>
+
+        <div className="sticky bottom-0 left-0 right-0 -mx-6 px-6 py-3 bg-card border-t border-border flex items-center justify-between gap-2">
+          <span className="text-xs text-muted-foreground">
+            {dirty ? `${Object.keys(pending).length} unsaved change${Object.keys(pending).length === 1 ? "" : "s"}` : "All changes saved"}
+          </span>
+          <div className="flex gap-2">
+            {dirty && (
+              <Button variant="outline" size="sm" onClick={() => setPending({})} disabled={saving}>
+                Discard
+              </Button>
+            )}
+            <Button size="sm" onClick={saveAll} disabled={!dirty || saving} className="bg-primary hover:bg-primary-hover">
+              {saving ? "Saving…" : "Save Changes"}
+            </Button>
+          </div>
+        </div>
       </SheetContent>
     </Sheet>
   );
 }
 
-function Field({ label, value, onSave, type = "text" }: { label: string; value: any; onSave: (v: string) => void; type?: string }) {
-  const [v, setV] = useState(String(value ?? ""));
-  useEffect(() => setV(String(value ?? "")), [value]);
+function Field({ label, value, onChange, type = "text" }: { label: string; value: any; onChange: (v: string) => void; type?: string }) {
   return (
     <div>
       <label className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</label>
-      <Input type={type} value={v} onChange={(e) => setV(e.target.value)} onBlur={() => v !== String(value ?? "") && onSave(v)} />
+      <Input type={type} value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} />
     </div>
   );
 }
