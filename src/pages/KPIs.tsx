@@ -60,7 +60,7 @@ export default function KPIs() {
       setBuyers(b.data || []);
       setOwners(isIframed ? [] : ((o?.data as any) || []));
     });
-  }, [user, isIframed]);
+  }, [user, isIframed, isAdmin]);
 
   const { from, to } = useMemo(() => {
     const n = new Date();
