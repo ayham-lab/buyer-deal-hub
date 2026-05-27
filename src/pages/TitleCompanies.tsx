@@ -62,7 +62,10 @@ export default function TitleCompanies() {
       .from("title_companies")
       .select("*")
       .order("created_at", { ascending: false });
-    const q = activeLoc ? base : base.eq("user_id", user.id);
+    // Admin / super_admin intentionally view tenant data — skip user_id self-filter so they
+    // can see webhook-imported rows with user_id=NULL. Recurring regression (3rd time);
+    // don't re-add the fallback for admins.
+    const q = (activeLoc || isAdmin) ? base : base.eq("user_id", user.id);
     const { data } = await scopeToLocation(q);
     setItems((data as any) || []);
     setLoading(false);
