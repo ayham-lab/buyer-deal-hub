@@ -45,7 +45,7 @@ export const DEAL_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function TitleCompanies() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [items, setItems] = useState<TitleCompany[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
