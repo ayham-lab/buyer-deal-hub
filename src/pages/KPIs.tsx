@@ -18,7 +18,7 @@ const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov
 const COLORS = ["#CC0000", "#FF1A1A", "#FF6B6B", "#FFA07A", "#FFD93D", "#6BCB77"];
 
 export default function KPIs() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { isIframed, activeLocation } = useActiveLocation();
   const [deals, setDeals] = useState<any[]>([]);
   const [buyers, setBuyers] = useState<any[]>([]);
