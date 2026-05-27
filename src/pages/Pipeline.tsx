@@ -58,7 +58,11 @@ export default function Pipeline() {
     // RLS already gates by location. Only fall back to owner-scoped when no location context exists.
     const activeLoc = getActiveLocationId();
     const base = supabase.from("deals").select("*").is("deleted_at", null).order("created_at", { ascending: false });
-    const query = (isIframed || activeLoc) ? base : base.eq("user_id", user.id);
+    // Admin / super_admin intentionally view tenant data — skip user_id self-filter so they
+    // can see webhook-imported rows with user_id=NULL. This regression keeps creeping back
+    // (3rd recurrence; prior fixes covered Pipeline + Buyers + KPIs + TitleCompanies);
+    // don't re-add the fallback for admins.
+    const query = (isIframed || activeLoc || isAdmin) ? base : base.eq("user_id", user.id);
     const { data } = await scopeToLocation(query);
     setDeals((data as any) || []);
 
