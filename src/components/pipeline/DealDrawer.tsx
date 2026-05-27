@@ -328,9 +328,10 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
                 )}
               </div>
               <div className="grid grid-cols-1 gap-2">
-                <Field label="Seller Name" value={deal.seller_name ?? ""} onSave={(v) => saveField("seller_name", v || null)} />
-                <Field label="Phone" value={deal.seller_phone ?? ""} onSave={(v) => saveField("seller_phone", v || null)} />
-                <Field label="Email" value={deal.seller_email ?? ""} onSave={(v) => saveField("seller_email", v || null)} />
+                <Field label="Seller Name" value={view.seller_name ?? ""} onChange={(v) => editField("seller_name", v || null)} />
+                <Field label="Phone" value={view.seller_phone ?? ""} onChange={(v) => editField("seller_phone", v || null)} />
+                <Field label="Email" value={view.seller_email ?? ""} onChange={(v) => editField("seller_email", v || null)} />
+
               </div>
               <div className="flex flex-wrap gap-2 text-xs">
                 {deal.seller_phone && (
