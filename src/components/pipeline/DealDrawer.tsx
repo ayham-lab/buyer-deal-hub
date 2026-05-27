@@ -432,13 +432,11 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
   );
 }
 
-function Field({ label, value, onSave, type = "text" }: { label: string; value: any; onSave: (v: string) => void; type?: string }) {
-  const [v, setV] = useState(String(value ?? ""));
-  useEffect(() => setV(String(value ?? "")), [value]);
+function Field({ label, value, onChange, type = "text" }: { label: string; value: any; onChange: (v: string) => void; type?: string }) {
   return (
     <div>
       <label className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</label>
-      <Input type={type} value={v} onChange={(e) => setV(e.target.value)} onBlur={() => v !== String(value ?? "") && onSave(v)} />
+      <Input type={type} value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} />
     </div>
   );
 }
