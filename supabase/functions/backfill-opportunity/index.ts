@@ -33,17 +33,23 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-  // AuthN
-  const caller = await resolveCaller(req, admin);
-  if (!caller.ok) return j({ error: caller.error }, caller.status);
+  // AuthN/Z — accept service-role bearer (for one-off sandbox runs) OR a
+  // resolved super_admin caller.
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const isServiceRole =
+    serviceRoleKey.length > 0 && authHeader === `Bearer ${serviceRoleKey}`;
 
-  // AuthZ — super_admin only
-  const { data: roles } = await admin
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", caller.userId);
-  const isSuperAdmin = (roles ?? []).some((r: any) => r.role === "super_admin");
-  if (!isSuperAdmin) return j({ error: "forbidden_super_admin_only" }, 403);
+  if (!isServiceRole) {
+    const caller = await resolveCaller(req, admin);
+    if (!caller.ok) return j({ error: caller.error }, caller.status);
+    const { data: roles } = await admin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", caller.userId);
+    const isSuperAdmin = (roles ?? []).some((r: any) => r.role === "super_admin");
+    if (!isSuperAdmin) return j({ error: "forbidden_super_admin_only" }, 403);
+  }
 
   let body: any = {};
   try { body = await req.json(); } catch {}
