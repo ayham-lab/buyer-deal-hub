@@ -26,6 +26,8 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
   const { user } = useAuth();
   const { isIframed, activeLocation } = useActiveLocation();
   const [deal, setDeal] = useState<any>(null);
+  const [pending, setPending] = useState<Record<string, any>>({});
+  const [saving, setSaving] = useState(false);
   const [checklist, setChecklist] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [titleCos, setTitleCos] = useState<{ id: string; name: string }[]>([]);
@@ -34,8 +36,12 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
   const [newTask, setNewTask] = useState("");
   const [newCheck, setNewCheck] = useState("");
 
+  const dirty = Object.keys(pending).length > 0;
+  const view: any = deal ? { ...deal, ...pending } : deal;
+
   useEffect(() => {
-    if (!dealId) { setDeal(null); return; }
+    if (!dealId) { setDeal(null); setPending({}); return; }
+    setPending({});
     (async () => {
       const activeLoc = getActiveLocationId();
       const teamBase = supabase.from("team_members").select("id,name,role").eq("is_active", true).order("name");
@@ -49,7 +55,6 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
       ]);
       setDeal(d); setChecklist(c || []); setTasks(t || []); setTitleCos((tc as any) || []); setTeam((tm as any) || []);
 
-      // Source location name
       if (d?.ghl_location_id) {
         const { data: loc } = await supabase
           .from("ghl_location_tokens")
@@ -65,22 +70,56 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
 
   if (!dealId || !deal) return null;
 
+  function editField(field: string, value: any) {
+    setPending((p) => {
+      const next = { ...p, [field]: value };
+      if (JSON.stringify(deal?.[field] ?? null) === JSON.stringify(value ?? null)) {
+        delete next[field];
+      }
+      return next;
+    });
+  }
+
   async function saveField(field: string, value: any) {
     const { data, error } = await supabase
       .from("deals")
       .update({ [field]: value } as any)
       .eq("id", dealId)
       .select("id");
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+    if (error) { toast.error(error.message); return; }
     if (!data || data.length === 0) {
       toast.error("Couldn't save — check your permissions or try again");
       return;
     }
     setDeal((prev: any) => prev ? { ...prev, [field]: value } : prev);
+    setPending((p) => { const n = { ...p }; delete n[field]; return n; });
     onUpdated();
+  }
+
+  async function saveAll() {
+    if (!dirty) return;
+    setSaving(true);
+    const { data, error } = await supabase
+      .from("deals")
+      .update(pending as any)
+      .eq("id", dealId)
+      .select("id");
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    if (!data || data.length === 0) {
+      toast.error("Couldn't save — check your permissions or try again");
+      return;
+    }
+    setDeal((prev: any) => prev ? { ...prev, ...pending } : prev);
+    setPending({});
+    toast.success("Changes saved");
+    onUpdated();
+  }
+
+  function handleClose() {
+    if (dirty && !confirm("You have unsaved changes. Discard them?")) { return; }
+    setPending({});
+    onClose();
   }
 
   async function toggleCheck(id: string, current: boolean) {
