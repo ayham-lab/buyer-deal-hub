@@ -412,9 +412,8 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
 
           <TabsContent value="notes" className="mt-4">
             <Textarea
-              value={deal.notes || ""}
-              onChange={(e) => setDeal({ ...deal, notes: e.target.value })}
-              onBlur={(e) => saveField("notes", e.target.value)}
+              value={view.notes || ""}
+              onChange={(e) => editField("notes", e.target.value)}
               rows={10}
               placeholder="Deal notes…"
             />
@@ -428,6 +427,22 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
             <DealActivity dealId={dealId} />
           </TabsContent>
         </Tabs>
+
+        <div className="sticky bottom-0 left-0 right-0 -mx-6 px-6 py-3 bg-card border-t border-border flex items-center justify-between gap-2">
+          <span className="text-xs text-muted-foreground">
+            {dirty ? `${Object.keys(pending).length} unsaved change${Object.keys(pending).length === 1 ? "" : "s"}` : "All changes saved"}
+          </span>
+          <div className="flex gap-2">
+            {dirty && (
+              <Button variant="outline" size="sm" onClick={() => setPending({})} disabled={saving}>
+                Discard
+              </Button>
+            )}
+            <Button size="sm" onClick={saveAll} disabled={!dirty || saving} className="bg-primary hover:bg-primary-hover">
+              {saving ? "Saving…" : "Save Changes"}
+            </Button>
+          </div>
+        </div>
       </SheetContent>
     </Sheet>
   );
