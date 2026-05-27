@@ -42,7 +42,7 @@ export interface Deal {
 
 
 export default function Pipeline() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { isIframed } = useActiveLocation();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
