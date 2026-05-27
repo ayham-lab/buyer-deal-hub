@@ -218,19 +218,19 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4 mt-4">
-            <Field label="Homeowner Name" value={deal.homeowner_name ?? ""} onSave={(v) => saveField("homeowner_name", v || null)} />
-            <Field label="Address" value={deal.property_address ?? ""} onSave={(v) => saveField("property_address", v)} />
+            <Field label="Homeowner Name" value={view.homeowner_name ?? ""} onChange={(v) => editField("homeowner_name", v || null)} />
+            <Field label="Address" value={view.property_address ?? ""} onChange={(v) => editField("property_address", v)} />
 
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Asking Price" type="number" value={deal.asking_price ?? ""} onSave={(v) => saveField("asking_price", v ? Number(v) : null)} />
-              <Field label="Price Under Contract" type="number" value={deal.price_under_contract ?? ""} onSave={(v) => saveField("price_under_contract", v ? Number(v) : null)} />
-              <Field label="ARV" type="number" value={deal.arv ?? ""} onSave={(v) => saveField("arv", v ? Number(v) : null)} />
-              <Field label="EMD Amount" type="number" value={deal.emd_amount ?? ""} onSave={(v) => saveField("emd_amount", v ? Number(v) : null)} />
-              <Field label="Expected Assignment" type="number" value={deal.expected_assignment ?? ""} onSave={(v) => saveField("expected_assignment", v ? Number(v) : null)} />
-              <Field label="Actual Assignment" type="number" value={deal.assignment_fee ?? ""} onSave={(v) => saveField("assignment_fee", v ? Number(v) : null)} />
-              <Field label="IP Expiry" type="date" value={deal.ip_expiry_date ?? ""} onSave={(v) => saveField("ip_expiry_date", v || null)} />
-              <Field label="Closing" type="date" value={deal.closing_date ?? ""} onSave={(v) => saveField("closing_date", v || null)} />
-              <Field label="Lead Source" value={deal.lead_source ?? ""} onSave={(v) => saveField("lead_source", v)} />
+              <Field label="Asking Price" type="number" value={view.asking_price ?? ""} onChange={(v) => editField("asking_price", v ? Number(v) : null)} />
+              <Field label="Price Under Contract" type="number" value={view.price_under_contract ?? ""} onChange={(v) => editField("price_under_contract", v ? Number(v) : null)} />
+              <Field label="ARV" type="number" value={view.arv ?? ""} onChange={(v) => editField("arv", v ? Number(v) : null)} />
+              <Field label="EMD Amount" type="number" value={view.emd_amount ?? ""} onChange={(v) => editField("emd_amount", v ? Number(v) : null)} />
+              <Field label="Expected Assignment" type="number" value={view.expected_assignment ?? ""} onChange={(v) => editField("expected_assignment", v ? Number(v) : null)} />
+              <Field label="Actual Assignment" type="number" value={view.assignment_fee ?? ""} onChange={(v) => editField("assignment_fee", v ? Number(v) : null)} />
+              <Field label="IP Expiry" type="date" value={view.ip_expiry_date ?? ""} onChange={(v) => editField("ip_expiry_date", v || null)} />
+              <Field label="Closing" type="date" value={view.closing_date ?? ""} onChange={(v) => editField("closing_date", v || null)} />
+              <Field label="Lead Source" value={view.lead_source ?? ""} onChange={(v) => editField("lead_source", v)} />
             </div>
             <div>
               <label className="text-[11px] uppercase tracking-wider text-muted-foreground">Exit Strategy</label>
