@@ -63,7 +63,7 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export default function Buyers() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [buyers, setBuyers] = useState<Buyer[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -85,7 +85,10 @@ export default function Buyers() {
       .select("*")
       .eq("is_archived", false)
       .order("created_at", { ascending: false });
-    const q = activeLoc ? base : base.eq("user_id", user.id);
+    // Admin / super_admin intentionally view tenant data — skip user_id self-filter so they
+    // can see webhook-imported rows with user_id=NULL. Recurring regression (3rd time);
+    // don't re-add the fallback for admins.
+    const q = (activeLoc || isAdmin) ? base : base.eq("user_id", user.id);
     const { data } = await scopeToLocation(q);
     setBuyers((data as any) || []);
     setLoading(false);

@@ -18,7 +18,7 @@ const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov
 const COLORS = ["#CC0000", "#FF1A1A", "#FF6B6B", "#FFA07A", "#FFD93D", "#6BCB77"];
 
 export default function KPIs() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { isIframed, activeLocation } = useActiveLocation();
   const [deals, setDeals] = useState<any[]>([]);
   const [buyers, setBuyers] = useState<any[]>([]);
@@ -34,8 +34,11 @@ export default function KPIs() {
     if (!user) return;
     // When a GHL location is active (iframe or standalone admin), include all rows for the
     // location (incl. webhook-imported with user_id=NULL). RLS enforces location scoping.
+    // Admin / super_admin also skip the user_id self-filter — they intentionally view tenant
+    // data including webhook-imported rows with user_id=NULL. Recurring regression (3rd time);
+    // don't re-add the fallback for admins.
     const activeLoc = getActiveLocationId();
-    const inLocation = isIframed || !!activeLoc;
+    const inLocation = isIframed || !!activeLoc || isAdmin;
     const dealsQ = inLocation
       ? supabase.from("deals").select("*").is("deleted_at", null)
       : supabase.from("deals").select("*").is("deleted_at", null).eq("user_id", user.id);
@@ -57,7 +60,7 @@ export default function KPIs() {
       setBuyers(b.data || []);
       setOwners(isIframed ? [] : ((o?.data as any) || []));
     });
-  }, [user, isIframed]);
+  }, [user, isIframed, isAdmin]);
 
   const { from, to } = useMemo(() => {
     const n = new Date();
