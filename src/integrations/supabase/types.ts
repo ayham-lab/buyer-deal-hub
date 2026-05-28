@@ -1536,6 +1536,186 @@ export type Database = {
         }
         Relationships: []
       }
+      skiptrace_buyer_phones: {
+        Row: {
+          buyer_id: string
+          created_at: string
+          id: string
+          last_marked_at: string | null
+          last_marked_by: string | null
+          notes: string | null
+          phone: string
+          phone_digits: string | null
+          position: number | null
+          status: Database["public"]["Enums"]["skiptrace_phone_status"]
+          updated_at: string
+        }
+        Insert: {
+          buyer_id: string
+          created_at?: string
+          id?: string
+          last_marked_at?: string | null
+          last_marked_by?: string | null
+          notes?: string | null
+          phone: string
+          phone_digits?: string | null
+          position?: number | null
+          status?: Database["public"]["Enums"]["skiptrace_phone_status"]
+          updated_at?: string
+        }
+        Update: {
+          buyer_id?: string
+          created_at?: string
+          id?: string
+          last_marked_at?: string | null
+          last_marked_by?: string | null
+          notes?: string | null
+          phone?: string
+          phone_digits?: string | null
+          position?: number | null
+          status?: Database["public"]["Enums"]["skiptrace_phone_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skiptrace_buyer_phones_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "skiptrace_buyers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skiptrace_buyers: {
+        Row: {
+          buyer_type: Database["public"]["Enums"]["skiptrace_buyer_type"] | null
+          created_at: string
+          email1: string | null
+          email2: string | null
+          first_uploaded_at: string
+          id: string
+          last_source_batch_id: string | null
+          last_source_location_id: string | null
+          mailing_address: string | null
+          mailing_city: string | null
+          mailing_state: string | null
+          mailing_zip: string | null
+          owner1_first: string | null
+          owner1_last: string | null
+          property_address: string
+          property_address_key: string | null
+          property_city: string | null
+          property_state: string | null
+          property_zip: string | null
+          source_batch_id: string | null
+          source_location_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          buyer_type?:
+            | Database["public"]["Enums"]["skiptrace_buyer_type"]
+            | null
+          created_at?: string
+          email1?: string | null
+          email2?: string | null
+          first_uploaded_at?: string
+          id?: string
+          last_source_batch_id?: string | null
+          last_source_location_id?: string | null
+          mailing_address?: string | null
+          mailing_city?: string | null
+          mailing_state?: string | null
+          mailing_zip?: string | null
+          owner1_first?: string | null
+          owner1_last?: string | null
+          property_address: string
+          property_address_key?: string | null
+          property_city?: string | null
+          property_state?: string | null
+          property_zip?: string | null
+          source_batch_id?: string | null
+          source_location_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          buyer_type?:
+            | Database["public"]["Enums"]["skiptrace_buyer_type"]
+            | null
+          created_at?: string
+          email1?: string | null
+          email2?: string | null
+          first_uploaded_at?: string
+          id?: string
+          last_source_batch_id?: string | null
+          last_source_location_id?: string | null
+          mailing_address?: string | null
+          mailing_city?: string | null
+          mailing_state?: string | null
+          mailing_zip?: string | null
+          owner1_first?: string | null
+          owner1_last?: string | null
+          property_address?: string
+          property_address_key?: string | null
+          property_city?: string | null
+          property_state?: string | null
+          property_zip?: string | null
+          source_batch_id?: string | null
+          source_location_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skiptrace_buyers_last_source_batch_id_fkey"
+            columns: ["last_source_batch_id"]
+            isOneToOne: false
+            referencedRelation: "skiptrace_upload_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skiptrace_buyers_source_batch_id_fkey"
+            columns: ["source_batch_id"]
+            isOneToOne: false
+            referencedRelation: "skiptrace_upload_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skiptrace_upload_batches: {
+        Row: {
+          created_at: string
+          filename: string | null
+          id: string
+          inserted_count: number
+          notes: string | null
+          row_count: number
+          updated_count: number
+          uploaded_by_location: string | null
+          uploaded_by_user: string | null
+        }
+        Insert: {
+          created_at?: string
+          filename?: string | null
+          id?: string
+          inserted_count?: number
+          notes?: string | null
+          row_count?: number
+          updated_count?: number
+          uploaded_by_location?: string | null
+          uploaded_by_user?: string | null
+        }
+        Update: {
+          created_at?: string
+          filename?: string | null
+          id?: string
+          inserted_count?: number
+          notes?: string | null
+          row_count?: number
+          updated_count?: number
+          uploaded_by_location?: string | null
+          uploaded_by_user?: string | null
+        }
+        Relationships: []
+      }
       subscription_plans: {
         Row: {
           created_at: string
@@ -1962,6 +2142,8 @@ export type Database = {
         | "title_issues"
         | "seller_issue"
         | "could_not_sell"
+      skiptrace_buyer_type: "individual_investor" | "company_investor"
+      skiptrace_phone_status: "untried" | "works" | "wrong_number"
       subscription_status: "active" | "trialing" | "cancelled" | "past_due"
       task_priority: "low" | "medium" | "high"
     }
@@ -2115,6 +2297,8 @@ export const Constants = {
         "seller_issue",
         "could_not_sell",
       ],
+      skiptrace_buyer_type: ["individual_investor", "company_investor"],
+      skiptrace_phone_status: ["untried", "works", "wrong_number"],
       subscription_status: ["active", "trialing", "cancelled", "past_due"],
       task_priority: ["low", "medium", "high"],
     },
