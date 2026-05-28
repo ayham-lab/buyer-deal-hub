@@ -248,13 +248,14 @@ export function TopBar() {
 
       {/* Right actions */}
       {showAdminUI && (
-        <Link
-          to="/admin"
+        <button
+          type="button"
+          onClick={pickAdminView}
           className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-primary/10 text-primary hover:bg-primary/20 text-xs font-semibold uppercase tracking-wider transition-colors"
         >
           <ShieldCheck className="h-3.5 w-3.5" />
           Admin
-        </Link>
+        </button>
       )}
       <CreditsPill />
       <button className="h-9 w-9 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted">
@@ -299,10 +300,8 @@ export function TopBar() {
                 </Link>
               </DropdownMenuItem>
               {isAdmin && (
-                <DropdownMenuItem asChild>
-                  <Link to="/admin" className="cursor-pointer">
-                    <ShieldCheck className="h-4 w-4 mr-2 text-primary" /> Admin Console
-                  </Link>
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); pickAdminView(); }} className="cursor-pointer">
+                  <ShieldCheck className="h-4 w-4 mr-2 text-primary" /> Admin Console
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
