@@ -19,6 +19,7 @@ import { ArchiveBuyersTab } from "@/components/admin/ArchiveBuyersTab";
 import { ImportBuyersTab } from "@/components/admin/ImportBuyersTab";
 import { ArchiveTitleCompaniesTab } from "@/components/admin/ArchiveTitleCompaniesTab";
 import { OperatorAccountsTab } from "@/components/admin/OperatorAccountsTab";
+import { SkiptraceBuyersTab } from "@/components/admin/SkiptraceBuyersTab";
 import { useActiveLocation } from "@/contexts/LocationContext";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -123,6 +124,7 @@ export default function Admin() {
             {showArchiveBuyers && <TabsTrigger value="import_buyers">Import Buyers</TabsTrigger>}
             {showArchiveBuyers && <TabsTrigger value="archive_title">Archive Title Cos</TabsTrigger>}
             {isSuperAdmin && <TabsTrigger value="operator_accounts">Operator Accounts</TabsTrigger>}
+            {showArchiveBuyers && <TabsTrigger value="skiptrace_buyers">Skiptrace Investors</TabsTrigger>}
           </TabsList>
 
           {/* OVERVIEW */}
@@ -257,6 +259,12 @@ export default function Admin() {
           {isSuperAdmin && (
             <TabsContent value="operator_accounts">
               <OperatorAccountsTab />
+            </TabsContent>
+          )}
+
+          {showArchiveBuyers && (
+            <TabsContent value="skiptrace_buyers">
+              <SkiptraceBuyersTab />
             </TabsContent>
           )}
         </Tabs>
