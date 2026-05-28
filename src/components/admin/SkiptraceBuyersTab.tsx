@@ -6,35 +6,74 @@ import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
 import { Loader2, Upload, Search, Check, X, Minus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useActiveLocation } from "@/contexts/LocationContext";
 
-// Expected CSV columns (case-insensitive, flexible aliases):
-// Owner 1 first, Owner 1 last, address, city, state, zip,
-// mailing address, mailing city, mailing state, mailing zip,
-// Phone 1..Phone 5, email 1, email 2, buyer type
-const HEADER_ALIASES: Record<string, string[]> = {
-  owner1_first: ["owner 1 first", "owner1_first", "owner first", "first name", "first"],
-  owner1_last:  ["owner 1 last", "owner1_last", "owner last", "last name", "last"],
-  property_address: ["address", "property address", "property_address", "site address"],
-  property_city:    ["city", "property city", "property_city"],
-  property_state:   ["state", "property state", "property_state"],
-  property_zip:     ["zip", "property zip", "zipcode", "zip code", "property_zip"],
-  mailing_address:  ["mailing address", "mailing_address", "mail address"],
-  mailing_city:     ["mailing city", "mailing_city"],
-  mailing_state:    ["mailing state", "mailing_state"],
-  mailing_zip:      ["mailing zip", "mailing_zip", "mail zip"],
-  phone1: ["phone 1", "phone1", "phone"],
-  phone2: ["phone 2", "phone2"],
-  phone3: ["phone 3", "phone3"],
-  phone4: ["phone 4", "phone4"],
-  phone5: ["phone 5", "phone5"],
-  email1: ["email 1", "email1", "email"],
-  email2: ["email 2", "email2"],
-  buyer_type: ["buyer type", "buyer_type", "type"],
+// ---------- Field definitions ----------
+type FieldKey =
+  | "owner_type"
+  | "property_address" | "property_city" | "property_state" | "property_zip" | "property_county"
+  | "owner1_first" | "owner1_last" | "owner2_first" | "owner2_last"
+  | "mailing_address" | "mailing_city" | "mailing_state" | "mailing_zip"
+  | "email1" | "email2" | "email3"
+  | "phone1" | "phone2" | "phone3" | "phone4" | "phone5";
+
+const FIELDS: { key: FieldKey; label: string; required?: boolean }[] = [
+  { key: "owner_type",       label: "Owner Type (filter)", required: true },
+  { key: "property_address", label: "Property Address", required: true },
+  { key: "property_city",    label: "Property City" },
+  { key: "property_state",   label: "Property State" },
+  { key: "property_zip",     label: "Property Zip" },
+  { key: "property_county",  label: "County" },
+  { key: "owner1_first",     label: "Owner 1 First Name" },
+  { key: "owner1_last",      label: "Owner 1 Last Name" },
+  { key: "owner2_first",     label: "Owner 2 First Name" },
+  { key: "owner2_last",      label: "Owner 2 Last Name" },
+  { key: "mailing_address",  label: "Mailing Address" },
+  { key: "mailing_city",     label: "Mailing City" },
+  { key: "mailing_state",    label: "Mailing State" },
+  { key: "mailing_zip",      label: "Mailing Zip" },
+  { key: "email1",           label: "Email 1" },
+  { key: "email2",           label: "Email 2" },
+  { key: "email3",           label: "Email 3" },
+  { key: "phone1",           label: "Phone 1" },
+  { key: "phone2",           label: "Phone 2" },
+  { key: "phone3",           label: "Phone 3" },
+  { key: "phone4",           label: "Phone 4" },
+  { key: "phone5",           label: "Phone 5" },
+];
+
+// Exact target column names from the user's source CSV (auto-mapped).
+const AUTO_ALIASES: Record<FieldKey, string[]> = {
+  owner_type:       ["owner type"],
+  property_address: ["address", "property address"],
+  property_city:    ["city", "property city"],
+  property_state:   ["state", "property state"],
+  property_zip:     ["zip", "property zip", "zipcode", "zip code"],
+  property_county:  ["county"],
+  owner1_first:     ["owner 1 first name", "owner 1 first"],
+  owner1_last:      ["owner 1 last name", "owner 1 last"],
+  owner2_first:     ["owner 2 first name", "owner 2 first"],
+  owner2_last:      ["owner 2 last name", "owner 2 last"],
+  mailing_address:  ["owner mailing address", "mailing address"],
+  mailing_city:     ["owner mailing city", "mailing city"],
+  mailing_state:    ["owner mailing state", "mailing state"],
+  mailing_zip:      ["owner mailing zip", "mailing zip"],
+  email1:           ["skiptrace:emails.0.email", "email 1", "email1", "email"],
+  email2:           ["skiptrace:emails.1.email", "email 2", "email2"],
+  email3:           ["skiptrace:emails.2.email", "email 3", "email3"],
+  phone1:           ["skiptrace:phonenumbers.0.number", "phone 1", "phone1", "phone"],
+  phone2:           ["skiptrace:phonenumbers.1.number", "phone 2", "phone2"],
+  phone3:           ["skiptrace:phonenumbers.2.number", "phone 3", "phone3"],
+  phone4:           ["skiptrace:phonenumbers.3.number", "phone 4", "phone4"],
+  phone5:           ["skiptrace:phonenumbers.4.number", "phone 5", "phone5"],
 };
 
+// ---------- CSV parsing ----------
 function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
   let cur: string[] = [];
@@ -59,39 +98,50 @@ function parseCsv(text: string): string[][] {
   return rows.filter(r => r.some(v => v && v.trim() !== ""));
 }
 
-function mapHeaders(header: string[]): Record<string, number> {
-  const map: Record<string, number> = {};
+function autoMap(header: string[]): Record<FieldKey, number | null> {
   const lowered = header.map(h => h.trim().toLowerCase());
-  for (const [key, aliases] of Object.entries(HEADER_ALIASES)) {
+  const map = {} as Record<FieldKey, number | null>;
+  for (const f of FIELDS) {
+    const aliases = AUTO_ALIASES[f.key];
     const idx = lowered.findIndex(h => aliases.includes(h));
-    if (idx !== -1) map[key] = idx;
+    map[f.key] = idx === -1 ? null : idx;
   }
   return map;
 }
 
-function normalizeBuyerType(v: string | undefined): "individual_investor" | "company_investor" | null {
-  if (!v) return null;
-  const s = v.trim().toLowerCase();
-  if (!s) return null;
-  if (s.includes("compan") || s.includes("llc") || s.includes("corp") || s.includes("inc")) return "company_investor";
-  if (s.includes("individ") || s.includes("person")) return "individual_investor";
+// Owner Type must classify as one of the two accepted combos.
+// Accepts comma/space/pipe separated tags in any order.
+function classifyOwnerType(raw: string | null): "individual_investor" | "company_investor" | null {
+  if (!raw) return null;
+  const tags = raw.toUpperCase().split(/[,\s|/]+/).map(t => t.trim()).filter(Boolean);
+  const set = new Set(tags);
+  const hasInvestor = set.has("INVESTOR");
+  const hasIndividual = set.has("INDIVIDUAL");
+  const hasCompany = set.has("COMPANY");
+  if (hasIndividual && hasInvestor) return "individual_investor";
+  if (hasCompany && (hasInvestor || hasIndividual)) return "company_investor";
   return null;
 }
 
+// ---------- Types ----------
 type SkiptraceBuyer = {
   id: string;
   owner1_first: string | null;
   owner1_last: string | null;
+  owner2_first: string | null;
+  owner2_last: string | null;
   property_address: string;
   property_city: string | null;
   property_state: string | null;
   property_zip: string | null;
+  property_county: string | null;
   mailing_address: string | null;
   mailing_city: string | null;
   mailing_state: string | null;
   mailing_zip: string | null;
   email1: string | null;
   email2: string | null;
+  email3: string | null;
   buyer_type: "individual_investor" | "company_investor" | null;
   first_uploaded_at: string;
   updated_at: string;
@@ -102,6 +152,13 @@ type Phone = {
   phone: string;
   status: "untried" | "works" | "wrong_number";
   position: number | null;
+};
+
+type PendingUpload = {
+  fileName: string;
+  header: string[];
+  dataRows: string[][];
+  mapping: Record<FieldKey, number | null>;
 };
 
 export function SkiptraceBuyersTab() {
@@ -115,6 +172,7 @@ export function SkiptraceBuyersTab() {
   const [phonesByBuyer, setPhonesByBuyer] = useState<Record<string, Phone[]>>({});
   const [q, setQ] = useState("");
   const [stateFilter, setStateFilter] = useState("all");
+  const [pending, setPending] = useState<PendingUpload | null>(null);
 
   async function load() {
     setLoading(true);
@@ -144,18 +202,37 @@ export function SkiptraceBuyersTab() {
   }
   useEffect(() => { load(); }, []);
 
-  async function handleUpload(file: File) {
-    setUploading(true);
+  // Step 1: parse CSV and open mapping dialog
+  async function handleFileChosen(file: File) {
     try {
       const text = await file.text();
       const parsed = parseCsv(text);
       if (parsed.length < 2) throw new Error("CSV has no data rows");
       const header = parsed[0];
-      const idx = mapHeaders(header);
-      if (idx.property_address === undefined) {
-        throw new Error("CSV is missing an 'address' column");
-      }
+      const dataRows = parsed.slice(1);
+      const mapping = autoMap(header);
+      setPending({ fileName: file.name, header, dataRows, mapping });
+    } catch (e: any) {
+      toast({ title: "Couldn't read CSV", description: e?.message || String(e), variant: "destructive" });
+    } finally {
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
 
+  // Step 2: confirm mapping and ingest
+  async function ingest() {
+    if (!pending) return;
+    const { mapping, dataRows, fileName } = pending;
+    if (mapping.owner_type === null) {
+      toast({ title: "Owner Type required", description: "Map a column to Owner Type before importing.", variant: "destructive" });
+      return;
+    }
+    if (mapping.property_address === null) {
+      toast({ title: "Property Address required", description: "Map a column to Property Address before importing.", variant: "destructive" });
+      return;
+    }
+    setUploading(true);
+    try {
       const { data: userRes } = await supabase.auth.getUser();
       const uid = userRes?.user?.id;
 
@@ -164,47 +241,52 @@ export function SkiptraceBuyersTab() {
         .insert({
           uploaded_by_user: uid,
           uploaded_by_location: activeLocationId,
-          filename: file.name,
-          row_count: parsed.length - 1,
+          filename: fileName,
+          row_count: dataRows.length,
         })
         .select()
         .single();
       if (batchErr) throw batchErr;
       const batchId = (batchRes as any).id as string;
 
-      let inserted = 0;
-      let updated = 0;
-      const get = (row: string[], key: string) => {
-        const i = idx[key];
-        if (i === undefined) return null;
+      const get = (row: string[], key: FieldKey) => {
+        const i = mapping[key];
+        if (i === null || i === undefined) return null;
         const v = row[i]?.trim();
         return v ? v : null;
       };
 
-      for (let r = 1; r < parsed.length; r++) {
-        const row = parsed[r];
+      let inserted = 0, updated = 0, skipped = 0;
+
+      for (const row of dataRows) {
+        const buyerType = classifyOwnerType(get(row, "owner_type"));
+        if (!buyerType) { skipped++; continue; }
+
         const property_address = get(row, "property_address");
-        if (!property_address) continue;
+        if (!property_address) { skipped++; continue; }
 
         const buyerPayload = {
           owner1_first: get(row, "owner1_first"),
-          owner1_last: get(row, "owner1_last"),
+          owner1_last:  get(row, "owner1_last"),
+          owner2_first: get(row, "owner2_first"),
+          owner2_last:  get(row, "owner2_last"),
           property_address,
-          property_city: get(row, "property_city"),
+          property_city:  get(row, "property_city"),
           property_state: get(row, "property_state"),
-          property_zip: get(row, "property_zip"),
+          property_zip:   get(row, "property_zip"),
+          property_county: get(row, "property_county"),
           mailing_address: get(row, "mailing_address"),
-          mailing_city: get(row, "mailing_city"),
-          mailing_state: get(row, "mailing_state"),
-          mailing_zip: get(row, "mailing_zip"),
+          mailing_city:    get(row, "mailing_city"),
+          mailing_state:   get(row, "mailing_state"),
+          mailing_zip:     get(row, "mailing_zip"),
           email1: get(row, "email1"),
           email2: get(row, "email2"),
-          buyer_type: normalizeBuyerType(get(row, "buyer_type") || undefined),
+          email3: get(row, "email3"),
+          buyer_type: buyerType,
           last_source_batch_id: batchId,
           last_source_location_id: activeLocationId,
         };
 
-        // Dedup on property_address_key (generated). Use upsert via lookup.
         const addrKey = property_address.trim().toLowerCase().replace(/\s+/g, " ");
         const { data: existingRaw } = await (supabase as any)
           .from("skiptrace_buyers")
@@ -237,9 +319,8 @@ export function SkiptraceBuyersTab() {
           inserted++;
         }
 
-        // Phones: append any new ones (unique on buyer_id + phone_digits)
         const phones = [1, 2, 3, 4, 5]
-          .map(n => ({ position: n, phone: get(row, `phone${n}`) }))
+          .map(n => ({ position: n, phone: get(row, `phone${n}` as FieldKey) }))
           .filter(p => p.phone) as { position: number; phone: string }[];
 
         if (phones.length) {
@@ -248,7 +329,6 @@ export function SkiptraceBuyersTab() {
             phone: p.phone,
             position: p.position,
           }));
-          // Best-effort insert; unique index dedupes existing
           await supabase.from("skiptrace_buyer_phones" as any).insert(payload);
         }
       }
@@ -260,15 +340,15 @@ export function SkiptraceBuyersTab() {
 
       toast({
         title: "Upload complete",
-        description: `${inserted} new investors added, ${updated} updated.`,
+        description: `${inserted} added, ${updated} updated, ${skipped} skipped (wrong Owner Type or missing address).`,
       });
+      setPending(null);
       await load();
     } catch (e: any) {
       console.error("Skiptrace upload failed:", e);
       toast({ title: "Upload failed", description: e?.message || String(e), variant: "destructive" });
     } finally {
       setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
     }
   }
 
@@ -309,12 +389,27 @@ export function SkiptraceBuyersTab() {
         r.property_address?.toLowerCase().includes(s) ||
         r.owner1_first?.toLowerCase().includes(s) ||
         r.owner1_last?.toLowerCase().includes(s) ||
+        r.owner2_first?.toLowerCase().includes(s) ||
+        r.owner2_last?.toLowerCase().includes(s) ||
         r.property_city?.toLowerCase().includes(s) ||
         r.email1?.toLowerCase().includes(s) ||
         r.email2?.toLowerCase().includes(s)
       );
     });
   }, [rows, q, stateFilter]);
+
+  // Preview counts in the mapping dialog
+  const previewStats = useMemo(() => {
+    if (!pending) return null;
+    const { mapping, dataRows } = pending;
+    if (mapping.owner_type === null) return null;
+    let accepted = 0, skipped = 0;
+    for (const row of dataRows) {
+      const v = mapping.owner_type !== null ? (row[mapping.owner_type] || "").trim() : "";
+      if (classifyOwnerType(v || null)) accepted++; else skipped++;
+    }
+    return { accepted, skipped, total: dataRows.length };
+  }, [pending]);
 
   return (
     <div className="space-y-4">
@@ -323,6 +418,7 @@ export function SkiptraceBuyersTab() {
           <h3 className="text-lg font-semibold">Skiptraced Investor Database</h3>
           <p className="text-sm text-muted-foreground">
             Global pool of investor records used by buyer-match. Re-uploads dedup on property address.
+            Only rows whose Owner Type is <code>INDIVIDUAL,INVESTOR</code> or <code>COMPANY,INVESTOR</code> are ingested.
           </p>
         </div>
         <input
@@ -332,21 +428,13 @@ export function SkiptraceBuyersTab() {
           className="hidden"
           onChange={(e) => {
             const f = e.target.files?.[0];
-            if (f) handleUpload(f);
+            if (f) handleFileChosen(f);
           }}
         />
         <Button onClick={() => fileRef.current?.click()} disabled={uploading}>
           {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
           Upload CSV
         </Button>
-      </div>
-
-      <div className="text-xs text-muted-foreground bg-muted/40 border border-border rounded p-3">
-        Expected columns (case-insensitive): <code>Owner 1 first</code>, <code>Owner 1 last</code>,
-        <code> address</code>, <code>city</code>, <code>state</code>, <code>zip</code>,
-        <code> mailing address</code>, <code>mailing city</code>, <code>mailing state</code>, <code>mailing zip</code>,
-        <code> Phone 1..Phone 5</code>, <code>email 1</code>, <code>email 2</code>,
-        <code> buyer type</code> (individual investor / company investor).
       </div>
 
       <div className="flex flex-col md:flex-row gap-3">
@@ -370,7 +458,7 @@ export function SkiptraceBuyersTab() {
         <table className="w-full text-sm">
           <thead className="bg-muted/40">
             <tr className="text-left">
-              <th className="p-2">Owner</th>
+              <th className="p-2">Owner(s)</th>
               <th className="p-2">Property</th>
               <th className="p-2">Mailing</th>
               <th className="p-2">Phones</th>
@@ -383,15 +471,19 @@ export function SkiptraceBuyersTab() {
           <tbody>
             {filtered.map(r => {
               const phones = phonesByBuyer[r.id] || [];
+              const owner1 = [r.owner1_first, r.owner1_last].filter(Boolean).join(" ");
+              const owner2 = [r.owner2_first, r.owner2_last].filter(Boolean).join(" ");
               return (
                 <tr key={r.id} className="border-t border-border align-top">
                   <td className="p-2 font-medium">
-                    {[r.owner1_first, r.owner1_last].filter(Boolean).join(" ") || "—"}
+                    <div>{owner1 || "—"}</div>
+                    {owner2 && <div className="text-xs text-muted-foreground">{owner2}</div>}
                   </td>
                   <td className="p-2">
                     <div>{r.property_address}</div>
                     <div className="text-xs text-muted-foreground">
                       {[r.property_city, r.property_state, r.property_zip].filter(Boolean).join(", ")}
+                      {r.property_county ? ` · ${r.property_county}` : ""}
                     </div>
                   </td>
                   <td className="p-2 text-xs text-muted-foreground">
@@ -419,21 +511,12 @@ export function SkiptraceBuyersTab() {
                               {p.status === "works" ? "✓" : p.status === "wrong_number" ? "✗" : "—"}
                             </Badge>
                             <div className="flex gap-0.5">
-                              <button
-                                title="Mark works"
-                                className="p-0.5 hover:bg-muted rounded"
-                                onClick={() => setPhoneStatus(p.id, "works")}
-                              ><Check className="h-3 w-3" /></button>
-                              <button
-                                title="Mark wrong number"
-                                className="p-0.5 hover:bg-muted rounded"
-                                onClick={() => setPhoneStatus(p.id, "wrong_number")}
-                              ><X className="h-3 w-3" /></button>
-                              <button
-                                title="Reset"
-                                className="p-0.5 hover:bg-muted rounded"
-                                onClick={() => setPhoneStatus(p.id, "untried")}
-                              ><Minus className="h-3 w-3" /></button>
+                              <button title="Mark works" className="p-0.5 hover:bg-muted rounded"
+                                onClick={() => setPhoneStatus(p.id, "works")}><Check className="h-3 w-3" /></button>
+                              <button title="Mark wrong number" className="p-0.5 hover:bg-muted rounded"
+                                onClick={() => setPhoneStatus(p.id, "wrong_number")}><X className="h-3 w-3" /></button>
+                              <button title="Reset" className="p-0.5 hover:bg-muted rounded"
+                                onClick={() => setPhoneStatus(p.id, "untried")}><Minus className="h-3 w-3" /></button>
                             </div>
                           </div>
                         ))}
@@ -441,10 +524,13 @@ export function SkiptraceBuyersTab() {
                     )}
                   </td>
                   <td className="p-2 text-xs">
-                    {[r.email1, r.email2].filter(Boolean).join(", ") || <span className="text-muted-foreground">—</span>}
+                    {[r.email1, r.email2, r.email3].filter(Boolean).map((e, i) => (
+                      <div key={i}>{e}</div>
+                    )) || "—"}
                   </td>
-                  <td className="p-2 text-xs capitalize">
-                    {r.buyer_type ? r.buyer_type.replace("_", " ") : "—"}
+                  <td className="p-2">
+                    {r.buyer_type === "individual_investor" && <Badge variant="outline">Individual</Badge>}
+                    {r.buyer_type === "company_investor" && <Badge variant="secondary">Company</Badge>}
                   </td>
                   <td className="p-2 text-xs text-muted-foreground">
                     {new Date(r.first_uploaded_at).toLocaleDateString()}
@@ -455,16 +541,73 @@ export function SkiptraceBuyersTab() {
                 </tr>
               );
             })}
-            {filtered.length === 0 && (
-              <tr><td colSpan={8} className="text-center p-6 text-muted-foreground">
-                {loading ? "Loading…" : "No skiptrace investors yet. Upload a CSV to get started."}
-              </td></tr>
+            {!loading && filtered.length === 0 && (
+              <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">No records.</td></tr>
             )}
           </tbody>
         </table>
       </div>
+
+      {/* ---------- Mapping dialog ---------- */}
+      <Dialog open={!!pending} onOpenChange={(o) => !o && !uploading && setPending(null)}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Map CSV Columns</DialogTitle>
+            <DialogDescription>
+              Confirm which CSV column feeds each field. Auto-mapped where possible.
+              Rows whose Owner Type is not <code>INDIVIDUAL,INVESTOR</code> or
+              <code> COMPANY,INVESTOR</code> will be skipped.
+            </DialogDescription>
+          </DialogHeader>
+
+          {pending && (
+            <div className="space-y-4">
+              <div className="text-xs text-muted-foreground">
+                <span className="font-medium">{pending.fileName}</span> · {pending.dataRows.length} rows
+                {previewStats && (
+                  <> · <span className="text-foreground">{previewStats.accepted}</span> accepted
+                  · <span className="text-foreground">{previewStats.skipped}</span> will be skipped</>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {FIELDS.map(f => (
+                  <div key={f.key} className="flex items-center gap-2">
+                    <label className="text-sm w-44 shrink-0">
+                      {f.label}{f.required && <span className="text-destructive"> *</span>}
+                    </label>
+                    <Select
+                      value={pending.mapping[f.key] === null ? "__none__" : String(pending.mapping[f.key])}
+                      onValueChange={(v) =>
+                        setPending(p => p ? ({
+                          ...p,
+                          mapping: { ...p.mapping, [f.key]: v === "__none__" ? null : Number(v) },
+                        }) : p)
+                      }
+                    >
+                      <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">— Not mapped —</SelectItem>
+                        {pending.header.map((h, i) => (
+                          <SelectItem key={i} value={String(i)}>{h || `(column ${i + 1})`}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPending(null)} disabled={uploading}>Cancel</Button>
+            <Button onClick={ingest} disabled={uploading}>
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Import
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-
-export default SkiptraceBuyersTab;
