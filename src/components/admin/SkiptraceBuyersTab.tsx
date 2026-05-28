@@ -106,7 +106,8 @@ type Phone = {
 
 export function SkiptraceBuyersTab() {
   const { toast } = useToast();
-  const { activeLocationId } = useActiveLocation();
+  const { activeLocation } = useActiveLocation();
+  const activeLocationId = activeLocation?.locationId ?? null;
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
