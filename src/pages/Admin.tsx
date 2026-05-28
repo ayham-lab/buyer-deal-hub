@@ -28,6 +28,7 @@ export default function Admin() {
   const { isSuperAdmin } = useAuth();
   const showPricing = !isIframed;
   const showArchiveBuyers = !isIframed && isSuperAdmin;
+  const showSkiptrace = !isIframed; // visible to any admin reaching this page
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<any[]>([]);
   const [deals, setDeals] = useState<any[]>([]);
@@ -124,7 +125,7 @@ export default function Admin() {
             {showArchiveBuyers && <TabsTrigger value="import_buyers">Import Buyers</TabsTrigger>}
             {showArchiveBuyers && <TabsTrigger value="archive_title">Archive Title Cos</TabsTrigger>}
             {isSuperAdmin && <TabsTrigger value="operator_accounts">Operator Accounts</TabsTrigger>}
-            {showArchiveBuyers && <TabsTrigger value="skiptrace_buyers">Skiptrace Investors</TabsTrigger>}
+            {showSkiptrace && <TabsTrigger value="skiptrace_buyers">Skiptrace Investors</TabsTrigger>}
           </TabsList>
 
           {/* OVERVIEW */}
@@ -262,7 +263,7 @@ export default function Admin() {
             </TabsContent>
           )}
 
-          {showArchiveBuyers && (
+          {showSkiptrace && (
             <TabsContent value="skiptrace_buyers">
               <SkiptraceBuyersTab />
             </TabsContent>
