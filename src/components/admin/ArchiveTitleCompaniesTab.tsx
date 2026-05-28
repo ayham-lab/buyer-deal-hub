@@ -79,8 +79,17 @@ export function ArchiveTitleCompaniesTab() {
       (t.phone || "").includes(s);
     const matchState = stateFilter === "all" || t.service_states.includes(stateFilter);
     const matchType = typeFilter === "all" || (t.entity_type || "title_company") === typeFilter;
-    return matchQ && matchState && matchType;
+    const matchSource = sourceFilter === "all" || t.source === sourceFilter;
+    return matchQ && matchState && matchType && matchSource;
   });
+
+  async function remove(id: string, name: string) {
+    if (!confirm(`Delete ${name} from archive?`)) return;
+    const { error } = await supabase.from("archive_title_companies" as any).delete().eq("id", id);
+    if (error) return toast({ title: "Delete failed", description: error.message, variant: "destructive" });
+    toast({ title: "Deleted" });
+    load();
+  }
 
   async function remove(id: string, name: string) {
     if (!confirm(`Delete ${name} from archive?`)) return;
