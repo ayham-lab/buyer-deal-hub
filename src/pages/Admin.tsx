@@ -124,6 +124,7 @@ export default function Admin() {
             {showArchiveBuyers && <TabsTrigger value="import_buyers">Import Buyers</TabsTrigger>}
             {showArchiveBuyers && <TabsTrigger value="archive_title">Archive Title Cos</TabsTrigger>}
             {isSuperAdmin && <TabsTrigger value="operator_accounts">Operator Accounts</TabsTrigger>}
+            {showArchiveBuyers && <TabsTrigger value="skiptrace_buyers">Skiptrace Investors</TabsTrigger>}
           </TabsList>
 
           {/* OVERVIEW */}
