@@ -21,12 +21,20 @@ const items = [
 
 export function Sidebar() {
   const { isAdmin, isSuperAdmin } = useAuth();
-  const { isIframed } = useActiveLocation();
+  const { isIframed, clearActiveLocation } = useActiveLocation();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   // Super-admins land in the Admin Console when they click the brand logo;
   // everyone else goes to the dashboard root.
-  const homeHref = isSuperAdmin && !isIframed ? "/admin" : "/";
+  const goAdminView = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    clearActiveLocation();
+    navigate("/admin");
+  };
+  const goHome = (e: React.MouseEvent) => {
+    if (isSuperAdmin && !isIframed) goAdminView(e);
+  };
 
   return (
     <aside
@@ -36,7 +44,7 @@ export function Sidebar() {
       )}
     >
       {/* Logo */}
-      <Link to={homeHref} className="h-14 flex items-center gap-3 px-4 border-b border-sidebar-border hover:bg-sidebar-accent/40 transition-colors">
+      <Link to={isSuperAdmin && !isIframed ? "/admin" : "/"} onClick={goHome} className="h-14 flex items-center gap-3 px-4 border-b border-sidebar-border hover:bg-sidebar-accent/40 transition-colors">
         <img src={logo} alt="Logo" className="h-8 w-8 rounded-md shrink-0 object-contain" />
         {!collapsed && (
           <div className="min-w-0">
