@@ -263,7 +263,7 @@ export default function Admin() {
             </TabsContent>
           )}
 
-          {showArchiveBuyers && (
+          {showSkiptrace && (
             <TabsContent value="skiptrace_buyers">
               <SkiptraceBuyersTab />
             </TabsContent>
