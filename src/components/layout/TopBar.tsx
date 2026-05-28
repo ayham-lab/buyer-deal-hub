@@ -300,10 +300,8 @@ export function TopBar() {
                 </Link>
               </DropdownMenuItem>
               {isAdmin && (
-                <DropdownMenuItem asChild>
-                  <Link to="/admin" className="cursor-pointer">
-                    <ShieldCheck className="h-4 w-4 mr-2 text-primary" /> Admin Console
-                  </Link>
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); pickAdminView(); }} className="cursor-pointer">
+                  <ShieldCheck className="h-4 w-4 mr-2 text-primary" /> Admin Console
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
