@@ -1592,6 +1592,7 @@ export type Database = {
           created_at: string
           email1: string | null
           email2: string | null
+          email3: string | null
           first_uploaded_at: string
           id: string
           last_source_batch_id: string | null
@@ -1602,9 +1603,12 @@ export type Database = {
           mailing_zip: string | null
           owner1_first: string | null
           owner1_last: string | null
+          owner2_first: string | null
+          owner2_last: string | null
           property_address: string
           property_address_key: string | null
           property_city: string | null
+          property_county: string | null
           property_state: string | null
           property_zip: string | null
           source_batch_id: string | null
@@ -1618,6 +1622,7 @@ export type Database = {
           created_at?: string
           email1?: string | null
           email2?: string | null
+          email3?: string | null
           first_uploaded_at?: string
           id?: string
           last_source_batch_id?: string | null
@@ -1628,9 +1633,12 @@ export type Database = {
           mailing_zip?: string | null
           owner1_first?: string | null
           owner1_last?: string | null
+          owner2_first?: string | null
+          owner2_last?: string | null
           property_address: string
           property_address_key?: string | null
           property_city?: string | null
+          property_county?: string | null
           property_state?: string | null
           property_zip?: string | null
           source_batch_id?: string | null
@@ -1644,6 +1652,7 @@ export type Database = {
           created_at?: string
           email1?: string | null
           email2?: string | null
+          email3?: string | null
           first_uploaded_at?: string
           id?: string
           last_source_batch_id?: string | null
@@ -1654,9 +1663,12 @@ export type Database = {
           mailing_zip?: string | null
           owner1_first?: string | null
           owner1_last?: string | null
+          owner2_first?: string | null
+          owner2_last?: string | null
           property_address?: string
           property_address_key?: string | null
           property_city?: string | null
+          property_county?: string | null
           property_state?: string | null
           property_zip?: string | null
           source_batch_id?: string | null
