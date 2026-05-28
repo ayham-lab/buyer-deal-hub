@@ -261,6 +261,12 @@ export default function Admin() {
               <OperatorAccountsTab />
             </TabsContent>
           )}
+
+          {showArchiveBuyers && (
+            <TabsContent value="skiptrace_buyers">
+              <SkiptraceBuyersTab />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 
