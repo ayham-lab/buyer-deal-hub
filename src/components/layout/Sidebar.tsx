@@ -90,6 +90,7 @@ export function Sidebar() {
             )}
             <NavLink
               to="/admin"
+              onClick={goAdminView}
               title={collapsed ? "Admin Console" : undefined}
               className={cn(
                 "relative flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-medium transition-colors",
