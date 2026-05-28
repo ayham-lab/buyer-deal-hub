@@ -206,12 +206,12 @@ export function SkiptraceBuyersTab() {
 
         // Dedup on property_address_key (generated). Use upsert via lookup.
         const addrKey = property_address.trim().toLowerCase().replace(/\s+/g, " ");
-        const { data: existingRaw } = await supabase
-          .from("skiptrace_buyers" as any)
+        const { data: existingRaw } = await (supabase as any)
+          .from("skiptrace_buyers")
           .select("id")
-          .eq("property_address_key" as any, addrKey)
+          .eq("property_address_key", addrKey)
           .maybeSingle();
-        const existing = existingRaw as { id: string } | null;
+        const existing = existingRaw as unknown as { id: string } | null;
 
         let buyerId: string;
         if (existing?.id) {
