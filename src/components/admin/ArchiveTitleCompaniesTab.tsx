@@ -115,6 +115,14 @@ export function ArchiveTitleCompaniesTab() {
               <SelectItem value="attorney">Attorney Offices</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={sourceFilter} onValueChange={(v) => setSourceFilter(v as any)}>
+            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All sources</SelectItem>
+              <SelectItem value="archive">Curated</SelectItem>
+              <SelectItem value="user">User-contributed</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <Button onClick={() => setEditing("new")} className="bg-primary hover:bg-primary-hover">
           <Plus className="h-4 w-4 mr-1" /> Add Title Company
@@ -125,18 +133,25 @@ export function ArchiveTitleCompaniesTab() {
         <table className="data-table w-full">
           <thead>
             <tr>
-              <th>Name</th><th>Type</th><th>Contact</th><th>States</th><th>Cities</th>
-              <th>Deal Types</th><th>File Fee</th><th>Phone</th><th>Active</th><th></th>
+              <th>Name</th><th>Source</th><th>Type</th><th>Contact</th><th>States</th><th>Cities</th>
+              <th>Deal Types</th><th>File Fee</th><th>Phone</th><th>Used by</th><th></th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={10} className="text-center py-6"><Loader2 className="inline h-4 w-4 animate-spin" /></td></tr>
+              <tr><td colSpan={11} className="text-center py-6"><Loader2 className="inline h-4 w-4 animate-spin" /></td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={10} className="text-center py-6 text-muted-foreground">No archive entries yet.</td></tr>
-            ) : filtered.map((t) => (
+              <tr><td colSpan={11} className="text-center py-6 text-muted-foreground">No archive entries yet.</td></tr>
+            ) : filtered.map((t) => {
+              const isCurated = t.source !== "user";
+              return (
               <tr key={t.id}>
                 <td className="font-medium">{t.name}</td>
+                <td>
+                  {isCurated
+                    ? <Badge className="text-[10px]">Curated</Badge>
+                    : <Badge variant="outline" className="text-[10px]">User</Badge>}
+                </td>
                 <td><Badge variant={(t.entity_type || "title_company") === "attorney" ? "secondary" : "outline"} className="text-[10px]">{ENTITY_TYPE_LABELS[(t.entity_type || "title_company") as EntityType]}</Badge></td>
                 <td className="text-muted-foreground">{t.contact_name || "—"}</td>
                 <td className="text-muted-foreground">{t.service_states.join(", ") || "—"}</td>
@@ -149,15 +164,21 @@ export function ArchiveTitleCompaniesTab() {
                 </td>
                 <td className="text-muted-foreground">{t.charges_file_fee ? (t.file_fee_amount ? `$${Number(t.file_fee_amount).toLocaleString()}` : "Yes") : "No"}</td>
                 <td className="text-muted-foreground">{t.phone || "—"}</td>
-                <td>{t.is_active ? <Badge>Active</Badge> : <Badge variant="outline">Inactive</Badge>}</td>
+                <td className="text-muted-foreground">{t.usage_count ?? "—"}</td>
                 <td className="text-right space-x-1">
-                  <Button size="sm" variant="ghost" onClick={() => setEditing(t)}><Pencil className="h-4 w-4" /></Button>
-                  <Button size="sm" variant="ghost" onClick={() => remove(t.id, t.name)} className="text-destructive hover:text-destructive">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {isCurated ? (
+                    <>
+                      <Button size="sm" variant="ghost" onClick={() => setEditing(t)}><Pencil className="h-4 w-4" /></Button>
+                      <Button size="sm" variant="ghost" onClick={() => remove(t.id, t.name)} className="text-destructive hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
+                  ) : (
+                    <span className="text-xs text-muted-foreground pr-2">Read-only</span>
+                  )}
                 </td>
               </tr>
-            ))}
+            );})}
           </tbody>
         </table>
       </div>
