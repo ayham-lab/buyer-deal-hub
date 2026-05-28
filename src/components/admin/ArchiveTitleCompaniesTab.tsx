@@ -21,6 +21,7 @@ const DEAL_TYPES = ["cash", "novation", "sub2", "owner_financing", "commercial"]
 
 export interface ArchiveTitleCompany {
   id: string;
+  source?: "archive" | "user";
   name: string;
   entity_type: EntityType;
   contact_name: string | null;
@@ -35,6 +36,7 @@ export interface ArchiveTitleCompany {
   notes: string | null;
   is_active: boolean;
   created_at: string;
+  usage_count?: number;
 }
 
 const empty: Partial<ArchiveTitleCompany> = {
@@ -51,16 +53,19 @@ export function ArchiveTitleCompaniesTab() {
   const [q, setQ] = useState("");
   const [stateFilter, setStateFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState<"all" | EntityType>("all");
+  const [sourceFilter, setSourceFilter] = useState<"all" | "archive" | "user">("all");
   const [editing, setEditing] = useState<ArchiveTitleCompany | "new" | null>(null);
 
   async function load() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("archive_title_companies" as any)
-      .select("*")
-      .order("created_at", { ascending: false });
+    const { data, error } = await supabase.rpc("list_title_company_archive" as any);
     if (error) toast({ title: "Failed to load", description: error.message, variant: "destructive" });
-    setItems((data as any) || []);
+    const rows = ((data as any[]) || []).map((r) => ({
+      ...r,
+      is_active: true,
+      created_at: r.created_at || new Date().toISOString(),
+    })) as ArchiveTitleCompany[];
+    setItems(rows);
     setLoading(false);
   }
   useEffect(() => { load(); }, []);
@@ -74,7 +79,8 @@ export function ArchiveTitleCompaniesTab() {
       (t.phone || "").includes(s);
     const matchState = stateFilter === "all" || t.service_states.includes(stateFilter);
     const matchType = typeFilter === "all" || (t.entity_type || "title_company") === typeFilter;
-    return matchQ && matchState && matchType;
+    const matchSource = sourceFilter === "all" || t.source === sourceFilter;
+    return matchQ && matchState && matchType && matchSource;
   });
 
   async function remove(id: string, name: string) {
@@ -84,6 +90,7 @@ export function ArchiveTitleCompaniesTab() {
     toast({ title: "Deleted" });
     load();
   }
+
 
   return (
     <div className="space-y-4">
@@ -108,6 +115,14 @@ export function ArchiveTitleCompaniesTab() {
               <SelectItem value="attorney">Attorney Offices</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={sourceFilter} onValueChange={(v) => setSourceFilter(v as any)}>
+            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All sources</SelectItem>
+              <SelectItem value="archive">Curated</SelectItem>
+              <SelectItem value="user">User-contributed</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <Button onClick={() => setEditing("new")} className="bg-primary hover:bg-primary-hover">
           <Plus className="h-4 w-4 mr-1" /> Add Title Company
@@ -118,18 +133,25 @@ export function ArchiveTitleCompaniesTab() {
         <table className="data-table w-full">
           <thead>
             <tr>
-              <th>Name</th><th>Type</th><th>Contact</th><th>States</th><th>Cities</th>
-              <th>Deal Types</th><th>File Fee</th><th>Phone</th><th>Active</th><th></th>
+              <th>Name</th><th>Source</th><th>Type</th><th>Contact</th><th>States</th><th>Cities</th>
+              <th>Deal Types</th><th>File Fee</th><th>Phone</th><th>Used by</th><th></th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={10} className="text-center py-6"><Loader2 className="inline h-4 w-4 animate-spin" /></td></tr>
+              <tr><td colSpan={11} className="text-center py-6"><Loader2 className="inline h-4 w-4 animate-spin" /></td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={10} className="text-center py-6 text-muted-foreground">No archive entries yet.</td></tr>
-            ) : filtered.map((t) => (
+              <tr><td colSpan={11} className="text-center py-6 text-muted-foreground">No archive entries yet.</td></tr>
+            ) : filtered.map((t) => {
+              const isCurated = t.source !== "user";
+              return (
               <tr key={t.id}>
                 <td className="font-medium">{t.name}</td>
+                <td>
+                  {isCurated
+                    ? <Badge className="text-[10px]">Curated</Badge>
+                    : <Badge variant="outline" className="text-[10px]">User</Badge>}
+                </td>
                 <td><Badge variant={(t.entity_type || "title_company") === "attorney" ? "secondary" : "outline"} className="text-[10px]">{ENTITY_TYPE_LABELS[(t.entity_type || "title_company") as EntityType]}</Badge></td>
                 <td className="text-muted-foreground">{t.contact_name || "—"}</td>
                 <td className="text-muted-foreground">{t.service_states.join(", ") || "—"}</td>
@@ -142,15 +164,21 @@ export function ArchiveTitleCompaniesTab() {
                 </td>
                 <td className="text-muted-foreground">{t.charges_file_fee ? (t.file_fee_amount ? `$${Number(t.file_fee_amount).toLocaleString()}` : "Yes") : "No"}</td>
                 <td className="text-muted-foreground">{t.phone || "—"}</td>
-                <td>{t.is_active ? <Badge>Active</Badge> : <Badge variant="outline">Inactive</Badge>}</td>
+                <td className="text-muted-foreground">{t.usage_count ?? "—"}</td>
                 <td className="text-right space-x-1">
-                  <Button size="sm" variant="ghost" onClick={() => setEditing(t)}><Pencil className="h-4 w-4" /></Button>
-                  <Button size="sm" variant="ghost" onClick={() => remove(t.id, t.name)} className="text-destructive hover:text-destructive">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {isCurated ? (
+                    <>
+                      <Button size="sm" variant="ghost" onClick={() => setEditing(t)}><Pencil className="h-4 w-4" /></Button>
+                      <Button size="sm" variant="ghost" onClick={() => remove(t.id, t.name)} className="text-destructive hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
+                  ) : (
+                    <span className="text-xs text-muted-foreground pr-2">Read-only</span>
+                  )}
                 </td>
               </tr>
-            ))}
+            );})}
           </tbody>
         </table>
       </div>
