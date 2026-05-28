@@ -28,6 +28,7 @@ export default function Admin() {
   const { isSuperAdmin } = useAuth();
   const showPricing = !isIframed;
   const showArchiveBuyers = !isIframed && isSuperAdmin;
+  const showSkiptrace = !isIframed; // visible to any admin reaching this page
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<any[]>([]);
   const [deals, setDeals] = useState<any[]>([]);
