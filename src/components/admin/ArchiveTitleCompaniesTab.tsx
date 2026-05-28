@@ -21,6 +21,7 @@ const DEAL_TYPES = ["cash", "novation", "sub2", "owner_financing", "commercial"]
 
 export interface ArchiveTitleCompany {
   id: string;
+  source?: "archive" | "user";
   name: string;
   entity_type: EntityType;
   contact_name: string | null;
@@ -35,6 +36,7 @@ export interface ArchiveTitleCompany {
   notes: string | null;
   is_active: boolean;
   created_at: string;
+  usage_count?: number;
 }
 
 const empty: Partial<ArchiveTitleCompany> = {
@@ -51,16 +53,19 @@ export function ArchiveTitleCompaniesTab() {
   const [q, setQ] = useState("");
   const [stateFilter, setStateFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState<"all" | EntityType>("all");
+  const [sourceFilter, setSourceFilter] = useState<"all" | "archive" | "user">("all");
   const [editing, setEditing] = useState<ArchiveTitleCompany | "new" | null>(null);
 
   async function load() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("archive_title_companies" as any)
-      .select("*")
-      .order("created_at", { ascending: false });
+    const { data, error } = await supabase.rpc("list_title_company_archive" as any);
     if (error) toast({ title: "Failed to load", description: error.message, variant: "destructive" });
-    setItems((data as any) || []);
+    const rows = ((data as any[]) || []).map((r) => ({
+      ...r,
+      is_active: true,
+      created_at: r.created_at || new Date().toISOString(),
+    })) as ArchiveTitleCompany[];
+    setItems(rows);
     setLoading(false);
   }
   useEffect(() => { load(); }, []);
