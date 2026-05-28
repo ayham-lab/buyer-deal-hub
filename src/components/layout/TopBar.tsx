@@ -116,11 +116,13 @@ export function TopBar() {
     setMemberships(opts);
     setLoadingMemberships(false);
 
-    // Don't get stuck with no active location: standalone non-super-admin
-    // users with at least one workspace get auto-switched to their first one.
-    // Super-admins are intentionally allowed a "no active location" state
-    // (Admin view) so they can land on /admin without picking a workspace.
-    if (!activeLocationId && opts.length > 0 && !isSuperAdmin) {
+    // Don't get stuck with no active location: standalone non-admin users
+    // with at least one workspace get auto-switched to their first one.
+    // Admins (regular + super) are allowed a "no active location" state so
+    // they can land on /admin without being yanked back into a workspace.
+    // Also skip auto-pick whenever we're already on an /admin route.
+    const onAdminRoute = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
+    if (!activeLocationId && opts.length > 0 && !isAdmin && !onAdminRoute) {
       try {
         sessionStorage.setItem(
           "ghl_active_location",
