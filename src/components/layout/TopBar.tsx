@@ -248,13 +248,14 @@ export function TopBar() {
 
       {/* Right actions */}
       {showAdminUI && (
-        <Link
-          to="/admin"
+        <button
+          type="button"
+          onClick={pickAdminView}
           className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-primary/10 text-primary hover:bg-primary/20 text-xs font-semibold uppercase tracking-wider transition-colors"
         >
           <ShieldCheck className="h-3.5 w-3.5" />
           Admin
-        </Link>
+        </button>
       )}
       <CreditsPill />
       <button className="h-9 w-9 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted">
