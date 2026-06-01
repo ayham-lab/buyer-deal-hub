@@ -68,6 +68,66 @@ export default function Finder() {
   const [results, setResults] = useState<Results | null>(null);
   const [buyOpen, setBuyOpen] = useState(false);
 
+  const [deals, setDeals] = useState<DealOption[]>([]);
+  const [selectedDealId, setSelectedDealId] = useState<string | null>(null);
+  const [dealQuery, setDealQuery] = useState("");
+  const [dealsLoading, setDealsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    setDealsLoading(true);
+    scopeToLocation(
+      supabase
+        .from("deals")
+        .select("id, property_address, city, state, property_type, asking_price, contract_price, arv")
+        .is("deleted_at", null)
+        .order("updated_at", { ascending: false })
+        .limit(300)
+    ).then(({ data }) => {
+      setDeals(((data as any) || []) as DealOption[]);
+      setDealsLoading(false);
+    });
+  }, [user, activeLocation?.locationId]);
+
+  const filteredDeals = useMemo(() => {
+    const q = dealQuery.trim().toLowerCase();
+    if (!q) return deals.slice(0, 8);
+    return deals
+      .filter((d) =>
+        [d.property_address, d.city, d.state].filter(Boolean).join(" ").toLowerCase().includes(q),
+      )
+      .slice(0, 8);
+  }, [deals, dealQuery]);
+
+  const selectedDeal = useMemo(
+    () => deals.find((d) => d.id === selectedDealId) || null,
+    [deals, selectedDealId],
+  );
+
+  function applyDeal(d: DealOption) {
+    const addr = (d.property_address || "").trim();
+    // street = portion before the first comma, fall back to whole address
+    const streetPart = addr.includes(",") ? addr.split(",")[0].trim() : addr;
+    const zipMatch = addr.match(/\b(\d{5})(?:-\d{4})?\b/);
+    setStreet(streetPart);
+    setCity((d.city || "").trim());
+    setStateCode(((d.state || "").trim().toUpperCase()).slice(0, 2));
+    setZip(zipMatch ? zipMatch[1] : "");
+    if (d.property_type && PROPERTY_TYPES.includes(d.property_type)) {
+      setPropertyType(d.property_type);
+    }
+    const price = d.asking_price ?? d.contract_price ?? d.arv ?? null;
+    if (price != null) setPriceHint(String(price));
+    setSelectedDealId(d.id);
+    setDealQuery("");
+  }
+
+  function clearDeal() {
+    setSelectedDealId(null);
+  }
+
+
+
   async function findMatches() {
     if (!street.trim() || !city.trim() || !stateCode.trim()) {
       toast.error("Street, City, and State are required");
