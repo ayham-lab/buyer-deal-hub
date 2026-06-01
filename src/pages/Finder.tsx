@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { withLocation } from "@/lib/locationScope";
+import { scopeToLocation, withLocation } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveLocation } from "@/contexts/LocationContext";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
@@ -10,9 +10,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BuyCreditsModal } from "@/components/credits/BuyCreditsModal";
 
 const PROPERTY_TYPES = ["SFH", "MFH 2-4", "MFH 5+", "Commercial", "Land", "Mobile"];
-import { MapPin, Sparkles, Loader2, Users, Archive, Globe, Lock, Mail, Phone, Coins, Check } from "lucide-react";
+import { MapPin, Sparkles, Loader2, Users, Archive, Globe, Lock, Mail, Phone, Coins, Check, Briefcase, X, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+
+type DealOption = {
+  id: string;
+  property_address: string | null;
+  city: string | null;
+  state: string | null;
+  property_type: string | null;
+  asking_price: number | null;
+  contract_price: number | null;
+  arv: number | null;
+};
 
 type Match = {
   id: string;
@@ -56,6 +67,66 @@ export default function Finder() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<Results | null>(null);
   const [buyOpen, setBuyOpen] = useState(false);
+
+  const [deals, setDeals] = useState<DealOption[]>([]);
+  const [selectedDealId, setSelectedDealId] = useState<string | null>(null);
+  const [dealQuery, setDealQuery] = useState("");
+  const [dealsLoading, setDealsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    setDealsLoading(true);
+    scopeToLocation(
+      supabase
+        .from("deals")
+        .select("id, property_address, city, state, property_type, asking_price, contract_price, arv")
+        .is("deleted_at", null)
+        .order("updated_at", { ascending: false })
+        .limit(300)
+    ).then(({ data }) => {
+      setDeals(((data as any) || []) as DealOption[]);
+      setDealsLoading(false);
+    });
+  }, [user, activeLocation?.locationId]);
+
+  const filteredDeals = useMemo(() => {
+    const q = dealQuery.trim().toLowerCase();
+    if (!q) return deals.slice(0, 8);
+    return deals
+      .filter((d) =>
+        [d.property_address, d.city, d.state].filter(Boolean).join(" ").toLowerCase().includes(q),
+      )
+      .slice(0, 8);
+  }, [deals, dealQuery]);
+
+  const selectedDeal = useMemo(
+    () => deals.find((d) => d.id === selectedDealId) || null,
+    [deals, selectedDealId],
+  );
+
+  function applyDeal(d: DealOption) {
+    const addr = (d.property_address || "").trim();
+    // street = portion before the first comma, fall back to whole address
+    const streetPart = addr.includes(",") ? addr.split(",")[0].trim() : addr;
+    const zipMatch = addr.match(/\b(\d{5})(?:-\d{4})?\b/);
+    setStreet(streetPart);
+    setCity((d.city || "").trim());
+    setStateCode(((d.state || "").trim().toUpperCase()).slice(0, 2));
+    setZip(zipMatch ? zipMatch[1] : "");
+    if (d.property_type && PROPERTY_TYPES.includes(d.property_type)) {
+      setPropertyType(d.property_type);
+    }
+    const price = d.asking_price ?? d.contract_price ?? d.arv ?? null;
+    if (price != null) setPriceHint(String(price));
+    setSelectedDealId(d.id);
+    setDealQuery("");
+  }
+
+  function clearDeal() {
+    setSelectedDealId(null);
+  }
+
+
 
   async function findMatches() {
     if (!street.trim() || !city.trim() || !stateCode.trim()) {
@@ -148,8 +219,60 @@ export default function Finder() {
         subtitle="Enter a property address — we'll match the best buyers across all your sources"
       />
       <div className="p-6 lg:p-8 space-y-6">
-        <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        <div className="bg-card border border-border rounded-xl p-6 shadow-sm space-y-4">
+          {/* Pull from existing deal */}
+          <div>
+            <label className="text-[11px] uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 mb-2">
+              <Briefcase className="h-3.5 w-3.5" /> Pull from a deal
+            </label>
+            {selectedDeal ? (
+              <div className="flex items-center gap-2 p-2 rounded-md border border-border bg-muted/40">
+                <Check className="h-4 w-4 text-green-600 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate">
+                    {selectedDeal.property_address || "(no address)"}
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {[selectedDeal.city, selectedDeal.state].filter(Boolean).join(", ")}
+                    {selectedDeal.property_type ? ` · ${selectedDeal.property_type}` : ""}
+                  </div>
+                </div>
+                <button onClick={clearDeal} className="text-muted-foreground hover:text-destructive">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  className="pl-9"
+                  placeholder={dealsLoading ? "Loading deals…" : "Search your deals by address…"}
+                  value={dealQuery}
+                  onChange={(e) => setDealQuery(e.target.value)}
+                />
+                {dealQuery.trim() && filteredDeals.length > 0 && (
+                  <div className="absolute z-10 mt-1 w-full bg-popover border border-border rounded-md shadow-md overflow-hidden max-h-80 overflow-y-auto">
+                    {filteredDeals.map((d) => (
+                      <button
+                        key={d.id}
+                        onClick={() => applyDeal(d)}
+                        className="w-full text-left px-3 py-2 hover:bg-muted text-sm border-b border-border last:border-b-0"
+                      >
+                        <div className="font-medium truncate">{d.property_address || "(no address)"}</div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {[d.city, d.state].filter(Boolean).join(", ")}
+                          {d.property_type ? ` · ${d.property_type}` : ""}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="grid gap-3 md:grid-cols-12">
+
             <div className="relative md:col-span-5">
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input className="pl-9" placeholder="Street address *"
