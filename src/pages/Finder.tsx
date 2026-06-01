@@ -219,8 +219,60 @@ export default function Finder() {
         subtitle="Enter a property address — we'll match the best buyers across all your sources"
       />
       <div className="p-6 lg:p-8 space-y-6">
-        <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        <div className="bg-card border border-border rounded-xl p-6 shadow-sm space-y-4">
+          {/* Pull from existing deal */}
+          <div>
+            <label className="text-[11px] uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 mb-2">
+              <Briefcase className="h-3.5 w-3.5" /> Pull from a deal
+            </label>
+            {selectedDeal ? (
+              <div className="flex items-center gap-2 p-2 rounded-md border border-border bg-muted/40">
+                <Check className="h-4 w-4 text-green-600 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate">
+                    {selectedDeal.property_address || "(no address)"}
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {[selectedDeal.city, selectedDeal.state].filter(Boolean).join(", ")}
+                    {selectedDeal.property_type ? ` · ${selectedDeal.property_type}` : ""}
+                  </div>
+                </div>
+                <button onClick={clearDeal} className="text-muted-foreground hover:text-destructive">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  className="pl-9"
+                  placeholder={dealsLoading ? "Loading deals…" : "Search your deals by address…"}
+                  value={dealQuery}
+                  onChange={(e) => setDealQuery(e.target.value)}
+                />
+                {dealQuery.trim() && filteredDeals.length > 0 && (
+                  <div className="absolute z-10 mt-1 w-full bg-popover border border-border rounded-md shadow-md overflow-hidden max-h-80 overflow-y-auto">
+                    {filteredDeals.map((d) => (
+                      <button
+                        key={d.id}
+                        onClick={() => applyDeal(d)}
+                        className="w-full text-left px-3 py-2 hover:bg-muted text-sm border-b border-border last:border-b-0"
+                      >
+                        <div className="font-medium truncate">{d.property_address || "(no address)"}</div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {[d.city, d.state].filter(Boolean).join(", ")}
+                          {d.property_type ? ` · ${d.property_type}` : ""}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="grid gap-3 md:grid-cols-12">
+
             <div className="relative md:col-span-5">
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input className="pl-9" placeholder="Street address *"
