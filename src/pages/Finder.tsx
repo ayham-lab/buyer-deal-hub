@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { withLocation } from "@/lib/locationScope";
+import { scopeToLocation, withLocation } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveLocation } from "@/contexts/LocationContext";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
@@ -10,9 +10,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BuyCreditsModal } from "@/components/credits/BuyCreditsModal";
 
 const PROPERTY_TYPES = ["SFH", "MFH 2-4", "MFH 5+", "Commercial", "Land", "Mobile"];
-import { MapPin, Sparkles, Loader2, Users, Archive, Globe, Lock, Mail, Phone, Coins, Check } from "lucide-react";
+import { MapPin, Sparkles, Loader2, Users, Archive, Globe, Lock, Mail, Phone, Coins, Check, Briefcase, X, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+
+type DealOption = {
+  id: string;
+  property_address: string | null;
+  city: string | null;
+  state: string | null;
+  property_type: string | null;
+  asking_price: number | null;
+  contract_price: number | null;
+  arv: number | null;
+};
 
 type Match = {
   id: string;
