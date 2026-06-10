@@ -1,0 +1,1 @@
+INSERT INTO public.credit_balances (ghl_location_id, balance) VALUES ('aVeRA744co5PmYJzT659', 100) ON CONFLICT (ghl_location_id) DO UPDATE SET balance = public.credit_balances.balance + 100; INSERT INTO public.credit_transactions (ghl_location_id, delta, description) VALUES ('aVeRA744co5PmYJzT659', 100, 'Manual grant');
