@@ -20,6 +20,7 @@ import { ImportBuyersTab } from "@/components/admin/ImportBuyersTab";
 import { ArchiveTitleCompaniesTab } from "@/components/admin/ArchiveTitleCompaniesTab";
 import { OperatorAccountsTab } from "@/components/admin/OperatorAccountsTab";
 import { SkiptraceBuyersTab } from "@/components/admin/SkiptraceBuyersTab";
+import { ArchiveContactsAdminTab } from "@/components/admin/ArchiveContactsAdminTab";
 import { useActiveLocation } from "@/contexts/LocationContext";
 import { useAuth } from "@/hooks/useAuth";
 
