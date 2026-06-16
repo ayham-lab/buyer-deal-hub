@@ -140,6 +140,102 @@ export type Database = {
         }
         Relationships: []
       }
+      archive_notaries: {
+        Row: {
+          created_at: string
+          email: string | null
+          first_name: string | null
+          id: string
+          is_active: boolean
+          last_name: string | null
+          markets: string[]
+          name: string
+          notes: string | null
+          phone: string | null
+          sources: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          is_active?: boolean
+          last_name?: string | null
+          markets?: string[]
+          name: string
+          notes?: string | null
+          phone?: string | null
+          sources?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          is_active?: boolean
+          last_name?: string | null
+          markets?: string[]
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          sources?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      archive_realtors: {
+        Row: {
+          brokerage: string | null
+          created_at: string
+          does_novations: boolean
+          email: string | null
+          first_name: string | null
+          id: string
+          is_active: boolean
+          last_name: string | null
+          markets: string[]
+          name: string
+          notes: string | null
+          phone: string | null
+          sources: Json
+          updated_at: string
+        }
+        Insert: {
+          brokerage?: string | null
+          created_at?: string
+          does_novations?: boolean
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          is_active?: boolean
+          last_name?: string | null
+          markets?: string[]
+          name: string
+          notes?: string | null
+          phone?: string | null
+          sources?: Json
+          updated_at?: string
+        }
+        Update: {
+          brokerage?: string | null
+          created_at?: string
+          does_novations?: boolean
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          is_active?: boolean
+          last_name?: string | null
+          markets?: string[]
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          sources?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       archive_title_companies: {
         Row: {
           address: string | null
@@ -1209,6 +1305,57 @@ export type Database = {
         }
         Relationships: []
       }
+      notaries: {
+        Row: {
+          created_at: string
+          email: string | null
+          first_name: string | null
+          ghl_location_id: string | null
+          id: string
+          is_archived: boolean
+          last_contact_at: string | null
+          last_name: string | null
+          markets: string[]
+          name: string
+          notes: string | null
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          ghl_location_id?: string | null
+          id?: string
+          is_archived?: boolean
+          last_contact_at?: string | null
+          last_name?: string | null
+          markets?: string[]
+          name: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          ghl_location_id?: string | null
+          id?: string
+          is_archived?: boolean
+          last_contact_at?: string | null
+          last_name?: string | null
+          markets?: string[]
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string | null
@@ -1531,6 +1678,63 @@ export type Database = {
           notification_prefs?: Json
           phone_number?: string | null
           subscription_status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      realtors: {
+        Row: {
+          brokerage: string | null
+          created_at: string
+          does_novations: boolean
+          email: string | null
+          first_name: string | null
+          ghl_location_id: string | null
+          id: string
+          is_archived: boolean
+          last_contact_at: string | null
+          last_name: string | null
+          markets: string[]
+          name: string
+          notes: string | null
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          brokerage?: string | null
+          created_at?: string
+          does_novations?: boolean
+          email?: string | null
+          first_name?: string | null
+          ghl_location_id?: string | null
+          id?: string
+          is_archived?: boolean
+          last_contact_at?: string | null
+          last_name?: string | null
+          markets?: string[]
+          name: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          brokerage?: string | null
+          created_at?: string
+          does_novations?: boolean
+          email?: string | null
+          first_name?: string | null
+          ghl_location_id?: string | null
+          id?: string
+          is_archived?: boolean
+          last_contact_at?: string | null
+          last_name?: string | null
+          markets?: string[]
+          name?: string
+          notes?: string | null
+          phone?: string | null
           updated_at?: string
           user_id?: string
         }

@@ -23,6 +23,8 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import PipelineMapping from "./pages/settings/PipelineMapping";
 import TitleCompanies from "./pages/TitleCompanies";
+import Realtors from "./pages/Realtors";
+import Notaries from "./pages/Notaries";
 
 import Tasks from "./pages/Tasks";
 import AcceptInvite from "./pages/AcceptInvite";
@@ -64,6 +66,8 @@ const App = () => (
                 <Route path="/settings" element={wrap(<Settings />)} />
                 <Route path="/settings/pipelines" element={wrap(<PipelineMapping />)} />
                 <Route path="/title-companies" element={wrap(<TitleCompanies />)} />
+                <Route path="/realtors" element={wrap(<Realtors />)} />
+                <Route path="/notaries" element={wrap(<Notaries />)} />
                 <Route path="/team" element={<Navigate to="/settings?tab=team" replace />} />
                 <Route path="*" element={wrap(<NotFound />)} />
               </Routes>
