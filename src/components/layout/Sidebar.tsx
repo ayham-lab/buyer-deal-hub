@@ -1,5 +1,5 @@
 import { NavLink, useLocation, Link, useNavigate } from "react-router-dom";
-import { Users, Search, LayoutGrid, BarChart3, ShieldCheck, ChevronsLeft, ChevronsRight, Building2, UsersRound, Home, CheckSquare, Settings as SettingsIcon, GitBranch } from "lucide-react";
+import { Users, Search, LayoutGrid, BarChart3, ShieldCheck, ChevronsLeft, ChevronsRight, Building2, UsersRound, Home, CheckSquare, Settings as SettingsIcon, GitBranch, Stamp } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveLocation } from "@/contexts/LocationContext";
 import { cn } from "@/lib/utils";
