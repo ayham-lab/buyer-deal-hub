@@ -260,6 +260,18 @@ export default function Admin() {
             </TabsContent>
           )}
 
+          {showArchiveBuyers && (
+            <TabsContent value="archive_realtors">
+              <ArchiveContactsAdminTab kind="realtors" />
+            </TabsContent>
+          )}
+
+          {showArchiveBuyers && (
+            <TabsContent value="archive_notaries">
+              <ArchiveContactsAdminTab kind="notaries" />
+            </TabsContent>
+          )}
+
           {isSuperAdmin && (
             <TabsContent value="operator_accounts">
               <OperatorAccountsTab />
