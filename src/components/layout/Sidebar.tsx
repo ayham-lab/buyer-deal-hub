@@ -15,6 +15,8 @@ const items = [
   { to: "/buyers", label: "Buyer Rolodex", icon: Users },
   { to: "/tasks", label: "Tasks", icon: CheckSquare },
   { to: "/title-companies", label: "Title Companies", icon: Building2 },
+  { to: "/realtors", label: "Realtors", icon: UsersRound },
+  { to: "/notaries", label: "Notaries", icon: Stamp },
   { to: "/settings/pipelines", label: "Pipeline Mapping", icon: GitBranch },
   { to: "/settings", label: "Settings", icon: SettingsIcon, exact: true },
 ];
