@@ -230,32 +230,30 @@ export default function Finder() {
                 </button>
               </div>
             ) : (
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  className="pl-9"
-                  placeholder={dealsLoading ? "Loading deals…" : "Search your deals by address…"}
-                  value={dealQuery}
-                  onChange={(e) => setDealQuery(e.target.value)}
-                />
-                {dealQuery.trim() && filteredDeals.length > 0 && (
-                  <div className="absolute z-10 mt-1 w-full bg-popover border border-border rounded-md shadow-md overflow-hidden max-h-80 overflow-y-auto">
-                    {filteredDeals.map((d) => (
-                      <button
-                        key={d.id}
-                        onClick={() => applyDeal(d)}
-                        className="w-full text-left px-3 py-2 hover:bg-muted text-sm border-b border-border last:border-b-0"
-                      >
-                        <div className="font-medium truncate">{d.property_address || "(no address)"}</div>
-                        <div className="text-xs text-muted-foreground truncate">
-                          {[d.city, d.state].filter(Boolean).join(", ")}
+              <Select
+                disabled={dealsLoading || deals.length === 0}
+                onValueChange={(id) => {
+                  const d = deals.find((deal) => deal.id === id);
+                  if (d) applyDeal(d);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={dealsLoading ? "Loading deals…" : deals.length === 0 ? "No active deals" : "Select a deal…"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {deals.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      <div className="truncate">
+                        {d.property_address || "(no address)"}
+                        <span className="text-muted-foreground ml-1">
+                          — {[d.city, d.state].filter(Boolean).join(", ")}
                           {d.property_type ? ` · ${d.property_type}` : ""}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
           </div>
 
