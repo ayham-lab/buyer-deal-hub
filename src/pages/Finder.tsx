@@ -108,7 +108,6 @@ export default function Finder() {
     const price = d.asking_price ?? d.contract_price ?? d.arv ?? null;
     if (price != null) setPriceHint(String(price));
     setSelectedDealId(d.id);
-    setDealQuery("");
   }
 
   function clearDeal() {
