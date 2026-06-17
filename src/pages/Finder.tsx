@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BuyCreditsModal } from "@/components/credits/BuyCreditsModal";
 
 const PROPERTY_TYPES = ["SFH", "MFH 2-4", "MFH 5+", "Commercial", "Land", "Mobile"];
-import { MapPin, Sparkles, Loader2, Users, Archive, Globe, Lock, Mail, Phone, Coins, Check, Briefcase, X, Search } from "lucide-react";
+import { MapPin, Sparkles, Loader2, Users, Archive, Globe, Lock, Mail, Phone, Coins, Check, Briefcase, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
