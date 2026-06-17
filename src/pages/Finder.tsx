@@ -70,7 +70,6 @@ export default function Finder() {
 
   const [deals, setDeals] = useState<DealOption[]>([]);
   const [selectedDealId, setSelectedDealId] = useState<string | null>(null);
-  const [dealQuery, setDealQuery] = useState("");
   const [dealsLoading, setDealsLoading] = useState(false);
 
   useEffect(() => {
@@ -88,16 +87,6 @@ export default function Finder() {
       setDealsLoading(false);
     });
   }, [user, activeLocation?.locationId]);
-
-  const filteredDeals = useMemo(() => {
-    const q = dealQuery.trim().toLowerCase();
-    if (!q) return deals.slice(0, 8);
-    return deals
-      .filter((d) =>
-        [d.property_address, d.city, d.state].filter(Boolean).join(" ").toLowerCase().includes(q),
-      )
-      .slice(0, 8);
-  }, [deals, dealQuery]);
 
   const selectedDeal = useMemo(
     () => deals.find((d) => d.id === selectedDealId) || null,
