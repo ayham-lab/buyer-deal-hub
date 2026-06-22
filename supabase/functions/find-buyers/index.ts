@@ -73,6 +73,38 @@ const METRO_MAP: Record<string, string[]> = {
 const NATIONAL_KEYWORDS = ["all","any","anywhere","national","nationwide","everywhere","usa","u.s.","united states","open","flexible"];
 const STATEWIDE_PHRASES = ["any in the state","anywhere in the state","entire state","whole state","statewide","state wide","all over"];
 
+function nonEmptyStr(v: unknown): boolean { return typeof v === "string" && v.trim().length > 0; }
+function nonEmptyArr(v: unknown): boolean { return Array.isArray(v) && v.length > 0; }
+
+// Mirrors src/lib/buyerCompleteness.ts (rolodex buyers)
+function rolodexCompleteness(b: any): { score: number; isComplete: boolean } {
+  let score = 0;
+  if (nonEmptyStr(b.name) || nonEmptyStr(b.first_name) || nonEmptyStr(b.last_name)) score += 10;
+  if (nonEmptyStr(b.email)) score += 10;
+  if (nonEmptyStr(b.phone)) score += 10;
+  if (nonEmptyArr(b.markets)) score += 15;
+  if (nonEmptyArr(b.property_types)) score += 10;
+  if (b.price_min != null && b.price_max != null) score += 10;
+  if (nonEmptyArr(b.proof_of_funds_files)) score += 15;
+  if (nonEmptyStr(b.previous_deals)) score += 10;
+  if (nonEmptyStr(b.experience)) score += 10;
+  const vetted = b.buyer_status === "vetted" || b.buyer_status === "vetted_and_closed";
+  return { score, isComplete: score >= 90 || (vetted && score >= 80) };
+}
+
+function archiveCompleteness(b: any): { score: number; isComplete: boolean } {
+  let score = 0;
+  if (nonEmptyStr(b.full_name) || nonEmptyStr(b.first_name) || nonEmptyStr(b.last_name)) score += 15;
+  if (nonEmptyStr(b.email)) score += 15;
+  if (nonEmptyStr(b.phone)) score += 10;
+  if (nonEmptyArr(b.preferred_markets)) score += 25;
+  if (nonEmptyArr(b.property_types)) score += 15;
+  if (b.price_min != null && b.price_max != null) score += 10;
+  if (nonEmptyStr(b.city) || nonEmptyStr(b.state)) score += 10;
+  return { score, isComplete: score >= 85 };
+}
+
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
