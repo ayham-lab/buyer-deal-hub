@@ -294,7 +294,8 @@ export default function Buyers() {
                       </button>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
