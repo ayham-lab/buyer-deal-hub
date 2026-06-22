@@ -231,7 +231,7 @@ Deno.serve(async (req) => {
     const [rolodexResp, ...archiveResps] = await Promise.all([
       userId
         ? admin.from("buyers")
-            .select("id, name, email, phone, markets, property_types, price_min, price_max, source, company_name")
+            .select("id, name, first_name, last_name, email, phone, markets, property_types, price_min, price_max, source, company_name, buyer_status, proof_of_funds_files, previous_deals, experience")
             .eq("user_id", userId).eq("is_archived", false).limit(300)
         : Promise.resolve({ data: [] as any[] }),
       ...queries,
