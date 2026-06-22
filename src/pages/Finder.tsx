@@ -38,6 +38,8 @@ type Match = {
   score: number;
   reason: string;
   revealed?: boolean;
+  profile_complete?: boolean;
+  profile_completeness?: number;
 };
 
 type ArchiveState = "admin" | "subscription" | "pay_per_reveal";
