@@ -17,6 +17,9 @@ import { exportToCsv } from "@/lib/csv";
 import { BUYER_CSV_COLUMNS, buyerToCsvRow } from "@/lib/buyerCsv";
 import { BUYER_ACTIVITY_OPTIONS, BUYER_ACTIVITY_LABEL, BUYER_ACTIVITY_COLOR, type BuyerActivity } from "@/lib/buyerActivity";
 import { format as fmtDate } from "date-fns";
+import { getBuyerCompleteness } from "@/lib/buyerCompleteness";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { CheckCircle2, CircleDashed } from "lucide-react";
 
 export interface Buyer {
   id: string;
