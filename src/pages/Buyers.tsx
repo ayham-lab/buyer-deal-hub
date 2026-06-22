@@ -17,6 +17,9 @@ import { exportToCsv } from "@/lib/csv";
 import { BUYER_CSV_COLUMNS, buyerToCsvRow } from "@/lib/buyerCsv";
 import { BUYER_ACTIVITY_OPTIONS, BUYER_ACTIVITY_LABEL, BUYER_ACTIVITY_COLOR, type BuyerActivity } from "@/lib/buyerActivity";
 import { format as fmtDate } from "date-fns";
+import { getBuyerCompleteness } from "@/lib/buyerCompleteness";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { CheckCircle2, CircleDashed } from "lucide-react";
 
 export interface Buyer {
   id: string;
@@ -193,6 +196,7 @@ export default function Buyers() {
                 <tr>
                   <th>Name</th>
                   <th>Company</th>
+                  <th>Profile</th>
                   <th>Status</th>
                   <th>Activity</th>
                   <th>Markets</th>
@@ -205,10 +209,40 @@ export default function Buyers() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((b) => (
+                {filtered.map((b) => {
+                  const c = getBuyerCompleteness(b);
+                  return (
                   <tr key={b.id} onClick={() => setActive(b)} className="cursor-pointer">
                     <td className="font-medium">{b.name}</td>
                     <td className="text-muted-foreground">{b.company_name || "—"}</td>
+                    <td>
+                      <TooltipProvider delayDuration={150}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="inline-flex items-center gap-1">
+                              {c.isComplete ? (
+                                <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                              ) : (
+                                <CircleDashed className="h-3.5 w-3.5 text-muted-foreground" />
+                              )}
+                              <span className={`text-[11px] font-medium ${c.isComplete ? "text-green-700" : "text-muted-foreground"}`}>
+                                {c.score}%
+                              </span>
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs">
+                            {c.isComplete ? (
+                              <p className="text-xs">Complete profile — prioritized in Buyer Finder.</p>
+                            ) : (
+                              <div className="text-xs">
+                                <p className="font-medium mb-1">Missing:</p>
+                                <p className="text-muted-foreground">{c.missing.join(", ")}</p>
+                              </div>
+                            )}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </td>
                     <td>
                       <Badge variant="outline" className={`text-[10px] rounded ${STATUS_COLOR[b.buyer_status || "not_vetted"]}`}>
                         {STATUS_LABEL[b.buyer_status || "not_vetted"]}
@@ -260,7 +294,8 @@ export default function Buyers() {
                       </button>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

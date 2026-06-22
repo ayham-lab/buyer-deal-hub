@@ -73,6 +73,38 @@ const METRO_MAP: Record<string, string[]> = {
 const NATIONAL_KEYWORDS = ["all","any","anywhere","national","nationwide","everywhere","usa","u.s.","united states","open","flexible"];
 const STATEWIDE_PHRASES = ["any in the state","anywhere in the state","entire state","whole state","statewide","state wide","all over"];
 
+function nonEmptyStr(v: unknown): boolean { return typeof v === "string" && v.trim().length > 0; }
+function nonEmptyArr(v: unknown): boolean { return Array.isArray(v) && v.length > 0; }
+
+// Mirrors src/lib/buyerCompleteness.ts (rolodex buyers)
+function rolodexCompleteness(b: any): { score: number; isComplete: boolean } {
+  let score = 0;
+  if (nonEmptyStr(b.name) || nonEmptyStr(b.first_name) || nonEmptyStr(b.last_name)) score += 10;
+  if (nonEmptyStr(b.email)) score += 10;
+  if (nonEmptyStr(b.phone)) score += 10;
+  if (nonEmptyArr(b.markets)) score += 15;
+  if (nonEmptyArr(b.property_types)) score += 10;
+  if (b.price_min != null && b.price_max != null) score += 10;
+  if (nonEmptyArr(b.proof_of_funds_files)) score += 15;
+  if (nonEmptyStr(b.previous_deals)) score += 10;
+  if (nonEmptyStr(b.experience)) score += 10;
+  const vetted = b.buyer_status === "vetted" || b.buyer_status === "vetted_and_closed";
+  return { score, isComplete: score >= 90 || (vetted && score >= 80) };
+}
+
+function archiveCompleteness(b: any): { score: number; isComplete: boolean } {
+  let score = 0;
+  if (nonEmptyStr(b.full_name) || nonEmptyStr(b.first_name) || nonEmptyStr(b.last_name)) score += 15;
+  if (nonEmptyStr(b.email)) score += 15;
+  if (nonEmptyStr(b.phone)) score += 10;
+  if (nonEmptyArr(b.preferred_markets)) score += 25;
+  if (nonEmptyArr(b.property_types)) score += 15;
+  if (b.price_min != null && b.price_max != null) score += 10;
+  if (nonEmptyStr(b.city) || nonEmptyStr(b.state)) score += 10;
+  return { score, isComplete: score >= 85 };
+}
+
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -199,7 +231,7 @@ Deno.serve(async (req) => {
     const [rolodexResp, ...archiveResps] = await Promise.all([
       userId
         ? admin.from("buyers")
-            .select("id, name, email, phone, markets, property_types, price_min, price_max, source, company_name")
+            .select("id, name, first_name, last_name, email, phone, markets, property_types, price_min, price_max, source, company_name, buyer_status, proof_of_funds_files, previous_deals, experience")
             .eq("user_id", userId).eq("is_archived", false).limit(300)
         : Promise.resolve({ data: [] as any[] }),
       ...queries,
@@ -262,6 +294,10 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      const comp = archiveCompleteness(r);
+      // Completeness boost: up to +12 to nudge fuller profiles up within the same tier
+      const boost = Math.round((comp.score / 100) * 12);
+
       scored.push({
         id: r.id,
         name: r.full_name || [r.first_name, r.last_name].filter(Boolean).join(" ") || "—",
@@ -274,22 +310,53 @@ Deno.serve(async (req) => {
         city: r.city,
         state: r.state,
         source: Array.isArray(r.sources) && r.sources.length ? `${r.sources.length} tenant(s)` : null,
-        score,
+        score: score + boost,
         tier,
-        reason: reasons.join(", "),
+        reason: comp.isComplete ? `${reasons.join(", ")} · complete profile` : reasons.join(", "),
+        profile_completeness: comp.score,
+        profile_complete: comp.isComplete,
       });
     }
 
-    scored.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+    scored.sort((a, b) =>
+      b.score - a.score ||
+      (b.profile_completeness ?? 0) - (a.profile_completeness ?? 0) ||
+      a.name.localeCompare(b.name)
+    );
     const archiveMatches = scored.slice(0, 60);
 
     // Rolodex (private buyers) — keep AI ranking, small pool
-    const rolodex = (rolodexResp.data || []).map((b: any) => ({
-      id: b.id, name: b.name, email: b.email, phone: b.phone,
-      markets: b.markets || [], property_types: b.property_types || [],
-      price_min: b.price_min, price_max: b.price_max, source: b.source,
-    }));
-    const rolodexMatches = await rankWithAI(rolodex, address, ctx, propertyType, priceHint, LOVABLE_API_KEY);
+    const rolodex = (rolodexResp.data || []).map((b: any) => {
+      const comp = rolodexCompleteness(b);
+      return {
+        id: b.id, name: b.name, email: b.email, phone: b.phone,
+        markets: b.markets || [], property_types: b.property_types || [],
+        price_min: b.price_min, price_max: b.price_max, source: b.source,
+        buyer_status: b.buyer_status,
+        profile_completeness: comp.score,
+        profile_complete: comp.isComplete,
+      };
+    });
+    const rolodexRanked = await rankWithAI(rolodex, address, ctx, propertyType, priceHint, LOVABLE_API_KEY);
+    // Apply completeness boost + re-sort so complete profiles get priority within rolodex
+    const rolodexMatches = rolodexRanked
+      .map((m: any) => {
+        const c = rolodex.find((r) => r.id === m.id);
+        const cs = c?.profile_completeness ?? 0;
+        const boost = Math.round((cs / 100) * 15);
+        return {
+          ...m,
+          score: (m.score ?? 50) + boost,
+          profile_completeness: cs,
+          profile_complete: c?.profile_complete ?? false,
+          reason: c?.profile_complete ? `${m.reason} · complete profile` : m.reason,
+        };
+      })
+      .sort((a: any, b: any) =>
+        (b.score ?? 0) - (a.score ?? 0) ||
+        (b.profile_completeness ?? 0) - (a.profile_completeness ?? 0)
+      );
+
 
     // Optional: AI re-rank top archive candidates within tier 1 only (keep tiers stable)
     // Skipped for now — deterministic order is fine and avoids dropping rows on AI flakiness.

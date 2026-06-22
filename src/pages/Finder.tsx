@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BuyCreditsModal } from "@/components/credits/BuyCreditsModal";
 
 const PROPERTY_TYPES = ["SFH", "MFH 2-4", "MFH 5+", "Commercial", "Land", "Mobile"];
-import { MapPin, Sparkles, Loader2, Users, Archive, Globe, Lock, Mail, Phone, Coins, Check, Briefcase, X } from "lucide-react";
+import { MapPin, Sparkles, Loader2, Users, Archive, Globe, Lock, Mail, Phone, Coins, Check, Briefcase, X, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
@@ -38,6 +38,8 @@ type Match = {
   score: number;
   reason: string;
   revealed?: boolean;
+  profile_complete?: boolean;
+  profile_completeness?: number;
 };
 
 type ArchiveState = "admin" | "subscription" | "pay_per_reveal";
@@ -395,6 +397,11 @@ function MatchCard({
       <div className="flex items-center gap-2">
         <span className="text-xs text-muted-foreground w-4">#{i + 1}</span>
         <span className="font-medium text-sm flex-1 truncate">{b.name}</span>
+        {b.profile_complete && (
+          <span title={`Complete profile (${b.profile_completeness ?? 100}%)`}>
+            <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+          </span>
+        )}
         <Badge variant="outline" className="text-[10px]">{Math.round(b.score)}</Badge>
       </div>
       <p className="text-xs text-muted-foreground mt-1">{b.reason}</p>
@@ -440,6 +447,11 @@ function ArchiveCard({
         <span className="font-medium text-sm flex-1 truncate">
           {revealed ? b.name : maskName(b.name)}
         </span>
+        {b.profile_complete && (
+          <span title={`Complete profile (${b.profile_completeness ?? 100}%)`}>
+            <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+          </span>
+        )}
         <Badge variant="outline" className="text-[10px]">{Math.round(b.score)}</Badge>
       </div>
       <p className="text-xs text-muted-foreground mt-1">{b.reason}</p>
