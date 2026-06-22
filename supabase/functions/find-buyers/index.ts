@@ -294,6 +294,10 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      const comp = archiveCompleteness(r);
+      // Completeness boost: up to +12 to nudge fuller profiles up within the same tier
+      const boost = Math.round((comp.score / 100) * 12);
+
       scored.push({
         id: r.id,
         name: r.full_name || [r.first_name, r.last_name].filter(Boolean).join(" ") || "—",
@@ -306,22 +310,53 @@ Deno.serve(async (req) => {
         city: r.city,
         state: r.state,
         source: Array.isArray(r.sources) && r.sources.length ? `${r.sources.length} tenant(s)` : null,
-        score,
+        score: score + boost,
         tier,
-        reason: reasons.join(", "),
+        reason: comp.isComplete ? `${reasons.join(", ")} · complete profile` : reasons.join(", "),
+        profile_completeness: comp.score,
+        profile_complete: comp.isComplete,
       });
     }
 
-    scored.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+    scored.sort((a, b) =>
+      b.score - a.score ||
+      (b.profile_completeness ?? 0) - (a.profile_completeness ?? 0) ||
+      a.name.localeCompare(b.name)
+    );
     const archiveMatches = scored.slice(0, 60);
 
     // Rolodex (private buyers) — keep AI ranking, small pool
-    const rolodex = (rolodexResp.data || []).map((b: any) => ({
-      id: b.id, name: b.name, email: b.email, phone: b.phone,
-      markets: b.markets || [], property_types: b.property_types || [],
-      price_min: b.price_min, price_max: b.price_max, source: b.source,
-    }));
-    const rolodexMatches = await rankWithAI(rolodex, address, ctx, propertyType, priceHint, LOVABLE_API_KEY);
+    const rolodex = (rolodexResp.data || []).map((b: any) => {
+      const comp = rolodexCompleteness(b);
+      return {
+        id: b.id, name: b.name, email: b.email, phone: b.phone,
+        markets: b.markets || [], property_types: b.property_types || [],
+        price_min: b.price_min, price_max: b.price_max, source: b.source,
+        buyer_status: b.buyer_status,
+        profile_completeness: comp.score,
+        profile_complete: comp.isComplete,
+      };
+    });
+    const rolodexRanked = await rankWithAI(rolodex, address, ctx, propertyType, priceHint, LOVABLE_API_KEY);
+    // Apply completeness boost + re-sort so complete profiles get priority within rolodex
+    const rolodexMatches = rolodexRanked
+      .map((m: any) => {
+        const c = rolodex.find((r) => r.id === m.id);
+        const cs = c?.profile_completeness ?? 0;
+        const boost = Math.round((cs / 100) * 15);
+        return {
+          ...m,
+          score: (m.score ?? 50) + boost,
+          profile_completeness: cs,
+          profile_complete: c?.profile_complete ?? false,
+          reason: c?.profile_complete ? `${m.reason} · complete profile` : m.reason,
+        };
+      })
+      .sort((a: any, b: any) =>
+        (b.score ?? 0) - (a.score ?? 0) ||
+        (b.profile_completeness ?? 0) - (a.profile_completeness ?? 0)
+      );
+
 
     // Optional: AI re-rank top archive candidates within tier 1 only (keep tiers stable)
     // Skipped for now — deterministic order is fine and avoids dropping rows on AI flakiness.
