@@ -447,6 +447,11 @@ function ArchiveCard({
         <span className="font-medium text-sm flex-1 truncate">
           {revealed ? b.name : maskName(b.name)}
         </span>
+        {b.profile_complete && (
+          <span title={`Complete profile (${b.profile_completeness ?? 100}%)`}>
+            <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+          </span>
+        )}
         <Badge variant="outline" className="text-[10px]">{Math.round(b.score)}</Badge>
       </div>
       <p className="text-xs text-muted-foreground mt-1">{b.reason}</p>
