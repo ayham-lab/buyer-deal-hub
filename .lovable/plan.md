@@ -1,138 +1,140 @@
-# Plan: GHL Marketplace OAuth + Multi-Account Support + Production Hardening
 
-## Context recap
+# Gap Analysis: Current App vs DispoGenius / InvestorLift
 
-- This app will be installed inside GHL as a marketplace app (iframe / external auth).
-- One Dispo CRM workspace can be connected to **up to 10 GHL locations (sub-accounts)**. All users on a connected GHL location should be able to see the CRM data for that workspace.
-- GHL is the OAuth **client**; this app is the OAuth **provider**. Lifetime: as long as user is logged into GHL they can access.
-- After OAuth: also do Security Scan + RLS audit, Settings page, CSV export, Error boundaries.
+Based on a review of the current codebase (Deals/Pipeline, Buyers + Archive, Finder, Title Co's, Realtors, Notaries, Marketing, Offers, Credits, GHL sync), here's where we stand and where the gaps are vs the leading dispo platforms.
 
----
+## What we already have (solid foundation)
+- Pipeline (Kanban + list), deal drawer, activity log, checklist, files, assignees
+- Buyers rolodex + global Archive with reveal/credits + vetting + completeness scoring
+- Buyer Finder algorithm w/ markets, price, property type, completeness boost
+- Deal Marketing (public deal page), offers tracking
+- Title companies, Realtors, Notaries directories (personal + archive)
+- GHL integration (opportunity sync, stage mappings, sub-accounts, SSO)
+- Credits, subscriptions, operator accounts, team/roles, KPIs
 
-## Part 1 — GHL OAuth Provider
+## Major gaps vs DispoGenius / InvestorLift
 
-### 1a. Database (migration)
+### 1. Outbound buyer marketing (biggest gap)
+Neither a true "blast" engine exists. Competitors win here.
+- **Email blasts** to matched buyers with deal page link, open/click tracking
+- **SMS blasts** (Twilio/GHL) with compliance (TCPA opt-out, quiet hours)
+- **Ringless voicemail** drops
+- **Branded buyer-facing deal pages** (we have public deals; need theming, photos gallery, financials calculator, comps, map, downloadable docs)
+- **Per-buyer tracking links** so we know who opened/clicked/viewed
 
-Three new tables, all RLS-locked to service-role only (edge functions use service key):
+### 2. Buyer engagement & bidding
+- **Live offer portal** on the public deal page (buyer submits offer + POF without login, or via magic link)
+- **Highest-and-best / auction mode** with countdown timer
+- **Deal "interest" button** (soft signal before formal offer)
+- **Buyer reply inbox** consolidated (email replies, SMS replies tied to deal)
 
-- `oauth_clients` — pre-seeded with one row for GHL
-  - `id` uuid pk, `client_id` text unique, `client_secret_hash` text, `name` text, `redirect_uris` text[], `scopes` text[], `created_at`
-- `oauth_authorization_codes`
-  - `code` text pk, `client_id` text, `user_id` uuid, `redirect_uri` text, `scope` text, `expires_at` timestamptz, `used` bool default false
-- `oauth_access_tokens`
-  - `access_token` text pk, `refresh_token` text unique, `client_id` text, `user_id` uuid, `scope` text, `expires_at`, `created_at`
+### 3. Buyer intelligence
+- **Buyer activity score** (opens, clicks, offers, closes) feeding the algorithm
+- **"Hot buyers" leaderboard** per market
+- **Skiptrace enrichment surfaced in UI** (we have skiptrace tables but limited workflow)
+- **Duplicate detection / merge** for buyers across rolodex + archive
+- **Buyer tags** (cash, hard money, fix-flip, BRRRR, Sec 8, MTR, etc.) used in matching
+- **POF verification workflow** (admin review, expiration dates, auto-flag stale)
 
-Plus a **link table for multi-location**:
-- `ghl_location_links`
-  - `id` uuid pk, `workspace_owner_user_id` uuid (the CRM account that owns the data), `ghl_location_id` text unique, `linked_by_user_id` uuid, `linked_at`
-  - Index on `ghl_location_id`. RLS: workspace owner + admin can read; insert via edge function.
+### 4. Deal intake & enrichment
+- **Comps integration** (manual entry now; add ATTOM/Zillow/RentCast pull)
+- **ARV/MAO calculator** built into deal
+- **Photo gallery upload** + auto-resize, drag reorder, cover photo
+- **Property data autofill** from address (county, zip, beds/baths, sqft)
+- **Map view** of deals + buyers' markets
 
-The migration will also **generate the GHL client_id + a 48-char client_secret**, store the bcrypt/sha256 hash, and `RAISE NOTICE` the plaintext secret once so it appears in the migration output. (Plaintext is never stored.)
+### 5. Contracts & closing
+- **E-signature** (DocuSign/Dropbox Sign) on assignment contracts
+- **Contract templates** with merge fields (buyer, seller, address, price)
+- **EMD tracking workflow** with reminders + escrow link
+- **Title order automation** — one-click "Send to title" with contract + buyer info
+- **Closing checklist** auto-generated from stage
 
-### 1b. Edge functions
+### 6. Lead/seller side (optional but DG has it)
+- Seller lead intake forms, lead source attribution, disposition reasons
+- We track lead_source but no intake forms or seller campaigns
 
-Three new functions (all `verify_jwt = false`, validate in code):
+### 7. Reporting & analytics
+- KPIs exist; missing:
+  - **Buyer engagement reports** (opens, clicks, response rate per blast)
+  - **Time-to-assign / time-to-close cohort analysis**
+  - **Revenue forecasting** from pipeline weighted by stage
+  - **Per-market velocity**
+  - **Source ROI** (which lead source → closed deals)
 
-1. **`oauth-authorize`** (GET)
-   - Params: `client_id`, `redirect_uri`, `response_type=code`, `scope`, `state`
-   - Validates `client_id` + `redirect_uri` against `oauth_clients.redirect_uris`
-   - Redirects browser to `/oauth/consent?client_id=…&redirect_uri=…&scope=…&state=…`
+### 8. Collaboration & workflow
+- **@mentions and threaded comments** on deals (we have activity log only)
+- **Task automations / triggers** (when stage → X, create task / notify role)
+- **Slack/Discord notifications** for new offers, won deals
+- **Email-to-deal** (forward seller emails into deal activity)
 
-2. **`oauth-token`** (POST, form-encoded)
-   - Grant types: `authorization_code` and `refresh_token`
-   - Validates `client_id` + `client_secret` (compares hash)
-   - For `authorization_code`: looks up code, checks not-used + not-expired, marks used, issues access_token (1h) + refresh_token (90d)
-   - For `refresh_token`: rotates and issues new pair
-   - Returns `{ access_token, token_type: "Bearer", expires_in, refresh_token, scope }`
+### 9. Public-facing / VIP buyer portal
+InvestorLift's killer feature: a **logged-in buyer portal** where buyers
+- See deals matched to their criteria
+- Save favorites, set alerts
+- Submit offers, upload POF once and reuse
+- See their own deal history with you
+We have nothing here.
 
-3. **`oauth-userinfo`** (GET)
-   - Bearer access_token → returns `{ sub, email, name, ghl_locations: [...] }`
-
-### 1c. Frontend pages
-
-- **`src/pages/OAuthConsent.tsx`** at `/oauth/consent`
-  - If not logged in → redirect to `/login?next=<current-url>`
-  - Shows: "GoHighLevel wants to access your Dispo CRM" + scopes
-  - Approve → calls a small edge function `oauth-issue-code` (or inline endpoint) that creates an authorization code and redirects to GHL's `redirect_uri?code=…&state=…`
-  - Deny → redirect with `?error=access_denied`
-
-- **`src/pages/Login.tsx`** — honor `?next=` query param after successful login (instead of always going to `/buyers`).
-
-### 1d. Multi-location linking flow
-
-When a GHL user installs the app on a sub-account and goes through OAuth:
-- The `oauth-userinfo` response (called by GHL) includes the `ghl_location_id` from the SSO payload
-- An edge function `link-ghl-location` (called from the consent page on approve) creates a row in `ghl_location_links` mapping that `ghl_location_id` → the current logged-in user's workspace
-- A user can link up to 10 locations. Settings page shows linked locations with "Disconnect" button.
-
-### 1e. What you'll need to do in GHL after I deploy
-
-1. I'll show you the generated **Client ID** and **Client Secret** (secret shown once — copy immediately).
-2. In the GHL marketplace app form paste:
-   - **Client ID**: `<generated>`
-   - **Client Secret**: `<generated>`
-   - **Authorization URL**: `https://ihvqhjrrahgyunmfvtrp.supabase.co/functions/v1/oauth-authorize`
-   - **Token URL**: `https://ihvqhjrrahgyunmfvtrp.supabase.co/functions/v1/oauth-token`
-   - **Scope**: `read write`
-   - **Redirect URL**: already set to the GHL callback you provided
-3. Save → install on a test sub-account → verify the consent screen appears → verify you land back in GHL.
-
----
-
-## Part 2 — Security Scan + RLS Audit
-
-- Run `security--run_security_scan` and `supabase--linter`
-- Fix anything critical (likely items: enable HIBP password check, review profiles RLS for cross-location reads once multi-location is in)
-- Update security memory with rationale for any ignored findings
+### 10. Mobile / Polish
+- No PWA / mobile-optimized deal cards for on-the-go dispo
+- Push notifications for new offers
+- Quick-action toolbar (call buyer, text buyer, copy deal link)
 
 ---
 
-## Part 3 — Settings Page
+## Quick-win improvements to existing features
 
-New `src/pages/Settings.tsx` at `/settings` with tabs:
-- **Profile** — name, email (read-only), change password
-- **GHL Connections** — list of linked `ghl_location_links` with Disconnect button; "Connect another GHL account" instructions
-- **Notifications** — toggles for email/in-app notifications (stored in `profiles.notification_prefs` jsonb — added in migration)
-- **Danger zone** — sign out everywhere, delete account (calls edge function)
-
-Add Settings link to Sidebar + TopBar user menu.
-
----
-
-## Part 4 — CSV Export
-
-Add a reusable `exportToCsv(rows, filename)` util in `src/lib/csv.ts`. Add "Export CSV" buttons to:
-- Buyers page (current filtered list)
-- Pipeline page (List view)
-- Tasks page
-
-No new dependencies — write a small CSV serializer with proper quote escaping.
+- **Finder**: add filters for buyer tags, last-active recency, min completeness score; export matched list to CSV; "Send blast to these N buyers" CTA
+- **Buyer profile**: timeline of every deal sent + their response; auto-vetting expiration; one-click "Request updated POF" email
+- **Deal page**: photo lightbox, comps table, financial breakdown, embedded map
+- **Offers tab**: rank by net-to-seller, side-by-side compare, accept→auto-populate contract
+- **Marketing**: per-deal share link with UTM, QR code, branded preview card (OG tags) — verify SEO meta on PublicDeal
+- **Archive**: bulk-reveal with credit estimate, saved searches with email alerts when new matching buyers added
+- **Notifications**: in-app + email digest of new offers, hot buyers, expiring EMD, stale deals
+- **Realtor/Notary directories**: tie to deals (assign closing notary / listing realtor), track usage like title companies
 
 ---
 
-## Part 5 — Error Boundaries
+## Suggested prioritization (phases)
 
-- New `src/components/ErrorBoundary.tsx` (class component) with a friendly fallback UI ("Something went wrong" + Reload + Report)
-- Wrap `<Routes>` in `App.tsx` with a top-level boundary
-- Wrap each page route with a per-route boundary so one page crash doesn't blank the whole app
+**Phase 1 — Outbound engine (highest ROI)**
+1. Email blast to matched buyers (Resend, tracked opens/clicks per buyer)
+2. Branded deal page upgrade (photos, comps, financials, map)
+3. Tracked share links + UTM
+4. Bulk "send to matched buyers" from Finder
+
+**Phase 2 — Offer & engagement**
+5. Public offer submission form on deal page (magic-link, no auth)
+6. Offer ranking + accept→contract flow
+7. SMS blast (Twilio or GHL passthrough) with TCPA controls
+8. Buyer activity score feeding Finder algorithm
+
+**Phase 3 — Contracts & closing**
+9. E-sign integration + contract templates with merge fields
+10. One-click send-to-title
+11. Auto-checklist by stage + reminders
+
+**Phase 4 — Buyer portal & intelligence**
+12. Logged-in buyer portal (deals matched, favorites, alerts, POF vault)
+13. Comps / ARV integration (ATTOM or RentCast)
+14. Skiptrace workflow surfaced in buyer UI
+
+**Phase 5 — Analytics & polish**
+15. Engagement & revenue reports
+16. Slack/email digests, automations, @mentions
+17. Mobile PWA + push
 
 ---
 
-## Files
+## Technical notes (for later phases)
+- Email: Resend via edge function; track via webhook → `buyer_engagement` table
+- SMS: Twilio Messaging Service; persist consent + opt-outs per buyer
+- E-sign: Dropbox Sign (cheaper than DocuSign) via edge function
+- Comps: RentCast API (cheapest) or ATTOM for richer data
+- Public offer submission: extend `deal_offers` with `submitted_via='public'`, validate via signed magic-link tokens
+- Buyer portal: Supabase Auth with `buyer_portal` role; RLS limits to buyers' own data + deals matching their markets
 
-**Create:** `supabase/functions/oauth-authorize/index.ts`, `supabase/functions/oauth-token/index.ts`, `supabase/functions/oauth-userinfo/index.ts`, `supabase/functions/link-ghl-location/index.ts`, `src/pages/OAuthConsent.tsx`, `src/pages/Settings.tsx`, `src/components/ErrorBoundary.tsx`, `src/lib/csv.ts`, plus migration
+---
 
-**Edit:** `src/App.tsx` (routes + boundary), `src/pages/Login.tsx` (honor `?next=`), `src/components/layout/Sidebar.tsx` + `TopBar.tsx` (Settings link), `src/pages/Buyers.tsx`, `src/pages/Pipeline.tsx`, `src/pages/Tasks.tsx` (Export buttons)
-
-## Order of execution
-
-1. Migration (oauth tables + ghl_location_links + notification_prefs) — secret printed in output
-2. Edge functions (authorize, token, userinfo, link-ghl-location)
-3. OAuthConsent page + Login `?next=` support
-4. ErrorBoundary + wrap routes
-5. Settings page + sidebar link
-6. CSV export util + buttons
-7. Run security scan + linter, fix findings, update security memory
-8. Hand you the Client ID + Client Secret + URLs to paste into GHL
-
-Approve and I'll execute end-to-end.
+Want me to turn any phase (or specific items) into a concrete build plan? I'd suggest starting with **Phase 1: email blast + branded deal page** — it's the single biggest competitive gap and unlocks measurable buyer engagement data we can feed back into the Finder algorithm.
