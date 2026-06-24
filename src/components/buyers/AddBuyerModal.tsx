@@ -173,7 +173,7 @@ export function AddBuyerModal({ open, onClose, onCreated }: { open: boolean; onC
       if (urls.length) updatePayload.proof_of_funds_files = urls;
     }
 
-    const { error } = await supabase.from("buyers").update(updatePayload).eq("id", buyerId).select("id");
+    const { error } = await supabase.from("buyers").update(updatePayload as any).eq("id", buyerId).select("id");
     if (error) { toast.error(error.message); setBusy(false); return; }
 
     toast.success("Buyer details saved");
