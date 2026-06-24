@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { scopeToLocation, getActiveLocationId } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Users as UsersIcon, Upload, Download, Trash2 } from "lucide-react";
+import { Plus, Search, Users as UsersIcon, Upload, Download, Trash2, Filter, X } from "lucide-react";
 import { toast } from "sonner";
 import { AddBuyerModal } from "@/components/buyers/AddBuyerModal";
 import { ImportBuyersModal } from "@/components/buyers/ImportBuyersModal";
@@ -20,6 +20,63 @@ import { format as fmtDate } from "date-fns";
 import { getBuyerCompleteness } from "@/lib/buyerCompleteness";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CheckCircle2, CircleDashed } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+
+const PROPERTY_TYPE_OPTIONS = ["SFH", "MFH 2-4", "MFH 5+", "Commercial", "Land", "Mobile"];
+const BUYER_TYPE_OPTIONS = ["Flipper", "Landlord", "Developer", "Section 8", "Hedge Fund", "Airbnb / Rooming House", "Padsplit", "Mobile Homes"];
+const BUYER_FREQUENCY_OPTIONS = ["Full-time Buyer", "Part-time Buyer", "Tax Write-off Buyer"];
+const STATUS_OPTIONS = [
+  { value: "not_vetted", label: "Not Vetted" },
+  { value: "vetted", label: "Vetted" },
+  { value: "vetted_and_closed", label: "Vetted + Closed" },
+  { value: "repeat", label: "Repeat Buyer" },
+  { value: "recurring", label: "Recurring Buyer" },
+];
+
+function MultiFilter({
+  label, options, value, onChange,
+}: {
+  label: string;
+  options: { value: string; label: string }[];
+  value: string[];
+  onChange: (v: string[]) => void;
+}) {
+  const count = value.length;
+  function toggle(v: string) {
+    onChange(value.includes(v) ? value.filter((x) => x !== v) : [...value, v]);
+  }
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm" className="h-8 gap-1">
+          {label}
+          {count > 0 && <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">{count}</Badge>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-56 p-2" align="start">
+        <div className="max-h-64 overflow-y-auto space-y-1">
+          {options.map((o) => (
+            <label key={o.value} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
+              <Checkbox checked={value.includes(o.value)} onCheckedChange={() => toggle(o.value)} />
+              <span>{o.label}</span>
+            </label>
+          ))}
+        </div>
+        {count > 0 && (
+          <button
+            onClick={() => onChange([])}
+            className="mt-2 w-full text-xs text-muted-foreground hover:text-foreground py-1 border-t border-border"
+          >
+            Clear
+          </button>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 
 export interface Buyer {
   id: string;
@@ -74,6 +131,16 @@ export default function Buyers() {
   const [showImport, setShowImport] = useState(false);
   const [active, setActive] = useState<Buyer | null>(null);
   const [activityFilter, setActivityFilter] = useState<"all" | BuyerActivity>("all");
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [propertyTypeFilter, setPropertyTypeFilter] = useState<string[]>([]);
+  const [buyerTypeFilter, setBuyerTypeFilter] = useState<string[]>([]);
+  const [frequencyFilter, setFrequencyFilter] = useState<string[]>([]);
+  const [marketFilter, setMarketFilter] = useState("");
+  const [priceMinFilter, setPriceMinFilter] = useState("");
+  const [priceMaxFilter, setPriceMaxFilter] = useState("");
+  const [profileFilter, setProfileFilter] = useState<"all" | "complete" | "incomplete">("all");
+  const [pofFilter, setPofFilter] = useState<"all" | "has" | "missing">("all");
+
 
 
 
@@ -99,22 +166,72 @@ export default function Buyers() {
 
   useEffect(() => { load(); }, [user]);
 
-  const filtered = buyers.filter((b) => {
-    if (activityFilter !== "all" && (b.buyer_activity || "currently_buying") !== activityFilter) return false;
-    const q = search.trim().toLowerCase();
-    if (!q) return true;
-    const digits = q.replace(/\D/g, "");
-    const phoneDigits = (b.phone || "").replace(/\D/g, "");
-    return (
-      b.name.toLowerCase().includes(q) ||
-      (b.first_name || "").toLowerCase().includes(q) ||
-      (b.last_name || "").toLowerCase().includes(q) ||
-      (b.email || "").toLowerCase().includes(q) ||
-      (b.company_name || "").toLowerCase().includes(q) ||
-      b.markets.some((m) => m.toLowerCase().includes(q)) ||
-      (digits.length >= 3 && phoneDigits.includes(digits))
-    );
-  });
+  const filtered = useMemo(() => {
+    const priceMinNum = priceMinFilter ? Number(priceMinFilter) : null;
+    const priceMaxNum = priceMaxFilter ? Number(priceMaxFilter) : null;
+    const marketQ = marketFilter.trim().toLowerCase();
+
+    return buyers.filter((b) => {
+      if (activityFilter !== "all" && (b.buyer_activity || "currently_buying") !== activityFilter) return false;
+      if (statusFilter.length && !statusFilter.includes(b.buyer_status || "not_vetted")) return false;
+      if (propertyTypeFilter.length && !propertyTypeFilter.some((p) => (b.property_types || []).includes(p))) return false;
+      if (buyerTypeFilter.length && !buyerTypeFilter.some((p) => (b.buyer_types || []).includes(p))) return false;
+      if (frequencyFilter.length && !frequencyFilter.some((p) => (b.buyer_frequency || []).includes(p))) return false;
+      if (marketQ && !(b.markets || []).some((m) => m.toLowerCase().includes(marketQ))) return false;
+      // Price overlap: buyer range [min,max] overlaps filter range [pMin,pMax]
+      if (priceMinNum !== null && b.price_max !== null && b.price_max < priceMinNum) return false;
+      if (priceMaxNum !== null && b.price_min !== null && b.price_min > priceMaxNum) return false;
+      if (profileFilter !== "all") {
+        const isComplete = getBuyerCompleteness(b).isComplete;
+        if (profileFilter === "complete" && !isComplete) return false;
+        if (profileFilter === "incomplete" && isComplete) return false;
+      }
+      if (pofFilter !== "all") {
+        const hasPof = (b.proof_of_funds_files || []).length > 0;
+        if (pofFilter === "has" && !hasPof) return false;
+        if (pofFilter === "missing" && hasPof) return false;
+      }
+      const q = search.trim().toLowerCase();
+      if (!q) return true;
+      const digits = q.replace(/\D/g, "");
+      const phoneDigits = (b.phone || "").replace(/\D/g, "");
+      return (
+        b.name.toLowerCase().includes(q) ||
+        (b.first_name || "").toLowerCase().includes(q) ||
+        (b.last_name || "").toLowerCase().includes(q) ||
+        (b.email || "").toLowerCase().includes(q) ||
+        (b.company_name || "").toLowerCase().includes(q) ||
+        b.markets.some((m) => m.toLowerCase().includes(q)) ||
+        (digits.length >= 3 && phoneDigits.includes(digits))
+      );
+    });
+  }, [buyers, search, activityFilter, statusFilter, propertyTypeFilter, buyerTypeFilter, frequencyFilter, marketFilter, priceMinFilter, priceMaxFilter, profileFilter, pofFilter]);
+
+  const activeFilterCount =
+    (activityFilter !== "all" ? 1 : 0) +
+    statusFilter.length +
+    propertyTypeFilter.length +
+    buyerTypeFilter.length +
+    frequencyFilter.length +
+    (marketFilter.trim() ? 1 : 0) +
+    (priceMinFilter ? 1 : 0) +
+    (priceMaxFilter ? 1 : 0) +
+    (profileFilter !== "all" ? 1 : 0) +
+    (pofFilter !== "all" ? 1 : 0);
+
+  function clearAllFilters() {
+    setActivityFilter("all");
+    setStatusFilter([]);
+    setPropertyTypeFilter([]);
+    setBuyerTypeFilter([]);
+    setFrequencyFilter([]);
+    setMarketFilter("");
+    setPriceMinFilter("");
+    setPriceMaxFilter("");
+    setProfileFilter("all");
+    setPofFilter("all");
+  }
+
 
   return (
     <AppLayout>
@@ -157,6 +274,109 @@ export default function Buyers() {
           </div>
         </div>
 
+        <div className="flex flex-wrap items-center gap-2 p-3 rounded-lg border border-border bg-card">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground mr-1">
+            <Filter className="h-3.5 w-3.5" /> Filters
+          </div>
+
+          <MultiFilter
+            label="Status"
+            options={STATUS_OPTIONS}
+            value={statusFilter}
+            onChange={setStatusFilter}
+          />
+          <MultiFilter
+            label="Property Type"
+            options={PROPERTY_TYPE_OPTIONS.map((o) => ({ value: o, label: o }))}
+            value={propertyTypeFilter}
+            onChange={setPropertyTypeFilter}
+          />
+          <MultiFilter
+            label="Buyer Type"
+            options={BUYER_TYPE_OPTIONS.map((o) => ({ value: o, label: o }))}
+            value={buyerTypeFilter}
+            onChange={setBuyerTypeFilter}
+          />
+          <MultiFilter
+            label="Frequency"
+            options={BUYER_FREQUENCY_OPTIONS.map((o) => ({ value: o, label: o }))}
+            value={frequencyFilter}
+            onChange={setFrequencyFilter}
+          />
+
+          <Input
+            placeholder="Market contains…"
+            value={marketFilter}
+            onChange={(e) => setMarketFilter(e.target.value)}
+            className="h-8 w-40 text-xs"
+          />
+          <Input
+            type="number"
+            placeholder="Price min"
+            value={priceMinFilter}
+            onChange={(e) => setPriceMinFilter(e.target.value)}
+            className="h-8 w-28 text-xs"
+          />
+          <Input
+            type="number"
+            placeholder="Price max"
+            value={priceMaxFilter}
+            onChange={(e) => setPriceMaxFilter(e.target.value)}
+            className="h-8 w-28 text-xs"
+          />
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1">
+                Profile
+                {profileFilter !== "all" && <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">1</Badge>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-40 p-2" align="start">
+              {(["all", "complete", "incomplete"] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setProfileFilter(v)}
+                  className={`w-full text-left text-sm px-2 py-1.5 rounded hover:bg-muted ${profileFilter === v ? "bg-muted font-medium" : ""}`}
+                >
+                  {v === "all" ? "All" : v === "complete" ? "Complete" : "Incomplete"}
+                </button>
+              ))}
+            </PopoverContent>
+          </Popover>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1">
+                POF
+                {pofFilter !== "all" && <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">1</Badge>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-40 p-2" align="start">
+              {(["all", "has", "missing"] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setPofFilter(v)}
+                  className={`w-full text-left text-sm px-2 py-1.5 rounded hover:bg-muted ${pofFilter === v ? "bg-muted font-medium" : ""}`}
+                >
+                  {v === "all" ? "All" : v === "has" ? "Has POF" : "Missing POF"}
+                </button>
+              ))}
+            </PopoverContent>
+          </Popover>
+
+          {activeFilterCount > 0 && (
+            <>
+              <span className="text-xs text-muted-foreground ml-auto">
+                {filtered.length} of {buyers.length}
+              </span>
+              <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs" onClick={clearAllFilters}>
+                <X className="h-3 w-3" /> Clear all ({activeFilterCount})
+              </Button>
+            </>
+          )}
+        </div>
+
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-xs text-muted-foreground mr-1">Activity:</span>
           {(["all", ...BUYER_ACTIVITY_OPTIONS.map((o) => o.value)] as const).map((v) => (
@@ -173,6 +393,7 @@ export default function Buyers() {
             </button>
           ))}
         </div>
+
 
         {loading ? (
           <div className="space-y-2">
