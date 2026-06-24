@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { scopeToLocation, getActiveLocationId } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Users as UsersIcon, Upload, Download, Trash2 } from "lucide-react";
+import { Plus, Search, Users as UsersIcon, Upload, Download, Trash2, Filter, X } from "lucide-react";
 import { toast } from "sonner";
 import { AddBuyerModal } from "@/components/buyers/AddBuyerModal";
 import { ImportBuyersModal } from "@/components/buyers/ImportBuyersModal";
@@ -20,6 +20,63 @@ import { format as fmtDate } from "date-fns";
 import { getBuyerCompleteness } from "@/lib/buyerCompleteness";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CheckCircle2, CircleDashed } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+
+const PROPERTY_TYPE_OPTIONS = ["SFH", "MFH 2-4", "MFH 5+", "Commercial", "Land", "Mobile"];
+const BUYER_TYPE_OPTIONS = ["Flipper", "Landlord", "Developer", "Section 8", "Hedge Fund", "Airbnb / Rooming House", "Padsplit", "Mobile Homes"];
+const BUYER_FREQUENCY_OPTIONS = ["Full-time Buyer", "Part-time Buyer", "Tax Write-off Buyer"];
+const STATUS_OPTIONS = [
+  { value: "not_vetted", label: "Not Vetted" },
+  { value: "vetted", label: "Vetted" },
+  { value: "vetted_and_closed", label: "Vetted + Closed" },
+  { value: "repeat", label: "Repeat Buyer" },
+  { value: "recurring", label: "Recurring Buyer" },
+];
+
+function MultiFilter({
+  label, options, value, onChange,
+}: {
+  label: string;
+  options: { value: string; label: string }[];
+  value: string[];
+  onChange: (v: string[]) => void;
+}) {
+  const count = value.length;
+  function toggle(v: string) {
+    onChange(value.includes(v) ? value.filter((x) => x !== v) : [...value, v]);
+  }
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm" className="h-8 gap-1">
+          {label}
+          {count > 0 && <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">{count}</Badge>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-56 p-2" align="start">
+        <div className="max-h-64 overflow-y-auto space-y-1">
+          {options.map((o) => (
+            <label key={o.value} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
+              <Checkbox checked={value.includes(o.value)} onCheckedChange={() => toggle(o.value)} />
+              <span>{o.label}</span>
+            </label>
+          ))}
+        </div>
+        {count > 0 && (
+          <button
+            onClick={() => onChange([])}
+            className="mt-2 w-full text-xs text-muted-foreground hover:text-foreground py-1 border-t border-border"
+          >
+            Clear
+          </button>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 
 export interface Buyer {
   id: string;
