@@ -31,7 +31,7 @@ export interface Buyer {
   price_min: number | null;
   price_max: number | null;
   source: string | null;
-  last_contact_at: string | null;
+  
   deal_count: number;
   deals_purchased: number;
   criteria_notes: string | null;
@@ -202,7 +202,7 @@ export default function Buyers() {
                   <th>Markets</th>
                   <th>Price Range</th>
                   <th>Property Types</th>
-                  <th>Last Contact</th>
+                  
                   <th title="Your personal count. System total combines all operators.">Deals</th>
                   <th>Source</th>
                   <th></th>
@@ -272,9 +272,6 @@ export default function Buyers() {
                         : "—"}
                     </td>
                     <td className="text-muted-foreground">{b.property_types.join(", ") || "—"}</td>
-                    <td className="text-muted-foreground">
-                      {b.last_contact_at ? format(new Date(b.last_contact_at), "MMM d") : "—"}
-                    </td>
                     <td>{b.deals_purchased ?? 0}</td>
                     <td className="text-muted-foreground">{b.source || "—"}</td>
                     <td onClick={(e) => e.stopPropagation()}>
