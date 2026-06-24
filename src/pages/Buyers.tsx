@@ -131,6 +131,16 @@ export default function Buyers() {
   const [showImport, setShowImport] = useState(false);
   const [active, setActive] = useState<Buyer | null>(null);
   const [activityFilter, setActivityFilter] = useState<"all" | BuyerActivity>("all");
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [propertyTypeFilter, setPropertyTypeFilter] = useState<string[]>([]);
+  const [buyerTypeFilter, setBuyerTypeFilter] = useState<string[]>([]);
+  const [frequencyFilter, setFrequencyFilter] = useState<string[]>([]);
+  const [marketFilter, setMarketFilter] = useState("");
+  const [priceMinFilter, setPriceMinFilter] = useState("");
+  const [priceMaxFilter, setPriceMaxFilter] = useState("");
+  const [profileFilter, setProfileFilter] = useState<"all" | "complete" | "incomplete">("all");
+  const [pofFilter, setPofFilter] = useState<"all" | "has" | "missing">("all");
+
 
 
 
@@ -156,22 +166,72 @@ export default function Buyers() {
 
   useEffect(() => { load(); }, [user]);
 
-  const filtered = buyers.filter((b) => {
-    if (activityFilter !== "all" && (b.buyer_activity || "currently_buying") !== activityFilter) return false;
-    const q = search.trim().toLowerCase();
-    if (!q) return true;
-    const digits = q.replace(/\D/g, "");
-    const phoneDigits = (b.phone || "").replace(/\D/g, "");
-    return (
-      b.name.toLowerCase().includes(q) ||
-      (b.first_name || "").toLowerCase().includes(q) ||
-      (b.last_name || "").toLowerCase().includes(q) ||
-      (b.email || "").toLowerCase().includes(q) ||
-      (b.company_name || "").toLowerCase().includes(q) ||
-      b.markets.some((m) => m.toLowerCase().includes(q)) ||
-      (digits.length >= 3 && phoneDigits.includes(digits))
-    );
-  });
+  const filtered = useMemo(() => {
+    const priceMinNum = priceMinFilter ? Number(priceMinFilter) : null;
+    const priceMaxNum = priceMaxFilter ? Number(priceMaxFilter) : null;
+    const marketQ = marketFilter.trim().toLowerCase();
+
+    return buyers.filter((b) => {
+      if (activityFilter !== "all" && (b.buyer_activity || "currently_buying") !== activityFilter) return false;
+      if (statusFilter.length && !statusFilter.includes(b.buyer_status || "not_vetted")) return false;
+      if (propertyTypeFilter.length && !propertyTypeFilter.some((p) => (b.property_types || []).includes(p))) return false;
+      if (buyerTypeFilter.length && !buyerTypeFilter.some((p) => (b.buyer_types || []).includes(p))) return false;
+      if (frequencyFilter.length && !frequencyFilter.some((p) => (b.buyer_frequency || []).includes(p))) return false;
+      if (marketQ && !(b.markets || []).some((m) => m.toLowerCase().includes(marketQ))) return false;
+      // Price overlap: buyer range [min,max] overlaps filter range [pMin,pMax]
+      if (priceMinNum !== null && b.price_max !== null && b.price_max < priceMinNum) return false;
+      if (priceMaxNum !== null && b.price_min !== null && b.price_min > priceMaxNum) return false;
+      if (profileFilter !== "all") {
+        const isComplete = getBuyerCompleteness(b).isComplete;
+        if (profileFilter === "complete" && !isComplete) return false;
+        if (profileFilter === "incomplete" && isComplete) return false;
+      }
+      if (pofFilter !== "all") {
+        const hasPof = (b.proof_of_funds_files || []).length > 0;
+        if (pofFilter === "has" && !hasPof) return false;
+        if (pofFilter === "missing" && hasPof) return false;
+      }
+      const q = search.trim().toLowerCase();
+      if (!q) return true;
+      const digits = q.replace(/\D/g, "");
+      const phoneDigits = (b.phone || "").replace(/\D/g, "");
+      return (
+        b.name.toLowerCase().includes(q) ||
+        (b.first_name || "").toLowerCase().includes(q) ||
+        (b.last_name || "").toLowerCase().includes(q) ||
+        (b.email || "").toLowerCase().includes(q) ||
+        (b.company_name || "").toLowerCase().includes(q) ||
+        b.markets.some((m) => m.toLowerCase().includes(q)) ||
+        (digits.length >= 3 && phoneDigits.includes(digits))
+      );
+    });
+  }, [buyers, search, activityFilter, statusFilter, propertyTypeFilter, buyerTypeFilter, frequencyFilter, marketFilter, priceMinFilter, priceMaxFilter, profileFilter, pofFilter]);
+
+  const activeFilterCount =
+    (activityFilter !== "all" ? 1 : 0) +
+    statusFilter.length +
+    propertyTypeFilter.length +
+    buyerTypeFilter.length +
+    frequencyFilter.length +
+    (marketFilter.trim() ? 1 : 0) +
+    (priceMinFilter ? 1 : 0) +
+    (priceMaxFilter ? 1 : 0) +
+    (profileFilter !== "all" ? 1 : 0) +
+    (pofFilter !== "all" ? 1 : 0);
+
+  function clearAllFilters() {
+    setActivityFilter("all");
+    setStatusFilter([]);
+    setPropertyTypeFilter([]);
+    setBuyerTypeFilter([]);
+    setFrequencyFilter([]);
+    setMarketFilter("");
+    setPriceMinFilter("");
+    setPriceMaxFilter("");
+    setProfileFilter("all");
+    setPofFilter("all");
+  }
+
 
   return (
     <AppLayout>
