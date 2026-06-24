@@ -274,6 +274,109 @@ export default function Buyers() {
           </div>
         </div>
 
+        <div className="flex flex-wrap items-center gap-2 p-3 rounded-lg border border-border bg-card">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground mr-1">
+            <Filter className="h-3.5 w-3.5" /> Filters
+          </div>
+
+          <MultiFilter
+            label="Status"
+            options={STATUS_OPTIONS}
+            value={statusFilter}
+            onChange={setStatusFilter}
+          />
+          <MultiFilter
+            label="Property Type"
+            options={PROPERTY_TYPE_OPTIONS.map((o) => ({ value: o, label: o }))}
+            value={propertyTypeFilter}
+            onChange={setPropertyTypeFilter}
+          />
+          <MultiFilter
+            label="Buyer Type"
+            options={BUYER_TYPE_OPTIONS.map((o) => ({ value: o, label: o }))}
+            value={buyerTypeFilter}
+            onChange={setBuyerTypeFilter}
+          />
+          <MultiFilter
+            label="Frequency"
+            options={BUYER_FREQUENCY_OPTIONS.map((o) => ({ value: o, label: o }))}
+            value={frequencyFilter}
+            onChange={setFrequencyFilter}
+          />
+
+          <Input
+            placeholder="Market contains…"
+            value={marketFilter}
+            onChange={(e) => setMarketFilter(e.target.value)}
+            className="h-8 w-40 text-xs"
+          />
+          <Input
+            type="number"
+            placeholder="Price min"
+            value={priceMinFilter}
+            onChange={(e) => setPriceMinFilter(e.target.value)}
+            className="h-8 w-28 text-xs"
+          />
+          <Input
+            type="number"
+            placeholder="Price max"
+            value={priceMaxFilter}
+            onChange={(e) => setPriceMaxFilter(e.target.value)}
+            className="h-8 w-28 text-xs"
+          />
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1">
+                Profile
+                {profileFilter !== "all" && <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">1</Badge>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-40 p-2" align="start">
+              {(["all", "complete", "incomplete"] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setProfileFilter(v)}
+                  className={`w-full text-left text-sm px-2 py-1.5 rounded hover:bg-muted ${profileFilter === v ? "bg-muted font-medium" : ""}`}
+                >
+                  {v === "all" ? "All" : v === "complete" ? "Complete" : "Incomplete"}
+                </button>
+              ))}
+            </PopoverContent>
+          </Popover>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1">
+                POF
+                {pofFilter !== "all" && <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">1</Badge>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-40 p-2" align="start">
+              {(["all", "has", "missing"] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setPofFilter(v)}
+                  className={`w-full text-left text-sm px-2 py-1.5 rounded hover:bg-muted ${pofFilter === v ? "bg-muted font-medium" : ""}`}
+                >
+                  {v === "all" ? "All" : v === "has" ? "Has POF" : "Missing POF"}
+                </button>
+              ))}
+            </PopoverContent>
+          </Popover>
+
+          {activeFilterCount > 0 && (
+            <>
+              <span className="text-xs text-muted-foreground ml-auto">
+                {filtered.length} of {buyers.length}
+              </span>
+              <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs" onClick={clearAllFilters}>
+                <X className="h-3 w-3" /> Clear all ({activeFilterCount})
+              </Button>
+            </>
+          )}
+        </div>
+
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-xs text-muted-foreground mr-1">Activity:</span>
           {(["all", ...BUYER_ACTIVITY_OPTIONS.map((o) => o.value)] as const).map((v) => (
@@ -290,6 +393,7 @@ export default function Buyers() {
             </button>
           ))}
         </div>
+
 
         {loading ? (
           <div className="space-y-2">
