@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Trash2, Clock, CalendarIcon } from "lucide-react";
+import { Trash2, CalendarIcon } from "lucide-react";
 import { MarketsInput } from "./MarketsInput";
 import type { Buyer } from "@/pages/Buyers";
 import { BUYER_ACTIVITY_OPTIONS } from "@/lib/buyerActivity";
@@ -120,11 +120,6 @@ export function BuyerDrawer({ buyer, onClose, onUpdated }: { buyer: Buyer | null
     onClose();
   }
 
-  async function logContact() {
-    const { error } = await supabase.from("buyers").update({ last_contact_at: new Date().toISOString() }).eq("id", buyer!.id);
-    if (error) toast.error(error.message);
-    else { toast.success("Contact logged"); onUpdated(); }
-  }
 
   async function archive() {
     if (!confirm("Archive this buyer?")) return;
@@ -238,16 +233,10 @@ export function BuyerDrawer({ buyer, onClose, onUpdated }: { buyer: Buyer | null
             <Textarea value={form.criteria_notes} onChange={(e) => set("criteria_notes", e.target.value)} />
           </div>
 
-          <div className="text-xs text-muted-foreground flex items-center gap-2">
-            <Clock className="h-3 w-3" />
-            Last contact: {buyer.last_contact_at ? new Date(buyer.last_contact_at).toLocaleString() : "Never"}
-          </div>
-
           <div className="flex gap-2 pt-4 border-t border-border">
             <Button onClick={save} disabled={busy} className="bg-primary hover:bg-primary-hover flex-1">
               {busy ? "Saving…" : "Save Changes"}
             </Button>
-            <Button onClick={logContact} variant="outline">Log Contact</Button>
             <Button onClick={archive} variant="outline"><Trash2 className="h-4 w-4" /></Button>
           </div>
         </div>

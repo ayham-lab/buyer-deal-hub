@@ -33,7 +33,6 @@ export const BUYER_CSV_COLUMNS = [
   // server-managed values are never clobbered.
   "deals_purchased",
   "deal_count",
-  "last_contact_at",
   "created_at",
   "updated_at",
 ] as const;
@@ -44,7 +43,6 @@ export type BuyerCsvColumn = (typeof BUYER_CSV_COLUMNS)[number];
 export const IMPORT_READONLY_COLUMNS = new Set<string>([
   "deals_purchased",
   "deal_count",
-  "last_contact_at",
   "created_at",
   "updated_at",
 ]);
@@ -87,7 +85,6 @@ export function buyerToCsvRow(b: Buyer): Record<BuyerCsvColumn, unknown> {
     experience: b.experience ?? "",
     deals_purchased: b.deals_purchased ?? 0,
     deal_count: b.deal_count ?? 0,
-    last_contact_at: b.last_contact_at ?? "",
     created_at: b.created_at ?? "",
     updated_at: (b as unknown as { updated_at?: string }).updated_at ?? "",
   };
