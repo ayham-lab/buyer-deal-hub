@@ -103,8 +103,6 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       return null;
     }
   });
-  const [debugMessages, setDebugMessages] = useState<string[]>([]);
-  const [debugStatus, setDebugStatus] = useState<string>("waiting for postMessage…");
   const [iframeSigninPending, setIframeSigninPending] = useState(false);
   const [iframeSigninDone, setIframeSigninDone] = useState(false);
   const isIframed = (() => {
@@ -131,7 +129,6 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     try {
       sessionStorage.removeItem("ghl_post_handshake_return");
     } catch {}
-    pushDebug(`handshake done → returning to ${target}`);
     navigate(target, { replace: true });
   }, [activeLocation, navigate]);
 
@@ -140,10 +137,6 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     refreshEffectiveLocations(activeLocation?.locationId ?? null);
   }, [activeLocation?.locationId]);
-
-  const pushDebug = (msg: string) => {
-    setDebugMessages((prev) => [...prev.slice(-9), `${new Date().toISOString().slice(11, 19)} ${msg}`]);
-  };
 
   useEffect(() => {
     const processBlob = async (ssoToken: string) => {
@@ -157,8 +150,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         console.log("LocationProvider decrypt-ghl-sso response:", data, invokeErr);
         if (invokeErr || (data as any)?.error) {
           const detail = (data as any)?.detail ?? (data as any)?.error ?? invokeErr?.message ?? "unknown";
-          pushDebug(`decrypt failed: ${detail}`);
-          setDebugStatus("decrypt failed");
+          console.warn("decrypt-ghl-sso failed:", detail);
           return;
         }
         if (!data) return;
@@ -167,8 +159,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         const locationId = info.locationId;
         const companyId = info.companyId || null;
         if (!locationId) {
-          pushDebug(`decrypt failed: no activeLocation in payload (keys=${Object.keys(info).join(",")})`);
-          setDebugStatus("decrypt failed");
+          console.warn("decrypt-ghl-sso missing activeLocation in payload (keys=", Object.keys(info).join(","), ")");
           return;
         }
 
@@ -183,8 +174,6 @@ export function LocationProvider({ children }: { children: ReactNode }) {
           sessionStorage.setItem("ghl_active_location", JSON.stringify(next));
         } catch {}
         setActiveLocation(next);
-        pushDebug(`decrypted: ${locationId}`);
-        setDebugStatus("active");
 
         const { data: { session } } = await supabase.auth.getSession();
         let user = session?.user ?? null;
@@ -205,21 +194,21 @@ export function LocationProvider({ children }: { children: ReactNode }) {
                 { body: { sso: ssoBlob } },
               );
               if (signinErr || !signin?.access_token || !signin?.refresh_token) {
-                pushDebug(`iframe-signin failed: ${signinErr?.message ?? (signin as any)?.error ?? "unknown"}`);
+                console.warn("iframe-signin failed:", signinErr?.message ?? (signin as any)?.error ?? "unknown");
               } else {
                 const { data: setData, error: setErr } = await supabase.auth.setSession({
                   access_token: signin.access_token,
                   refresh_token: signin.refresh_token,
                 });
                 if (setErr) {
-                  pushDebug(`setSession failed: ${setErr.message}`);
+                  console.warn("setSession failed:", setErr.message);
                 } else {
                   user = setData.session?.user ?? null;
-                  pushDebug(`iframe-signin ok: ${user?.id?.slice(0, 8) ?? "—"}`);
+                  console.log("iframe-signin ok:", user?.id?.slice(0, 8) ?? "—");
                 }
               }
             } catch (e: any) {
-              pushDebug(`iframe-signin threw: ${e?.message ?? e}`);
+              console.warn("iframe-signin threw:", e?.message ?? e);
             } finally {
               setIframeSigninPending(false);
             }
@@ -275,13 +264,6 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       } catch {}
 
       const data: any = event.data ?? {};
-      let preview: string;
-      try {
-        preview = typeof data === "string" ? data.slice(0, 80) : JSON.stringify(data).slice(0, 120);
-      } catch {
-        preview = String(data);
-      }
-      pushDebug(`msg from ${event.origin}: ${preview}`);
 
       // 1) Encrypted SSO blob path
       const ssoBlob =
@@ -291,8 +273,6 @@ export function LocationProvider({ children }: { children: ReactNode }) {
             ? data.sso
             : null;
       if (ssoBlob) {
-        pushDebug("→ SSO blob, decrypting…");
-        setDebugStatus("decrypting SSO");
         // Stash the raw encrypted blob so iframe-mode edge function calls
         // (e.g. team-admin / invite-team-member) can re-decrypt server-side
         // to authenticate the GHL user without a Supabase session cookie.
@@ -320,8 +300,6 @@ export function LocationProvider({ children }: { children: ReactNode }) {
             sessionStorage.setItem("ghl_active_location", JSON.stringify(next));
           } catch {}
           setActiveLocation(next);
-          pushDebug(`→ plain activeLocation ${locationId}`);
-          setDebugStatus("active");
           return;
         }
       }
@@ -329,7 +307,6 @@ export function LocationProvider({ children }: { children: ReactNode }) {
 
     window.addEventListener("message", handler);
 
-    pushDebug(`mounted. iframed=${isIframed} path=${window.location.pathname}`);
     if (isIframed) {
       // GHL only injects activeLocation into iframes whose URL it recognizes
       // as the app's custom-page (/embed). If we're deep-linked anywhere else
@@ -342,19 +319,14 @@ export function LocationProvider({ children }: { children: ReactNode }) {
           sessionStorage.setItem("ghl_post_handshake_return", original);
         } catch {}
         const target = `/embed${window.location.search}${window.location.hash}`;
-        pushDebug(`iframed but not /embed → redirecting to ${target} (return=${original})`);
         window.location.replace(target);
         return;
       }
       try {
         window.parent.postMessage({ message: "REQUEST_USER_DATA" }, "*");
-        pushDebug("posted REQUEST_USER_DATA to parent");
       } catch (e: any) {
-        pushDebug(`postMessage failed: ${e?.message ?? e}`);
         console.error("postMessage to parent failed", e);
       }
-    } else {
-      setDebugStatus("not iframed (standalone)");
     }
 
     return () => {
@@ -374,70 +346,6 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   return (
     <LocationContext.Provider value={{ activeLocation, isIframed, handshakeReady, iframeSigninPending, clearActiveLocation }}>
       {children}
-      <DebugOverlay
-        status={debugStatus}
-        activeLocation={activeLocation}
-        messages={debugMessages}
-      />
     </LocationContext.Provider>
   );
 }
-
-function DebugOverlay({
-  status,
-  activeLocation,
-  messages,
-}: {
-  status: string;
-  activeLocation: ActiveLocation | null;
-  messages: string[];
-}) {
-  const [open, setOpen] = useState(true);
-  return (
-    <div
-      style={{
-        position: "fixed",
-        bottom: 8,
-        right: 8,
-        zIndex: 99999,
-        maxWidth: 420,
-        fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-        fontSize: 11,
-        background: "rgba(0,0,0,0.85)",
-        color: "#0f0",
-        border: "1px solid #0f0",
-        borderRadius: 6,
-        padding: 8,
-        pointerEvents: "auto",
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-        <strong style={{ color: "#fff" }}>GHL Location Debug</strong>
-        <button
-          onClick={() => setOpen((o) => !o)}
-          style={{ background: "transparent", color: "#fff", border: "1px solid #555", borderRadius: 4, padding: "0 6px", cursor: "pointer" }}
-        >
-          {open ? "−" : "+"}
-        </button>
-      </div>
-      {open && (
-        <div style={{ marginTop: 6 }}>
-          <div>status: <span style={{ color: "#ff0" }}>{status}</span></div>
-          <div>
-            activeLocation: <span style={{ color: "#ff0" }}>
-              {activeLocation ? `${activeLocation.locationId} / ${activeLocation.companyId ?? "—"}` : "null"}
-            </span>
-          </div>
-          <div style={{ marginTop: 6, borderTop: "1px solid #333", paddingTop: 6, maxHeight: 200, overflow: "auto" }}>
-            {messages.length === 0 ? (
-              <div style={{ opacity: 0.6 }}>no messages yet…</div>
-            ) : (
-              messages.map((m, i) => <div key={i}>{m}</div>)
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
