@@ -214,7 +214,7 @@ export default function Admin() {
 
           {/* USERS */}
           <TabsContent value="users">
-            <UsersTab users={users} dealsByUser={dealsByUser} buyersByUser={buyersByUser} onOpen={setOpenUserId} />
+            <UsersTab users={usersWithRoles} dealsByUser={dealsByUser} buyersByUser={buyersByUser} onOpen={setOpenUserId} onChanged={load} />
           </TabsContent>
 
           {/* DEALS */}
