@@ -293,15 +293,40 @@ export default function Admin() {
 
 // ============== Sub-tabs ==============
 
-function UsersTab({ users, dealsByUser, buyersByUser, onOpen }: any) {
+function UsersTab({ users, dealsByUser, buyersByUser, onOpen, onChanged }: any) {
+  const { user, isSuperAdmin, refreshRoles } = useAuth();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");
+  const [busyId, setBusyId] = useState<string | null>(null);
   const filtered = users.filter((u: any) => {
     const s = q.toLowerCase();
     const matchQ = !s || u.email?.toLowerCase().includes(s) || u.name?.toLowerCase().includes(s);
     const matchS = status === "all" || u.subscription_status === status;
     return matchQ && matchS;
   });
+
+  async function promote(uid: string) {
+    setBusyId(uid);
+    const { toast } = await import("sonner");
+    const { error } = await supabase.from("user_roles").insert({ user_id: uid, role: "admin" as any });
+    setBusyId(null);
+    if (error && !error.message.includes("duplicate")) return toast.error(error.message);
+    toast.success("Promoted to admin — full feature access granted");
+    if (uid === user?.id) await refreshRoles();
+    onChanged?.();
+  }
+  async function demote(uid: string) {
+    if (!confirm("Remove admin role from this user?")) return;
+    setBusyId(uid);
+    const { toast } = await import("sonner");
+    const { error } = await supabase.from("user_roles").delete().eq("user_id", uid).eq("role", "admin");
+    setBusyId(null);
+    if (error) return toast.error(error.message);
+    toast.success("Admin role removed");
+    if (uid === user?.id) await refreshRoles();
+    onChanged?.();
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row gap-3">
@@ -321,25 +346,45 @@ function UsersTab({ users, dealsByUser, buyersByUser, onOpen }: any) {
       </div>
       <div className="rounded-lg border border-border overflow-hidden">
         <table className="data-table w-full">
-          <thead><tr><th>Name</th><th>Email</th><th>Subscription</th><th>Deals</th><th>Buyers</th><th>Last Active</th></tr></thead>
+          <thead><tr><th>Name</th><th>Email</th><th>Subscription</th><th>Role</th><th>Deals</th><th>Buyers</th><th>Last Active</th><th className="text-right">Actions</th></tr></thead>
           <tbody>
             {filtered.map((u: any) => (
               <tr key={u.id} className="cursor-pointer hover:bg-muted/40" onClick={() => onOpen(u.user_id)}>
                 <td className="font-medium">{u.name || "—"}</td>
                 <td className="text-muted-foreground">{u.email}</td>
                 <td><Badge variant="outline" className="capitalize">{u.subscription_status}</Badge></td>
+                <td>
+                  {u.isAdminRole
+                    ? <Badge className="bg-primary/15 text-primary border-primary/30">admin</Badge>
+                    : <Badge variant="outline">user</Badge>}
+                </td>
                 <td>{dealsByUser[u.user_id] || 0}</td>
                 <td>{buyersByUser[u.user_id] || 0}</td>
                 <td className="text-xs text-muted-foreground">{u.last_active_at ? new Date(u.last_active_at).toLocaleDateString() : "—"}</td>
+                <td className="text-right" onClick={(e) => e.stopPropagation()}>
+                  {u.isAdminRole ? (
+                    <Button size="sm" variant="outline" disabled={busyId === u.user_id} onClick={() => demote(u.user_id)}>
+                      Remove admin
+                    </Button>
+                  ) : (
+                    <Button size="sm" disabled={busyId === u.user_id} onClick={() => promote(u.user_id)}>
+                      <ShieldCheck className="h-3.5 w-3.5 mr-1.5" /> Make admin
+                    </Button>
+                  )}
+                </td>
               </tr>
             ))}
-            {filtered.length === 0 && <tr><td colSpan={6} className="text-center py-6 text-muted-foreground">No users match.</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={8} className="text-center py-6 text-muted-foreground">No users match.</td></tr>}
           </tbody>
         </table>
       </div>
+      <p className="text-xs text-muted-foreground">
+        Admins get full Admin Console access, cross-tenant visibility, and free archive buyer / title company reveals.
+      </p>
     </div>
   );
 }
+
 
 function DealsTab({ deals, users, locationNames, onOpenUser }: any) {
   const [q, setQ] = useState("");
