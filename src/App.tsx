@@ -57,7 +57,7 @@ const App = () => (
                 <Route path="/deal/:id" element={wrap(<PublicDeal />)} />
                 <Route path="/buyers" element={wrap(<Buyers />)} />
                 
-                <Route path="/finder" element={wrap(<Finder />)} />
+                <Route path="/finder" element={<Navigate to="/buyers?tab=finder" replace />} />
                 <Route path="/pipeline" element={wrap(<Pipeline />)} />
                 <Route path="/kpis" element={<Navigate to="/" replace />} />
                 <Route path="/tasks" element={wrap(<Tasks />)} />
