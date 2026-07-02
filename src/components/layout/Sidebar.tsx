@@ -40,26 +40,37 @@ export function Sidebar() {
     if (isSuperAdmin && !isIframed) goAdminView(e);
   };
 
-  type AdminItem = { value: string; label: string; icon: React.ComponentType<any>; show?: boolean };
-  type AdminGroup = { label?: string; items: AdminItem[] };
+  type AdminLeaf = { value: string; label: string; icon: React.ComponentType<any>; show?: boolean };
+  type AdminSection = { label?: string; items: AdminLeaf[] };
+  type AdminGroup = { label?: string; sections: AdminSection[] };
   const adminNav: AdminGroup[] = [
-    { items: [{ value: "overview", label: "Dashboard", icon: LayoutDashboard }] },
-    { items: [
-      { value: "users", label: "Users & Roles", icon: Users },
-    ] },
-    { label: "Database", items: [
-      { value: "deals", label: "Deals", icon: Briefcase },
-      { value: "recently_deleted", label: "Recently Deleted", icon: Trash2, show: isSuperAdmin },
-      { value: "archive_buyers", label: "Archive Buyers", icon: Archive, show: isSuperAdmin },
-      { value: "import_buyers", label: "Import Buyers", icon: UsersRound, show: isSuperAdmin },
-      { value: "archive_title", label: "Archive Title Cos", icon: Landmark, show: isSuperAdmin },
-      { value: "archive_realtors", label: "Archive Realtors", icon: Building2, show: isSuperAdmin },
-      { value: "archive_notaries", label: "Archive Notaries", icon: Stamp, show: isSuperAdmin },
-      { value: "skiptrace_buyers", label: "Skiptrace Investors", icon: FileSearch },
-      { value: "operator_accounts", label: "Operator Accounts", icon: UserCog, show: isSuperAdmin },
-    ] },
-    { items: [{ value: "pricing", label: "Pricing", icon: Tag }] },
-    { items: [{ value: "audit_log", label: "Audit Log", icon: ScrollText }] },
+    { sections: [{ items: [{ value: "overview", label: "Dashboard", icon: LayoutDashboard }] }] },
+    { sections: [{ items: [{ value: "users", label: "Users & Roles", icon: Users }] }] },
+    {
+      label: "Database",
+      sections: [
+        {
+          label: "Deals",
+          items: [
+            { value: "deals", label: "Deals", icon: Briefcase },
+            { value: "recently_deleted", label: "Recently Deleted", icon: Trash2, show: isSuperAdmin },
+          ],
+        },
+        {
+          items: [
+            { value: "archive_buyers", label: "Archive Buyers", icon: Archive, show: isSuperAdmin },
+            { value: "import_buyers", label: "Import Buyers", icon: UsersRound, show: isSuperAdmin },
+            { value: "archive_title", label: "Archive Title Cos", icon: Landmark, show: isSuperAdmin },
+            { value: "archive_realtors", label: "Archive Realtors", icon: Building2, show: isSuperAdmin },
+            { value: "archive_notaries", label: "Archive Notaries", icon: Stamp, show: isSuperAdmin },
+            { value: "skiptrace_buyers", label: "Skiptrace Investors", icon: FileSearch },
+            { value: "operator_accounts", label: "Operator Accounts", icon: UserCog, show: isSuperAdmin },
+          ],
+        },
+      ],
+    },
+    { sections: [{ items: [{ value: "pricing", label: "Pricing", icon: Tag }] }] },
+    { sections: [{ items: [{ value: "audit_log", label: "Audit Log", icon: ScrollText }] }] },
   ];
 
   return (
@@ -134,8 +145,8 @@ export function Sidebar() {
             {onAdmin && !collapsed && (
               <div className="mt-2 ml-2 pl-3 border-l border-sidebar-border space-y-3">
                 {adminNav.map((group, gi) => {
-                  const items = group.items.filter((i) => i.show !== false);
-                  if (items.length === 0) return null;
+                  const hasVisibleSection = group.sections.some((s) => s.items.some((i) => i.show !== false));
+                  if (!hasVisibleSection) return null;
                   return (
                     <div key={gi}>
                       {group.label && (
@@ -143,24 +154,39 @@ export function Sidebar() {
                           {group.label}
                         </div>
                       )}
-                      <div className="space-y-0.5">
-                        {items.map((item) => {
-                          const Icon = item.icon;
-                          const active = adminTab === item.value;
+                      <div className="space-y-2">
+                        {group.sections.map((section, si) => {
+                          const sectionItems = section.items.filter((i) => i.show !== false);
+                          if (sectionItems.length === 0) return null;
                           return (
-                            <button
-                              key={item.value}
-                              onClick={() => navigate(`/admin?tab=${item.value}`)}
-                              className={cn(
-                                "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] text-left transition-colors",
-                                active
-                                  ? "bg-sidebar-accent text-white font-medium"
-                                  : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-white"
+                            <div key={si}>
+                              {section.label && (
+                                <div className="px-2 pb-1 text-[10px] uppercase tracking-wider text-sidebar-foreground/50 font-semibold">
+                                  {section.label}
+                                </div>
                               )}
-                            >
-                              <Icon className="h-3.5 w-3.5 shrink-0" />
-                              <span className="truncate">{item.label}</span>
-                            </button>
+                              <div className="space-y-0.5">
+                                {sectionItems.map((item) => {
+                                  const Icon = item.icon;
+                                  const active = adminTab === item.value;
+                                  return (
+                                    <button
+                                      key={item.value}
+                                      onClick={() => navigate(`/admin?tab=${item.value}`)}
+                                      className={cn(
+                                        "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] text-left transition-colors",
+                                        active
+                                          ? "bg-sidebar-accent text-white font-medium"
+                                          : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-white"
+                                      )}
+                                    >
+                                      <Icon className="h-3.5 w-3.5 shrink-0" />
+                                      <span className="truncate">{item.label}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
                           );
                         })}
                       </div>
