@@ -20,6 +20,7 @@ import { DealMarketing } from "./DealMarketing";
 import { DealOffers } from "./DealOffers";
 import { ExitStrategyPicker } from "./ExitStrategyPicker";
 import { StageProgressBar } from "./StageProgressBar";
+import { usePipelineStages } from "@/hooks/usePipelineStages";
 import { format } from "date-fns";
 
 export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | null; onClose: () => void; onUpdated: () => void }) {
