@@ -128,16 +128,15 @@ Deno.serve(async (req) => {
       if (!name) return json({ error: "missing_name" }, 400);
       if (picks.length === 0) return json({ error: "no_locations_selected" }, 400);
 
-      // Verify caller owns every picked location.
+      // Verify caller is a member of every picked location.
       const { data: ownedRows } = await admin
         .from("location_memberships")
         .select("location_id")
         .eq("user_id", userId)
-        .eq("is_owner", true)
         .in("location_id", picks);
       const ownedSet = new Set((ownedRows ?? []).map((r: any) => r.location_id));
       if (picks.some((id) => !ownedSet.has(id))) {
-        return json({ error: "not_owner_of_all_locations" }, 403);
+        return json({ error: "not_member_of_all_locations" }, 403);
       }
 
       const { data: created, error: createErr } = await admin
