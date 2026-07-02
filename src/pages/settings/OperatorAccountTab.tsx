@@ -146,8 +146,9 @@ export default function OperatorAccountTab() {
   if (owned.length === 0) {
     return (
       <div className="mt-6 text-sm text-muted-foreground p-6 border border-dashed rounded-md">
-        You don't own any sub-accounts that can be grouped. Operator Accounts
-        are only available to workspace owners.
+        You don't have access to any sub-accounts yet. Operator Accounts let you
+        group multiple sub-accounts you're a member of so deals, buyers, tasks
+        and KPIs are shared across all of them.
       </div>
     );
   }
@@ -229,7 +230,7 @@ export default function OperatorAccountTab() {
 
       <div className="space-y-2">
         <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-          Locations you own
+          Locations you have access to
         </Label>
         <div className="border rounded-md divide-y">
           {owned.map((l) => (

@@ -57,10 +57,9 @@ Deno.serve(async (req) => {
       const { data: memberships } = await admin
         .from("location_memberships")
         .select("location_id")
-        .eq("user_id", userId)
-        .eq("is_owner", true);
+        .eq("user_id", userId);
       const ids = (memberships ?? []).map((m: any) => m.location_id);
-      console.log("operator-account list owned_memberships", { user_id: userId, ids });
+      console.log("operator-account list memberships", { user_id: userId, ids });
 
       let owned: any[] = [];
       if (ids.length > 0) {
@@ -129,16 +128,15 @@ Deno.serve(async (req) => {
       if (!name) return json({ error: "missing_name" }, 400);
       if (picks.length === 0) return json({ error: "no_locations_selected" }, 400);
 
-      // Verify caller owns every picked location.
+      // Verify caller is a member of every picked location.
       const { data: ownedRows } = await admin
         .from("location_memberships")
         .select("location_id")
         .eq("user_id", userId)
-        .eq("is_owner", true)
         .in("location_id", picks);
       const ownedSet = new Set((ownedRows ?? []).map((r: any) => r.location_id));
       if (picks.some((id) => !ownedSet.has(id))) {
-        return json({ error: "not_owner_of_all_locations" }, 403);
+        return json({ error: "not_member_of_all_locations" }, 403);
       }
 
       const { data: created, error: createErr } = await admin
@@ -163,15 +161,14 @@ Deno.serve(async (req) => {
       const locId = (body.location_id ?? "").trim();
       if (!locId) return json({ error: "missing_location_id" }, 400);
 
-      // Verify caller owns the location.
+      // Verify caller is a member of the location.
       const { data: owns } = await admin
         .from("location_memberships")
         .select("id")
         .eq("user_id", userId)
         .eq("location_id", locId)
-        .eq("is_owner", true)
         .maybeSingle();
-      if (!owns) return json({ error: "not_owner_of_location" }, 403);
+      if (!owns) return json({ error: "not_member_of_location" }, 403);
 
       if (action === "add") {
         // Resolve group from active location.
