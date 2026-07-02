@@ -42,6 +42,7 @@ export default function Settings() {
             <TabsTrigger value="team">Team</TabsTrigger>
             <TabsTrigger value="operator">Operator Account</TabsTrigger>
             {isIframed && <TabsTrigger value="billing">Billing</TabsTrigger>}
+            {isIframed && <TabsTrigger value="login">Standalone Login</TabsTrigger>}
             {showGhl && <TabsTrigger value="ghl">GHL Connections</TabsTrigger>}
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
           </TabsList>
@@ -52,6 +53,7 @@ export default function Settings() {
           <TabsContent value="team"><TeamTab /></TabsContent>
           <TabsContent value="operator"><OperatorAccountTab /></TabsContent>
           {isIframed && <TabsContent value="billing"><BillingTab locationId={activeLocation?.locationId ?? null} /></TabsContent>}
+          {isIframed && <TabsContent value="login"><StandaloneLoginTab /></TabsContent>}
           {showGhl && <TabsContent value="ghl"><GhlTab /></TabsContent>}
           <TabsContent value="notifications"><NotificationsTab /></TabsContent>
         </Tabs>
@@ -259,6 +261,56 @@ function ProfileTab() {
         <Input type="password" value={pw} onChange={(e) => setPw(e.target.value)} />
         <Button onClick={changePassword} disabled={busy}>Change password</Button>
       </div>
+    </div>
+  );
+}
+
+function StandaloneLoginTab() {
+  const { user } = useAuth();
+  const [pw, setPw] = useState("");
+  const [pw2, setPw2] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const loginUrl = `${window.location.origin}/login`;
+
+  async function setPassword() {
+    if (pw.length < 8) { toast.error("Password must be at least 8 characters"); return; }
+    if (pw !== pw2) { toast.error("Passwords do not match"); return; }
+    setBusy(true);
+    const { error } = await supabase.auth.updateUser({ password: pw });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Password set — you can now sign in at " + loginUrl);
+    setPw(""); setPw2("");
+  }
+
+  return (
+    <div className="space-y-6 mt-6 max-w-lg">
+      <div className="border rounded-md p-4 space-y-2 bg-muted/30">
+        <div className="text-sm font-semibold">Sign in outside of GoHighLevel</div>
+        <p className="text-sm text-muted-foreground">
+          Your account was created automatically the first time you opened this app inside GHL. To sign in
+          on the standalone site (<a className="underline" href={loginUrl} target="_blank" rel="noreferrer">{loginUrl}</a>),
+          set a password below. Your email stays the same.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Email</Label>
+        <Input value={user?.email ?? ""} disabled />
+      </div>
+      <div className="space-y-2">
+        <Label>New password</Label>
+        <Input type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" placeholder="At least 8 characters" />
+      </div>
+      <div className="space-y-2">
+        <Label>Confirm password</Label>
+        <Input type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} autoComplete="new-password" />
+      </div>
+      <Button onClick={setPassword} disabled={busy || !pw || !pw2}>
+        {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+        Set password
+      </Button>
     </div>
   );
 }
