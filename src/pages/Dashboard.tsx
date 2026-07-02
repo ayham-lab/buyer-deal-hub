@@ -64,10 +64,12 @@ export default function Dashboard() {
       const weekISO = format(weekFromNow, "yyyy-MM-dd");
       const sevenDaysAgo = format(addDays(today, -7), "yyyy-MM-dd");
       const ninetyDaysAgoISO = addDays(today, -90).toISOString();
+      const sevenDaysAgoISO = addDays(today, -7).toISOString();
 
       const [
         closings, emd, ip, leads, revenue, openTasks,
         underContract, assigned, offerAgg, newBuyers, activeBuyerDeals,
+        assignedThisWeek, allDealsForRate, allFees,
       ] = await Promise.all([
         scopeToLocation(supabase.from("deals").select("id,property_address,city,state,closing_date,assignment_fee").is("deleted_at", null).gte("closing_date", todayISO).lte("closing_date", weekISO).order("closing_date")),
         scopeToLocation(supabase.from("deals").select("id,property_address,emd_amount,closing_date,status").is("deleted_at", null).eq("status", "under_contract").eq("emd_received", false)),
@@ -80,6 +82,9 @@ export default function Dashboard() {
         scopeToLocation(supabase.from("deals").select("id, deal_offers(id)").is("deleted_at", null)),
         scopeToLocation(supabase.from("buyers").select("id", { count: "exact", head: true }).gte("created_at", sevenDaysAgo)),
         scopeToLocation(supabase.from("deals").select("buyer_id").is("deleted_at", null).eq("status", "closed").not("buyer_id", "is", null).gte("closed_at", ninetyDaysAgoISO)),
+        scopeToLocation(supabase.from("deals").select("id", { count: "exact", head: true }).is("deleted_at", null).gte("assigned_at", sevenDaysAgoISO)),
+        scopeToLocation(supabase.from("deals").select("status").is("deleted_at", null)),
+        scopeToLocation(supabase.from("deals").select("assignment_fee").is("deleted_at", null).not("assignment_fee", "is", null)),
       ]);
 
       const assignedRows = (assigned.data as any) || [];
@@ -98,6 +103,13 @@ export default function Dashboard() {
       const activeBuyerIds = new Set<string>();
       ((activeBuyerDeals.data as any) || []).forEach((r: any) => r.buyer_id && activeBuyerIds.add(r.buyer_id));
 
+      const allRateRows = (allDealsForRate.data as any) || [];
+      const closedCount = allRateRows.filter((d: any) => d.status === "closed").length;
+      const closeRate = allRateRows.length ? (closedCount / allRateRows.length) * 100 : null;
+
+      const feeRows = ((allFees.data as any) || []).map((r: any) => Number(r.assignment_fee)).filter((n: number) => !isNaN(n) && n > 0);
+      const avgFee = feeRows.length ? feeRows.reduce((s: number, n: number) => s + n, 0) / feeRows.length : null;
+
       setSummary({
         closingsThisWeek: (closings.data as any) || [],
         emdOverdue: (emd.data as any) || [],
@@ -110,6 +122,9 @@ export default function Dashboard() {
         avgOffersPerDeal: avgOffers,
         newBuyersThisWeek: newBuyers.count || 0,
         activeBuyers90d: activeBuyerIds.size,
+        dealsAssignedThisWeek: assignedThisWeek.count || 0,
+        closeRatePct: closeRate,
+        avgAssignmentFee: avgFee,
       });
     })();
   }, [user, handshakeReady, activeLocation?.locationId, isIframed]);
