@@ -56,6 +56,7 @@ const App = () => (
                 <Route path="/oauth/callback" element={wrap(<OAuthCallback />)} />
                 <Route path="/embed" element={wrap(<Embed />)} />
                 <Route path="/deal/:id" element={wrap(<PublicDeal />)} />
+                <Route path="/buyer-signup/:token" element={wrap(<BuyerSignup />)} />
                 <Route path="/buyers" element={wrap(<Buyers />)} />
                 
                 <Route path="/finder" element={<Navigate to="/buyers?tab=finder" replace />} />
