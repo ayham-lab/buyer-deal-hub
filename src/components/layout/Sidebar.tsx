@@ -23,8 +23,12 @@ export function Sidebar() {
   const { isAdmin, isSuperAdmin } = useAuth();
   const { isIframed, clearActiveLocation } = useActiveLocation();
   const { pathname } = useLocation();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
+  const onAdmin = pathname.startsWith("/admin");
+  const adminTab = searchParams.get("tab") || "overview";
+
   // Super-admins land in the Admin Console when they click the brand logo;
   // everyone else goes to the dashboard root.
   const goAdminView = (e?: React.MouseEvent) => {
@@ -35,6 +39,29 @@ export function Sidebar() {
   const goHome = (e: React.MouseEvent) => {
     if (isSuperAdmin && !isIframed) goAdminView(e);
   };
+
+  type AdminItem = { value: string; label: string; icon: React.ComponentType<any>; show?: boolean };
+  type AdminGroup = { label?: string; items: AdminItem[] };
+  const adminNav: AdminGroup[] = [
+    { items: [{ value: "overview", label: "Dashboard", icon: LayoutDashboard }] },
+    { items: [
+      { value: "users", label: "Users", icon: Users },
+      { value: "roles", label: "Roles", icon: ShieldCheck },
+    ] },
+    { label: "Database", items: [
+      { value: "deals", label: "Deals", icon: Briefcase },
+      { value: "recently_deleted", label: "Recently Deleted", icon: Trash2, show: isSuperAdmin },
+      { value: "archive_buyers", label: "Archive Buyers", icon: Archive, show: isSuperAdmin },
+      { value: "import_buyers", label: "Import Buyers", icon: UsersRound, show: isSuperAdmin },
+      { value: "archive_title", label: "Archive Title Cos", icon: Landmark, show: isSuperAdmin },
+      { value: "archive_realtors", label: "Archive Realtors", icon: Building2, show: isSuperAdmin },
+      { value: "archive_notaries", label: "Archive Notaries", icon: Stamp, show: isSuperAdmin },
+      { value: "skiptrace_buyers", label: "Skiptrace Investors", icon: FileSearch },
+      { value: "operator_accounts", label: "Operator Accounts", icon: UserCog, show: isSuperAdmin },
+    ] },
+    { items: [{ value: "pricing", label: "Pricing", icon: Tag }] },
+    { items: [{ value: "audit_log", label: "Audit Log", icon: ScrollText }] },
+  ];
 
   return (
     <aside
