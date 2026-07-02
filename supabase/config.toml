@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.backfill-opportunity]
 verify_jwt = false
+
+[functions.buyer-intake]
+verify_jwt = false
