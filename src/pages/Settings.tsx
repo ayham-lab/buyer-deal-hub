@@ -14,6 +14,7 @@ import { useActiveLocation } from "@/contexts/LocationContext";
 import TeamTab from "@/pages/settings/TeamTab";
 import OperatorAccountTab from "@/pages/settings/OperatorAccountTab";
 import PipelineStagesTab from "@/pages/settings/PipelineStagesTab";
+import BuyerIntakeTab from "@/pages/settings/BuyerIntakeTab";
 
 export default function Settings() {
   const { isIframed, activeLocation } = useActiveLocation();
