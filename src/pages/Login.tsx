@@ -170,21 +170,27 @@ export default function Login() {
         nav("/embed", { replace: true });
         return;
       }
-      // Admins (regular + super) land in the Admin Console by default — no
-      // workspace selection required. Clear any stale active location so they
-      // don't get dropped back into the last workspace they were viewing.
-      if (isAdmin) {
-        try {
-          sessionStorage.removeItem("ghl_active_location");
-          sessionStorage.removeItem("ghl_effective_locations");
-          sessionStorage.removeItem("ghl_location_names");
-        } catch {}
-        nav("/admin", { replace: true });
-        return;
-      }
-      // Otherwise: route by membership count.
-      // 0 → /no-access, 1 → set active location and go home, >1 → show switcher.
+      // Route by role + membership. Query user_roles directly here so we
+      // don't race the useAuth hook's async role load (which caused admins
+      // to be incorrectly sent to /no-access on standalone login).
       (async () => {
+        const { data: roleRows } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id);
+        const roleList = (roleRows ?? []).map((r: any) => r.role);
+        const admin = roleList.includes("admin") || roleList.includes("super_admin");
+        if (admin) {
+          try {
+            sessionStorage.removeItem("ghl_active_location");
+            sessionStorage.removeItem("ghl_effective_locations");
+            sessionStorage.removeItem("ghl_location_names");
+          } catch {}
+          nav("/admin", { replace: true });
+          return;
+        }
+        // Otherwise: route by membership count.
+        // 0 → /no-access, 1 → set active location and go home, >1 → show switcher.
         const { data } = await supabase
           .from("location_memberships")
           .select("location_id, is_owner")
@@ -220,7 +226,7 @@ export default function Login() {
         );
       })();
     }
-  }, [user, authLoading, isSuperAdmin, nav, params]);
+  }, [user, authLoading, nav, params]);
 
   function pickLocation(locationId: string) {
     try {
