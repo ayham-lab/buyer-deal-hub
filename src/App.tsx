@@ -12,6 +12,7 @@ import OAuthConsent from "./pages/OAuthConsent";
 import OAuthCallback from "./pages/OAuthCallback";
 import Embed from "./pages/Embed";
 import PublicDeal from "./pages/PublicDeal";
+import BuyerSignup from "./pages/BuyerSignup";
 import Dashboard from "./pages/Dashboard";
 import Buyers from "./pages/Buyers";
 
