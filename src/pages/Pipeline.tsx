@@ -117,7 +117,7 @@ export default function Pipeline() {
           </TabsList>
           <TabsContent value="kanban" className="mt-6">
             {loading ? <Skeleton className="h-96 w-full" /> :
-              <KanbanBoard deals={deals} onStatusChange={updateStatus} onSelect={setActiveId} locationNames={locationNames} />}
+              <KanbanBoard deals={deals} onStatusChange={updateStatus} onSelect={setActiveId} locationNames={locationNames} columns={visibleColumns as any} />}
           </TabsContent>
           <TabsContent value="list" className="mt-6">
             <DealListView deals={deals} onSelect={setActiveId} />
