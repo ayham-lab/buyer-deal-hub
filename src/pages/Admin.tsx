@@ -11,7 +11,7 @@ import {
 import {
   Users, Briefcase, DollarSign, Database, MapPin, Search, ShieldCheck,
   TrendingUp, Loader2, Trash2, RotateCcw, LayoutDashboard, ScrollText,
-  Tag, Archive, UserCog, FileSearch, Building2, Landmark, Stamp, UsersRound, Wand2,
+  Tag, Archive, UserCog, FileSearch, Building2, Landmark, Stamp, UsersRound,
 } from "lucide-react";
 import { AuditLogTab } from "@/components/admin/AuditLogTab";
 import { UserDrawer } from "@/components/admin/UserDrawer";
