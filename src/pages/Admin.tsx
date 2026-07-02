@@ -24,6 +24,7 @@ import { ArchiveTitleCompaniesTab } from "@/components/admin/ArchiveTitleCompani
 import { OperatorAccountsTab } from "@/components/admin/OperatorAccountsTab";
 import { SkiptraceBuyersTab } from "@/components/admin/SkiptraceBuyersTab";
 import { ArchiveContactsAdminTab } from "@/components/admin/ArchiveContactsAdminTab";
+import { LocationsAdminTab } from "@/components/admin/LocationsAdminTab";
 import { useActiveLocation } from "@/contexts/LocationContext";
 import { useAuth } from "@/hooks/useAuth";
 
