@@ -130,6 +130,46 @@ export function Sidebar() {
               <ShieldCheck className="h-[18px] w-[18px] shrink-0" />
               {!collapsed && <span className="truncate">Admin Console</span>}
             </NavLink>
+
+            {/* Admin sub-nav — visible only while inside /admin */}
+            {onAdmin && !collapsed && (
+              <div className="mt-2 ml-2 pl-3 border-l border-sidebar-border space-y-3">
+                {adminNav.map((group, gi) => {
+                  const items = group.items.filter((i) => i.show !== false);
+                  if (items.length === 0) return null;
+                  return (
+                    <div key={gi}>
+                      {group.label && (
+                        <div className="px-2 pb-1 text-[10px] uppercase tracking-wider text-sidebar-foreground/50 font-semibold">
+                          {group.label}
+                        </div>
+                      )}
+                      <div className="space-y-0.5">
+                        {items.map((item) => {
+                          const Icon = item.icon;
+                          const active = adminTab === item.value;
+                          return (
+                            <button
+                              key={item.value}
+                              onClick={() => navigate(`/admin?tab=${item.value}`)}
+                              className={cn(
+                                "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] text-left transition-colors",
+                                active
+                                  ? "bg-sidebar-accent text-white font-medium"
+                                  : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-white"
+                              )}
+                            >
+                              <Icon className="h-3.5 w-3.5 shrink-0" />
+                              <span className="truncate">{item.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </nav>
