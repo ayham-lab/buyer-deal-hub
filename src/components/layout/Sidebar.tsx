@@ -9,7 +9,7 @@ import { Launchpad } from "./Launchpad";
 
 const items = [
   { to: "/", label: "Dashboard", icon: Home, exact: true },
-  { to: "/kpis", label: "KPI Dashboard", icon: BarChart3 },
+  
   { to: "/finder", label: "Buyer Finder", icon: Search },
   { to: "/pipeline", label: "Deal Pipeline", icon: LayoutGrid },
   { to: "/buyers", label: "Buyer Rolodex", icon: Users },
