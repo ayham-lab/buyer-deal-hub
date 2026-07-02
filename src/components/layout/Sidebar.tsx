@@ -53,6 +53,7 @@ export function Sidebar() {
           items: [
             { value: "deals", label: "Deals", icon: Briefcase },
             { value: "buyer_database", label: "Buyer Database", icon: Database, show: isAdmin },
+            { value: "locations", label: "Locations", icon: MapPin, show: isAdmin || isSuperAdmin },
             { value: "archive_title", label: "Archive Title Cos", icon: Landmark, show: isSuperAdmin },
             { value: "archive_realtors", label: "Archive Realtors", icon: Building2, show: isSuperAdmin },
             { value: "archive_notaries", label: "Archive Notaries", icon: Stamp, show: isSuperAdmin },
