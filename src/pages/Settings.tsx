@@ -13,6 +13,7 @@ import { Loader2, Trash2, Infinity as InfinityIcon, ExternalLink } from "lucide-
 import { useActiveLocation } from "@/contexts/LocationContext";
 import TeamTab from "@/pages/settings/TeamTab";
 import OperatorAccountTab from "@/pages/settings/OperatorAccountTab";
+import PipelineStagesTab from "@/pages/settings/PipelineStagesTab";
 
 export default function Settings() {
   const { isIframed, activeLocation } = useActiveLocation();
