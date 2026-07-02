@@ -101,6 +101,31 @@ export default function Admin() {
     return users.map((u) => ({ ...u, isAdminRole: adminSet.has(u.user_id) }));
   }, [users, roles]);
 
+  const [activeTab, setActiveTab] = useState<string>("overview");
+
+  type NavItem = { value: string; label: string; icon: React.ComponentType<any>; show?: boolean };
+  type NavGroup = { label?: string; items: NavItem[] };
+  const nav: NavGroup[] = [
+    { items: [{ value: "overview", label: "Dashboard", icon: LayoutDashboard }] },
+    { items: [{ value: "users", label: "Users", icon: Users }, { value: "roles", label: "Roles", icon: ShieldCheck }] },
+    {
+      label: "Database",
+      items: [
+        { value: "deals", label: "Deals", icon: Briefcase },
+        { value: "recently_deleted", label: "Recently Deleted", icon: Trash2, show: isSuperAdmin },
+        { value: "archive_buyers", label: "Archive Buyers", icon: Archive, show: showArchiveBuyers },
+        { value: "import_buyers", label: "Import Buyers", icon: UsersRound, show: showArchiveBuyers },
+        { value: "archive_title", label: "Archive Title Cos", icon: Landmark, show: showArchiveBuyers },
+        { value: "archive_realtors", label: "Archive Realtors", icon: Building2, show: showArchiveBuyers },
+        { value: "archive_notaries", label: "Archive Notaries", icon: Stamp, show: showArchiveBuyers },
+        { value: "skiptrace_buyers", label: "Skiptrace Investors", icon: FileSearch, show: showSkiptrace },
+        { value: "operator_accounts", label: "Operator Accounts", icon: UserCog, show: isSuperAdmin },
+      ],
+    },
+    { items: [{ value: "pricing", label: "Pricing", icon: Tag, show: showPricing }] },
+    { items: [{ value: "audit_log", label: "Audit Log", icon: ScrollText }] },
+  ];
+
   return (
     <AppLayout requireAdmin>
       <PageHeader
@@ -113,179 +138,157 @@ export default function Admin() {
           </Button>
         }
       />
-      <div className="p-6 lg:p-8">
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="deals">Deals</TabsTrigger>
-            {isSuperAdmin && <TabsTrigger value="recently_deleted">Recently Deleted</TabsTrigger>}
-            
-            
-            <TabsTrigger value="roles">Roles</TabsTrigger>
-            {showPricing && <TabsTrigger value="pricing">Pricing</TabsTrigger>}
-            {showArchiveBuyers && <TabsTrigger value="archive_buyers">Archive Buyers</TabsTrigger>}
-            {showArchiveBuyers && <TabsTrigger value="import_buyers">Import Buyers</TabsTrigger>}
-            {showArchiveBuyers && <TabsTrigger value="archive_title">Archive Title Cos</TabsTrigger>}
-            {showArchiveBuyers && <TabsTrigger value="archive_realtors">Archive Realtors</TabsTrigger>}
-            {showArchiveBuyers && <TabsTrigger value="archive_notaries">Archive Notaries</TabsTrigger>}
-            {isSuperAdmin && <TabsTrigger value="operator_accounts">Operator Accounts</TabsTrigger>}
-            {showSkiptrace && <TabsTrigger value="skiptrace_buyers">Skiptrace Investors</TabsTrigger>}
-          </TabsList>
-
-          {/* OVERVIEW */}
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              <Stat icon={<Users />} label="Users" value={String(users.length)} />
-              <Stat icon={<ShieldCheck />} label="Active Subs" value={String(activeSubs)} />
-              <Stat icon={<Briefcase />} label="Deals" value={String(deals.length)} />
-              <Stat icon={<TrendingUp />} label="Closed" value={String(closedDeals)} />
-              <Stat icon={<DollarSign />} label="Revenue" value={`$${totalRevenue.toLocaleString()}`} />
-              <Stat icon={<Database />} label="Archive" value={String(archive.length)} />
-            </div>
-
-            <div className="grid lg:grid-cols-2 gap-6">
-              <Section title="Deals per month (last 12)">
-                <div className="bg-card border border-border rounded-lg p-4">
-                  {dealsPerMonth.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No data yet.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {dealsPerMonth.map(([k, v]) => {
-                        const max = Math.max(...dealsPerMonth.map(([, x]) => x.opened));
-                        const pct = max ? (v.opened / max) * 100 : 0;
-                        return (
-                          <div key={k} className="flex items-center gap-3 text-xs">
-                            <div className="w-16 font-mono text-muted-foreground">{k}</div>
-                            <div className="flex-1 bg-secondary h-5 rounded overflow-hidden">
-                              <div className="bg-primary h-full" style={{ width: `${pct}%` }} />
-                            </div>
-                            <div className="w-12 text-right font-semibold">{v.opened}</div>
-                            <div className="w-24 text-right text-primary">${v.revenue.toLocaleString()}</div>
-                          </div>
-                        );
-                      })}
+      <div className="flex gap-6 p-6 lg:p-8">
+        {/* Admin left nav */}
+        <aside className="w-56 shrink-0">
+          <nav className="sticky top-6 space-y-5">
+            {nav.map((group, gi) => {
+              const items = group.items.filter((i) => i.show !== false);
+              if (items.length === 0) return null;
+              return (
+                <div key={gi}>
+                  {group.label && (
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-2 mb-2">
+                      {group.label}
                     </div>
                   )}
+                  <div className="space-y-0.5">
+                    {items.map((item) => {
+                      const Icon = item.icon;
+                      const active = activeTab === item.value;
+                      return (
+                        <button
+                          key={item.value}
+                          onClick={() => setActiveTab(item.value)}
+                          className={cn(
+                            "w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm text-left transition-colors",
+                            active
+                              ? "bg-primary/10 text-primary font-medium"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          )}
+                        >
+                          <Icon className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{item.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </Section>
+              );
+            })}
+          </nav>
+        </aside>
 
-              <Section title="Top lead sources">
-                <div className="bg-card border border-border rounded-lg p-4">
-                  {topLeadSources.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No lead source data.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {topLeadSources.map(([src, n]) => {
-                        const max = topLeadSources[0][1];
-                        return (
-                          <div key={src} className="flex items-center gap-3 text-sm">
-                            <div className="w-32 truncate">{src}</div>
-                            <div className="flex-1 bg-secondary h-5 rounded overflow-hidden">
-                              <div className="bg-primary h-full" style={{ width: `${(n / max) * 100}%` }} />
-                            </div>
-                            <div className="w-10 text-right font-semibold">{n}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </Section>
-            </div>
-
-            <Section title="Deals by state">
-              <div className="bg-card border border-border rounded-lg p-5">
-                <div className="flex items-center gap-2 text-muted-foreground mb-3 text-sm">
-                  <MapPin className="h-4 w-4" /> Cross-tenant heatmap
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
-                  {Object.entries(dealsByState).sort(([, a], [, b]) => b - a).map(([s, n]) => (
-                    <div key={s} className="flex items-center justify-between bg-secondary rounded px-3 py-2">
-                      <span className="font-mono font-semibold">{s}</span>
-                      <span className="text-primary font-bold">{n}</span>
-                    </div>
-                  ))}
-                  {Object.keys(dealsByState).length === 0 && (
-                    <p className="text-sm text-muted-foreground col-span-full">No state data yet.</p>
-                  )}
-                </div>
+        {/* Content */}
+        <div className="flex-1 min-w-0 space-y-6">
+          {activeTab === "overview" && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <Stat icon={<Users />} label="Users" value={String(users.length)} />
+                <Stat icon={<ShieldCheck />} label="Active Subs" value={String(activeSubs)} />
+                <Stat icon={<Briefcase />} label="Deals" value={String(deals.length)} />
+                <Stat icon={<TrendingUp />} label="Closed" value={String(closedDeals)} />
+                <Stat icon={<DollarSign />} label="Revenue" value={`$${totalRevenue.toLocaleString()}`} />
+                <Stat icon={<Database />} label="Archive" value={String(archive.length)} />
               </div>
-            </Section>
-          </TabsContent>
 
-          {/* USERS */}
-          <TabsContent value="users">
+              <div className="grid lg:grid-cols-2 gap-6">
+                <Section title="Deals per month (last 12)">
+                  <div className="bg-card border border-border rounded-lg p-4">
+                    {dealsPerMonth.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No data yet.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {dealsPerMonth.map(([k, v]) => {
+                          const max = Math.max(...dealsPerMonth.map(([, x]) => x.opened));
+                          const pct = max ? (v.opened / max) * 100 : 0;
+                          return (
+                            <div key={k} className="flex items-center gap-3 text-xs">
+                              <div className="w-16 font-mono text-muted-foreground">{k}</div>
+                              <div className="flex-1 bg-secondary h-5 rounded overflow-hidden">
+                                <div className="bg-primary h-full" style={{ width: `${pct}%` }} />
+                              </div>
+                              <div className="w-12 text-right font-semibold">{v.opened}</div>
+                              <div className="w-24 text-right text-primary">${v.revenue.toLocaleString()}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </Section>
+
+                <Section title="Top lead sources">
+                  <div className="bg-card border border-border rounded-lg p-4">
+                    {topLeadSources.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No lead source data.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {topLeadSources.map(([src, n]) => {
+                          const max = topLeadSources[0][1];
+                          return (
+                            <div key={src} className="flex items-center gap-3 text-sm">
+                              <div className="w-32 truncate">{src}</div>
+                              <div className="flex-1 bg-secondary h-5 rounded overflow-hidden">
+                                <div className="bg-primary h-full" style={{ width: `${(n / max) * 100}%` }} />
+                              </div>
+                              <div className="w-10 text-right font-semibold">{n}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </Section>
+              </div>
+
+              <Section title="Deals by state">
+                <div className="bg-card border border-border rounded-lg p-5">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-3 text-sm">
+                    <MapPin className="h-4 w-4" /> Cross-tenant heatmap
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
+                    {Object.entries(dealsByState).sort(([, a], [, b]) => b - a).map(([s, n]) => (
+                      <div key={s} className="flex items-center justify-between bg-secondary rounded px-3 py-2">
+                        <span className="font-mono font-semibold">{s}</span>
+                        <span className="text-primary font-bold">{n}</span>
+                      </div>
+                    ))}
+                    {Object.keys(dealsByState).length === 0 && (
+                      <p className="text-sm text-muted-foreground col-span-full">No state data yet.</p>
+                    )}
+                  </div>
+                </div>
+              </Section>
+            </div>
+          )}
+
+          {activeTab === "users" && (
             <UsersTab users={usersWithRoles} dealsByUser={dealsByUser} buyersByUser={buyersByUser} onOpen={setOpenUserId} onChanged={load} />
-          </TabsContent>
-
-          {/* DEALS */}
-          <TabsContent value="deals">
-            <DealsTab deals={deals} users={users} locationNames={locationNames} onOpenUser={setOpenUserId} />
-          </TabsContent>
-
-          {/* RECENTLY DELETED */}
-          {isSuperAdmin && (
-            <TabsContent value="recently_deleted">
-              <RecentlyDeletedTab users={users} locationNames={locationNames} />
-            </TabsContent>
           )}
 
-
-          {/* ROLES */}
-          <TabsContent value="roles">
+          {activeTab === "roles" && (
             <RoleManager users={usersWithRoles} onChanged={load} />
-          </TabsContent>
-
-          {/* PRICING */}
-          {showPricing && (
-            <TabsContent value="pricing">
-              <PricingTab />
-            </TabsContent>
           )}
 
-          {showArchiveBuyers && (
-            <TabsContent value="archive_buyers">
-              <ArchiveBuyersTab />
-            </TabsContent>
+          {activeTab === "deals" && (
+            <DealsTab deals={deals} users={users} locationNames={locationNames} onOpenUser={setOpenUserId} />
           )}
 
-          {showArchiveBuyers && (
-            <TabsContent value="import_buyers">
-              <ImportBuyersTab />
-            </TabsContent>
+          {activeTab === "recently_deleted" && isSuperAdmin && (
+            <RecentlyDeletedTab users={users} locationNames={locationNames} />
           )}
 
-          {showArchiveBuyers && (
-            <TabsContent value="archive_title">
-              <ArchiveTitleCompaniesTab />
-            </TabsContent>
-          )}
-
-          {showArchiveBuyers && (
-            <TabsContent value="archive_realtors">
-              <ArchiveContactsAdminTab kind="realtors" />
-            </TabsContent>
-          )}
-
-          {showArchiveBuyers && (
-            <TabsContent value="archive_notaries">
-              <ArchiveContactsAdminTab kind="notaries" />
-            </TabsContent>
-          )}
-
-          {isSuperAdmin && (
-            <TabsContent value="operator_accounts">
-              <OperatorAccountsTab />
-            </TabsContent>
-          )}
-
-          {showSkiptrace && (
-            <TabsContent value="skiptrace_buyers">
-              <SkiptraceBuyersTab />
-            </TabsContent>
-          )}
-        </Tabs>
+          {activeTab === "pricing" && showPricing && <PricingTab />}
+          {activeTab === "archive_buyers" && showArchiveBuyers && <ArchiveBuyersTab />}
+          {activeTab === "import_buyers" && showArchiveBuyers && <ImportBuyersTab />}
+          {activeTab === "archive_title" && showArchiveBuyers && <ArchiveTitleCompaniesTab />}
+          {activeTab === "archive_realtors" && showArchiveBuyers && <ArchiveContactsAdminTab kind="realtors" />}
+          {activeTab === "archive_notaries" && showArchiveBuyers && <ArchiveContactsAdminTab kind="notaries" />}
+          {activeTab === "operator_accounts" && isSuperAdmin && <OperatorAccountsTab />}
+          {activeTab === "skiptrace_buyers" && showSkiptrace && <SkiptraceBuyersTab />}
+          {activeTab === "audit_log" && <AuditLogTab />}
+        </div>
       </div>
 
       <UserDrawer userId={openUserId} onClose={() => setOpenUserId(null)} onChanged={load} />
