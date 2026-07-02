@@ -48,7 +48,7 @@ export function TopBar() {
     : activeMembership?.location_name
       || (activeLocationId
         ? "Unnamed location"
-        : (isSuperAdmin ? "Admin view" : "Select workspace"));
+        : (isAdmin ? "Admin view" : "Select workspace"));
 
   // Iframe: fetch friendly name from ghl_location_tokens for the active loc.
   useEffect(() => {
@@ -176,7 +176,7 @@ export function TopBar() {
           <DropdownMenuContent align="start" className="w-72">
             <DropdownMenuLabel>Switch workspace</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {isSuperAdmin && (
+            {isAdmin && (
               <>
                 <DropdownMenuItem onClick={pickAdminView} className="cursor-pointer">
                   <div className="flex items-center gap-2 w-full">
