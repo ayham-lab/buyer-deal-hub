@@ -13,6 +13,7 @@ import { DealListView } from "@/components/pipeline/DealListView";
 import { AddDealModal } from "@/components/pipeline/AddDealModal";
 import { DealDrawer } from "@/components/pipeline/DealDrawer";
 import { Skeleton } from "@/components/ui/skeleton";
+import { usePipelineStages } from "@/hooks/usePipelineStages";
 
 export type DealStatus = "lead" | "active" | "under_contract" | "closed" | "dead" | "title_issues" | "seller_issue" | "could_not_sell";
 
@@ -43,7 +44,8 @@ export interface Deal {
 
 export default function Pipeline() {
   const { user, isAdmin } = useAuth();
-  const { isIframed } = useActiveLocation();
+  const { isIframed, activeLocation } = useActiveLocation();
+  const { visibleColumns } = usePipelineStages(activeLocation?.locationId ?? null);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -116,7 +118,7 @@ export default function Pipeline() {
           </TabsList>
           <TabsContent value="kanban" className="mt-6">
             {loading ? <Skeleton className="h-96 w-full" /> :
-              <KanbanBoard deals={deals} onStatusChange={updateStatus} onSelect={setActiveId} locationNames={locationNames} />}
+              <KanbanBoard deals={deals} onStatusChange={updateStatus} onSelect={setActiveId} locationNames={locationNames} columns={visibleColumns as any} />}
           </TabsContent>
           <TabsContent value="list" className="mt-6">
             <DealListView deals={deals} onSelect={setActiveId} />

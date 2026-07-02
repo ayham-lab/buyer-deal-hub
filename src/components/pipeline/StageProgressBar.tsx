@@ -2,18 +2,22 @@ import { STATUS_COLS } from "./utils";
 import { cn } from "@/lib/utils";
 
 type Status = (typeof STATUS_COLS)[number]["id"];
+type Col = { id: Status; label: string };
 
 export function StageProgressBar({
   value,
   onChange,
+  columns,
 }: {
   value: Status | null | undefined;
   onChange: (s: Status) => void;
+  columns?: Col[];
 }) {
-  const currentIdx = STATUS_COLS.findIndex((s) => s.id === value);
+  const cols: Col[] = (columns && columns.length ? columns : STATUS_COLS) as Col[];
+  const currentIdx = cols.findIndex((s) => s.id === value);
   return (
     <div className="flex w-full overflow-x-auto gap-0.5 py-1">
-      {STATUS_COLS.map((s, i) => {
+      {cols.map((s, i) => {
         const isCurrent = i === currentIdx;
         const isPast = currentIdx >= 0 && i < currentIdx;
         return (
@@ -33,7 +37,7 @@ export function StageProgressBar({
             )}
             style={{
               clipPath:
-                i === STATUS_COLS.length - 1
+                i === cols.length - 1
                   ? "polygon(0 0, 100% 0, 100% 100%, 0 100%, 12px 50%)"
                   : i === 0
                   ? "polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%)"

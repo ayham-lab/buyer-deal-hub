@@ -20,6 +20,7 @@ import { DealMarketing } from "./DealMarketing";
 import { DealOffers } from "./DealOffers";
 import { ExitStrategyPicker } from "./ExitStrategyPicker";
 import { StageProgressBar } from "./StageProgressBar";
+import { usePipelineStages } from "@/hooks/usePipelineStages";
 import { format } from "date-fns";
 
 export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | null; onClose: () => void; onUpdated: () => void }) {
@@ -199,10 +200,12 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
 
         <div className="mt-4">
           <label className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1 block">Stage</label>
-          <StageProgressBar
+          <StageProgressBarWithLocation
+            locationId={deal.ghl_location_id ?? activeLocation?.locationId ?? null}
             value={deal.status}
             onChange={(s) => saveField("status", s)}
           />
+
         </div>
 
         <Tabs defaultValue="overview" className="mt-6">
@@ -456,6 +459,12 @@ function Field({ label, value, onChange, type = "text" }: { label: string; value
     </div>
   );
 }
+
+function StageProgressBarWithLocation({ locationId, value, onChange }: { locationId: string | null; value: any; onChange: (s: any) => void }) {
+  const { visibleColumns } = usePipelineStages(locationId);
+  return <StageProgressBar value={value} onChange={onChange} columns={visibleColumns as any} />;
+}
+
 
 function TimelineRow({ label, value }: { label: string; value: string | null }) {
   return (

@@ -13,6 +13,7 @@ import { Loader2, Trash2, Infinity as InfinityIcon, ExternalLink } from "lucide-
 import { useActiveLocation } from "@/contexts/LocationContext";
 import TeamTab from "@/pages/settings/TeamTab";
 import OperatorAccountTab from "@/pages/settings/OperatorAccountTab";
+import PipelineStagesTab from "@/pages/settings/PipelineStagesTab";
 
 export default function Settings() {
   const { isIframed, activeLocation } = useActiveLocation();
@@ -35,6 +36,7 @@ export default function Settings() {
           <TabsList>
             {showProfile && <TabsTrigger value="profile">Profile</TabsTrigger>}
             <TabsTrigger value="checklist">Checklist</TabsTrigger>
+            <TabsTrigger value="stages">Pipeline Stages</TabsTrigger>
             <TabsTrigger value="team">Team</TabsTrigger>
             <TabsTrigger value="operator">Operator Account</TabsTrigger>
             {isIframed && <TabsTrigger value="billing">Billing</TabsTrigger>}
@@ -43,6 +45,7 @@ export default function Settings() {
           </TabsList>
           {showProfile && <TabsContent value="profile"><ProfileTab /></TabsContent>}
           <TabsContent value="checklist"><ChecklistTab /></TabsContent>
+          <TabsContent value="stages"><PipelineStagesTab /></TabsContent>
           <TabsContent value="team"><TeamTab /></TabsContent>
           <TabsContent value="operator"><OperatorAccountTab /></TabsContent>
           {isIframed && <TabsContent value="billing"><BillingTab locationId={activeLocation?.locationId ?? null} /></TabsContent>}
