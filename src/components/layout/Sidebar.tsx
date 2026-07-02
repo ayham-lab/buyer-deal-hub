@@ -1,5 +1,5 @@
-import { NavLink, useLocation, Link, useNavigate } from "react-router-dom";
-import { Users, Search, LayoutGrid, BarChart3, ShieldCheck, ChevronsLeft, ChevronsRight, Building2, UsersRound, Home, CheckSquare, Settings as SettingsIcon, GitBranch, Stamp } from "lucide-react";
+import { NavLink, useLocation, Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Users, LayoutGrid, ShieldCheck, ChevronsLeft, ChevronsRight, Building2, UsersRound, Home, CheckSquare, Settings as SettingsIcon, GitBranch, Stamp, LayoutDashboard, Briefcase, Trash2, Archive, Landmark, UserCog, FileSearch, Tag, ScrollText } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveLocation } from "@/contexts/LocationContext";
 import { cn } from "@/lib/utils";
@@ -23,8 +23,12 @@ export function Sidebar() {
   const { isAdmin, isSuperAdmin } = useAuth();
   const { isIframed, clearActiveLocation } = useActiveLocation();
   const { pathname } = useLocation();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
+  const onAdmin = pathname.startsWith("/admin");
+  const adminTab = searchParams.get("tab") || "overview";
+
   // Super-admins land in the Admin Console when they click the brand logo;
   // everyone else goes to the dashboard root.
   const goAdminView = (e?: React.MouseEvent) => {
@@ -35,6 +39,29 @@ export function Sidebar() {
   const goHome = (e: React.MouseEvent) => {
     if (isSuperAdmin && !isIframed) goAdminView(e);
   };
+
+  type AdminItem = { value: string; label: string; icon: React.ComponentType<any>; show?: boolean };
+  type AdminGroup = { label?: string; items: AdminItem[] };
+  const adminNav: AdminGroup[] = [
+    { items: [{ value: "overview", label: "Dashboard", icon: LayoutDashboard }] },
+    { items: [
+      { value: "users", label: "Users", icon: Users },
+      { value: "roles", label: "Roles", icon: ShieldCheck },
+    ] },
+    { label: "Database", items: [
+      { value: "deals", label: "Deals", icon: Briefcase },
+      { value: "recently_deleted", label: "Recently Deleted", icon: Trash2, show: isSuperAdmin },
+      { value: "archive_buyers", label: "Archive Buyers", icon: Archive, show: isSuperAdmin },
+      { value: "import_buyers", label: "Import Buyers", icon: UsersRound, show: isSuperAdmin },
+      { value: "archive_title", label: "Archive Title Cos", icon: Landmark, show: isSuperAdmin },
+      { value: "archive_realtors", label: "Archive Realtors", icon: Building2, show: isSuperAdmin },
+      { value: "archive_notaries", label: "Archive Notaries", icon: Stamp, show: isSuperAdmin },
+      { value: "skiptrace_buyers", label: "Skiptrace Investors", icon: FileSearch },
+      { value: "operator_accounts", label: "Operator Accounts", icon: UserCog, show: isSuperAdmin },
+    ] },
+    { items: [{ value: "pricing", label: "Pricing", icon: Tag }] },
+    { items: [{ value: "audit_log", label: "Audit Log", icon: ScrollText }] },
+  ];
 
   return (
     <aside
@@ -103,6 +130,46 @@ export function Sidebar() {
               <ShieldCheck className="h-[18px] w-[18px] shrink-0" />
               {!collapsed && <span className="truncate">Admin Console</span>}
             </NavLink>
+
+            {/* Admin sub-nav — visible only while inside /admin */}
+            {onAdmin && !collapsed && (
+              <div className="mt-2 ml-2 pl-3 border-l border-sidebar-border space-y-3">
+                {adminNav.map((group, gi) => {
+                  const items = group.items.filter((i) => i.show !== false);
+                  if (items.length === 0) return null;
+                  return (
+                    <div key={gi}>
+                      {group.label && (
+                        <div className="px-2 pb-1 text-[10px] uppercase tracking-wider text-sidebar-foreground/50 font-semibold">
+                          {group.label}
+                        </div>
+                      )}
+                      <div className="space-y-0.5">
+                        {items.map((item) => {
+                          const Icon = item.icon;
+                          const active = adminTab === item.value;
+                          return (
+                            <button
+                              key={item.value}
+                              onClick={() => navigate(`/admin?tab=${item.value}`)}
+                              className={cn(
+                                "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] text-left transition-colors",
+                                active
+                                  ? "bg-sidebar-accent text-white font-medium"
+                                  : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-white"
+                              )}
+                            >
+                              <Icon className="h-3.5 w-3.5 shrink-0" />
+                              <span className="truncate">{item.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </nav>
