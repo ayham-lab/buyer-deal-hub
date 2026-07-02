@@ -113,11 +113,12 @@ export function BuyerFinderPanel({ onBuyerAdded }: { onBuyerAdded?: () => void }
   function clearDeal() { setSelectedDealId(null); }
 
   async function findMatches() {
-    if (!street.trim() || !city.trim() || !stateCode.trim()) {
-      toast.error("Street, City, and State are required");
+    if (!stateCode.trim() && !zip.trim() && !city.trim()) {
+      toast.error("Provide at least a State, ZIP, or City");
       return;
     }
-    const address = `${street.trim()}, ${city.trim()}, ${stateCode.trim().toUpperCase()}${zip.trim() ? " " + zip.trim() : ""}`;
+    const locParts = [city.trim(), stateCode.trim().toUpperCase()].filter(Boolean).join(", ");
+    const address = [street.trim(), locParts, zip.trim()].filter(Boolean).join(street.trim() ? ", " : " ").trim();
     setLoading(true);
     setResults(null);
     try {
