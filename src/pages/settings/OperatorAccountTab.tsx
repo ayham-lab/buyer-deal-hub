@@ -230,7 +230,7 @@ export default function OperatorAccountTab() {
 
       <div className="space-y-2">
         <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-          Locations you own
+          Locations you have access to
         </Label>
         <div className="border rounded-md divide-y">
           {owned.map((l) => (
