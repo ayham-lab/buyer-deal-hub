@@ -45,8 +45,7 @@ export function Sidebar() {
   const adminNav: AdminGroup[] = [
     { items: [{ value: "overview", label: "Dashboard", icon: LayoutDashboard }] },
     { items: [
-      { value: "users", label: "Users", icon: Users },
-      { value: "roles", label: "Roles", icon: ShieldCheck },
+      { value: "users", label: "Users & Roles", icon: Users },
     ] },
     { label: "Database", items: [
       { value: "deals", label: "Deals", icon: Briefcase },
