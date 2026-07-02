@@ -9,10 +9,11 @@ import { cn } from "@/lib/utils";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Users, Briefcase, DollarSign, Database, MapPin, Search, ShieldCheck,
   TrendingUp, Loader2, Trash2, RotateCcw, LayoutDashboard, ScrollText,
-  Tag, Archive, UserCog, FileSearch, Building2, Landmark, Stamp, UsersRound,
+  Tag,
 } from "lucide-react";
 import { AuditLogTab } from "@/components/admin/AuditLogTab";
 import { UserDrawer } from "@/components/admin/UserDrawer";
@@ -28,10 +29,9 @@ import { useAuth } from "@/hooks/useAuth";
 
 export default function Admin() {
   const { isIframed } = useActiveLocation();
-  const { isSuperAdmin } = useAuth();
+  const { isAdmin, isSuperAdmin } = useAuth();
   const showPricing = !isIframed;
-  const showArchiveBuyers = !isIframed && isSuperAdmin;
-  const showSkiptrace = !isIframed; // visible to any admin reaching this page
+  const showBuyerDatabase = !isIframed && isAdmin;
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<any[]>([]);
   const [deals, setDeals] = useState<any[]>([]);
@@ -216,12 +216,11 @@ export default function Admin() {
           )}
 
           {activeTab === "pricing" && showPricing && <PricingTab />}
-          {activeTab === "archive_buyers" && showArchiveBuyers && <ArchiveBuyersTab />}
-          {activeTab === "archive_title" && showArchiveBuyers && <ArchiveTitleCompaniesTab />}
-          {activeTab === "archive_realtors" && showArchiveBuyers && <ArchiveContactsAdminTab kind="realtors" />}
-          {activeTab === "archive_notaries" && showArchiveBuyers && <ArchiveContactsAdminTab kind="notaries" />}
+          {activeTab === "buyer_database" && showBuyerDatabase && <BuyerDatabaseTab />}
+          {activeTab === "archive_title" && isSuperAdmin && <ArchiveTitleCompaniesTab />}
+          {activeTab === "archive_realtors" && isSuperAdmin && <ArchiveContactsAdminTab kind="realtors" />}
+          {activeTab === "archive_notaries" && isSuperAdmin && <ArchiveContactsAdminTab kind="notaries" />}
           {activeTab === "operator_accounts" && isSuperAdmin && <OperatorAccountsTab />}
-          {activeTab === "skiptrace_buyers" && showSkiptrace && <SkiptraceBuyersTab />}
           {activeTab === "audit_log" && <AuditLogTab />}
         </div>
       </div>
@@ -500,6 +499,28 @@ function ArchiveTab({ archive, onChanged }: any) {
         </table>
       </div>
     </div>
+  );
+}
+
+// ============== Buyer Database ==============
+
+function BuyerDatabaseTab() {
+  const { isSuperAdmin } = useAuth();
+  return (
+    <Tabs defaultValue="skiptrace" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="skiptrace">Skiptrace Investors</TabsTrigger>
+        {isSuperAdmin && <TabsTrigger value="archive">Archive Buyers</TabsTrigger>}
+      </TabsList>
+      <TabsContent value="skiptrace">
+        <SkiptraceBuyersTab />
+      </TabsContent>
+      {isSuperAdmin && (
+        <TabsContent value="archive">
+          <ArchiveBuyersTab />
+        </TabsContent>
+      )}
+    </Tabs>
   );
 }
 
