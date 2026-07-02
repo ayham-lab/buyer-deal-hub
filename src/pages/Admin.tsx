@@ -224,6 +224,7 @@ export default function Admin() {
           {activeTab === "archive_realtors" && isSuperAdmin && <ArchiveContactsAdminTab kind="realtors" />}
           {activeTab === "archive_notaries" && isSuperAdmin && <ArchiveContactsAdminTab kind="notaries" />}
           {activeTab === "operator_accounts" && isSuperAdmin && <OperatorAccountsTab />}
+          {activeTab === "locations" && (isAdmin || isSuperAdmin) && <LocationsAdminTab />}
           {activeTab === "audit_log" && <AuditLogTab />}
         </div>
       </div>
