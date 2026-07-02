@@ -59,7 +59,7 @@ const App = () => (
                 
                 <Route path="/finder" element={wrap(<Finder />)} />
                 <Route path="/pipeline" element={wrap(<Pipeline />)} />
-                <Route path="/kpis" element={wrap(<KPIs />)} />
+                <Route path="/kpis" element={<Navigate to="/" replace />} />
                 <Route path="/tasks" element={wrap(<Tasks />)} />
                 <Route path="/admin" element={wrap(<Admin />)} />
                 <Route path="/profile" element={wrap(<Profile />)} />
