@@ -37,7 +37,7 @@ export function Sidebar() {
     navigate("/admin");
   };
   const goHome = (e: React.MouseEvent) => {
-    if (isSuperAdmin && !isIframed) goAdminView(e);
+    if (isAdmin && !isIframed) goAdminView(e);
   };
 
   type AdminLeaf = { value: string; label: string; icon: React.ComponentType<any>; show?: boolean };
@@ -73,7 +73,7 @@ export function Sidebar() {
       )}
     >
       {/* Logo */}
-      <Link to={isSuperAdmin && !isIframed ? "/admin" : "/"} onClick={goHome} className="h-14 flex items-center gap-3 px-4 border-b border-sidebar-border hover:bg-sidebar-accent/40 transition-colors">
+      <Link to={isAdmin && !isIframed ? "/admin" : "/"} onClick={goHome} className="h-14 flex items-center gap-3 px-4 border-b border-sidebar-border hover:bg-sidebar-accent/40 transition-colors">
         <img src={logo} alt="Logo" className="h-8 w-8 rounded-md shrink-0 object-contain" />
         {!collapsed && (
           <div className="min-w-0">

@@ -50,7 +50,7 @@ export default function Dashboard() {
   const [fromMonth, setFromMonth] = useState(now.getMonth());
   const [toMonth, setToMonth] = useState(now.getMonth());
 
-  if (!isIframed && !authLoading && isAdmin && !activeLocation) {
+  if (!isIframed && !authLoading && isAdmin) {
     return <Navigate to="/admin" replace />;
   }
 
