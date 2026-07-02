@@ -547,6 +547,8 @@ export default function Buyers() {
           </div>
         )}
       </div>
+      )}
+
 
       <AddBuyerModal open={showAdd} onClose={() => setShowAdd(false)} onCreated={load} />
       <ImportBuyersModal open={showImport} onClose={() => setShowImport(false)} onImported={load} />
