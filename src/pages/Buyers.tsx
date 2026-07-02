@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { scopeToLocation, getActiveLocationId } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Users as UsersIcon, Upload, Download, Trash2, Filter, X } from "lucide-react";
+import { Plus, Search, Users as UsersIcon, Upload, Download, Trash2, Filter, X, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { AddBuyerModal } from "@/components/buyers/AddBuyerModal";
 import { ImportBuyersModal } from "@/components/buyers/ImportBuyersModal";
 import { BuyerDrawer } from "@/components/buyers/BuyerDrawer";
+import { BuyerFinderPanel } from "@/components/buyers/BuyerFinderPanel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -23,6 +25,8 @@ import { CheckCircle2, CircleDashed } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
 
 const PROPERTY_TYPE_OPTIONS = ["SFH", "MFH 2-4", "MFH 5+", "Commercial", "Land", "Mobile"];
 const BUYER_TYPE_OPTIONS = ["Flipper", "Landlord", "Developer", "Section 8", "Hedge Fund", "Airbnb / Rooming House", "Padsplit", "Mobile Homes"];
