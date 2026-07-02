@@ -19,7 +19,6 @@ import { UserDrawer } from "@/components/admin/UserDrawer";
 import { RoleManager } from "@/components/admin/RoleManager";
 import { PricingTab } from "@/components/admin/PricingTab";
 import { ArchiveBuyersTab } from "@/components/admin/ArchiveBuyersTab";
-import { ImportBuyersTab } from "@/components/admin/ImportBuyersTab";
 import { ArchiveTitleCompaniesTab } from "@/components/admin/ArchiveTitleCompaniesTab";
 import { OperatorAccountsTab } from "@/components/admin/OperatorAccountsTab";
 import { SkiptraceBuyersTab } from "@/components/admin/SkiptraceBuyersTab";
@@ -218,7 +217,6 @@ export default function Admin() {
 
           {activeTab === "pricing" && showPricing && <PricingTab />}
           {activeTab === "archive_buyers" && showArchiveBuyers && <ArchiveBuyersTab />}
-          {activeTab === "import_buyers" && showArchiveBuyers && <ImportBuyersTab />}
           {activeTab === "archive_title" && showArchiveBuyers && <ArchiveTitleCompaniesTab />}
           {activeTab === "archive_realtors" && showArchiveBuyers && <ArchiveContactsAdminTab kind="realtors" />}
           {activeTab === "archive_notaries" && showArchiveBuyers && <ArchiveContactsAdminTab kind="notaries" />}

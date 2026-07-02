@@ -59,7 +59,6 @@ export function Sidebar() {
         {
           items: [
             { value: "archive_buyers", label: "Archive Buyers", icon: Archive, show: isSuperAdmin },
-            { value: "import_buyers", label: "Import Buyers", icon: UsersRound, show: isSuperAdmin },
             { value: "archive_title", label: "Archive Title Cos", icon: Landmark, show: isSuperAdmin },
             { value: "archive_realtors", label: "Archive Realtors", icon: Building2, show: isSuperAdmin },
             { value: "archive_notaries", label: "Archive Notaries", icon: Stamp, show: isSuperAdmin },
