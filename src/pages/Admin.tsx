@@ -119,7 +119,10 @@ export default function Admin() {
       />
       <div className="p-6 lg:p-8">
         <div className="min-w-0 space-y-6">
+          {activeTab === "overview" && (
+            <div className="space-y-6">
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+
                 <Stat icon={<Users />} label="Users" value={String(users.length)} />
                 <Stat icon={<ShieldCheck />} label="Active Subs" value={String(activeSubs)} />
                 <Stat icon={<Briefcase />} label="Deals" value={String(deals.length)} />
