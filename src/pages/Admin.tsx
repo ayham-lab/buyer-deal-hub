@@ -9,10 +9,11 @@ import { cn } from "@/lib/utils";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Users, Briefcase, DollarSign, Database, MapPin, Search, ShieldCheck,
   TrendingUp, Loader2, Trash2, RotateCcw, LayoutDashboard, ScrollText,
-  Tag, Archive, UserCog, FileSearch, Building2, Landmark, Stamp, UsersRound,
+  Tag,
 } from "lucide-react";
 import { AuditLogTab } from "@/components/admin/AuditLogTab";
 import { UserDrawer } from "@/components/admin/UserDrawer";
