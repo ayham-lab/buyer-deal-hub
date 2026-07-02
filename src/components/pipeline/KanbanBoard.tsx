@@ -5,11 +5,13 @@ import { cn } from "@/lib/utils";
 import { ExternalLink } from "lucide-react";
 import { EXIT_STRATEGY_MAP } from "./exitStrategies";
 
-export function KanbanBoard({ deals, onStatusChange, onSelect, locationNames }: {
+export function KanbanBoard({ deals, onStatusChange, onSelect, locationNames, columns }: {
   deals: Deal[]; onStatusChange: (id: string, s: DealStatus) => void; onSelect: (id: string) => void;
   locationNames?: Record<string, string>;
+  columns?: { id: DealStatus; label: string }[];
 }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  const cols = (columns && columns.length ? columns : STATUS_COLS) as { id: DealStatus; label: string }[];
   function onDragEnd(e: DragEndEvent) {
     if (!e.over) return;
     const id = String(e.active.id);
@@ -19,7 +21,7 @@ export function KanbanBoard({ deals, onStatusChange, onSelect, locationNames }: 
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-4">
-        {STATUS_COLS.map((col) => {
+        {cols.map((col) => {
           const knownStatuses = new Set(STATUS_COLS.map((c) => c.id));
           const colDeals =
             col.id === "lead"
@@ -33,6 +35,7 @@ export function KanbanBoard({ deals, onStatusChange, onSelect, locationNames }: 
     </DndContext>
   );
 }
+
 
 function Column({ id, label, deals, onSelect, locationNames }: { id: string; label: string; deals: Deal[]; onSelect: (id: string) => void; locationNames?: Record<string, string> }) {
   const { setNodeRef, isOver } = useDroppable({ id });
