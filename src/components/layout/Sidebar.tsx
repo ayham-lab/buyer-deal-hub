@@ -9,10 +9,8 @@ import { Launchpad } from "./Launchpad";
 
 const items = [
   { to: "/", label: "Dashboard", icon: Home, exact: true },
-  
-  { to: "/finder", label: "Buyer Finder", icon: Search },
   { to: "/pipeline", label: "Deal Pipeline", icon: LayoutGrid },
-  { to: "/buyers", label: "Buyer Rolodex", icon: Users },
+  { to: "/buyers", label: "Buyers", icon: Users },
   { to: "/tasks", label: "Tasks", icon: CheckSquare },
   { to: "/title-companies", label: "Title Companies", icon: Building2 },
   { to: "/realtors", label: "Realtors", icon: UsersRound },

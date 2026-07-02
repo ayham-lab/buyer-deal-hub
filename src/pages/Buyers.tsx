@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { scopeToLocation, getActiveLocationId } from "@/lib/locationScope";
 import { useAuth } from "@/hooks/useAuth";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Users as UsersIcon, Upload, Download, Trash2, Filter, X } from "lucide-react";
+import { Plus, Search, Users as UsersIcon, Upload, Download, Trash2, Filter, X, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { AddBuyerModal } from "@/components/buyers/AddBuyerModal";
 import { ImportBuyersModal } from "@/components/buyers/ImportBuyersModal";
 import { BuyerDrawer } from "@/components/buyers/BuyerDrawer";
+import { BuyerFinderPanel } from "@/components/buyers/BuyerFinderPanel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -23,6 +25,8 @@ import { CheckCircle2, CircleDashed } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
 
 const PROPERTY_TYPE_OPTIONS = ["SFH", "MFH 2-4", "MFH 5+", "Commercial", "Land", "Mobile"];
 const BUYER_TYPE_OPTIONS = ["Flipper", "Landlord", "Developer", "Section 8", "Hedge Fund", "Airbnb / Rooming House", "Padsplit", "Mobile Homes"];
@@ -233,35 +237,59 @@ export default function Buyers() {
   }
 
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get("tab") === "finder" ? "finder" : "rolodex";
+  const setTab = (v: string) => {
+    const sp = new URLSearchParams(searchParams);
+    if (v === "rolodex") sp.delete("tab"); else sp.set("tab", v);
+    setSearchParams(sp, { replace: true });
+  };
+
   return (
     <AppLayout>
       <PageHeader
-        title="Buyer Rolodex"
-        subtitle="Your private buyer database"
+        title="Buyers"
+        subtitle="Manage your buyer database and match buyers to deals"
         actions={
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() =>
-                exportToCsv(
-                  filtered.map((b) => buyerToCsvRow(b)) as unknown as Record<string, unknown>[],
-                  `buyers-${new Date().toISOString().slice(0, 10)}`,
-                  [...BUYER_CSV_COLUMNS]
-                )
-              }
-            >
-              <Download className="h-4 w-4 mr-1" /> Export CSV
-            </Button>
-            <Button variant="outline" onClick={() => setShowImport(true)}>
-              <Upload className="h-4 w-4 mr-1" /> Import CSV
-            </Button>
-            <Button onClick={() => setShowAdd(true)} className="bg-primary hover:bg-primary-hover text-primary-foreground">
-              <Plus className="h-4 w-4 mr-1" /> Add Buyer
-            </Button>
-          </div>
+          tab === "rolodex" ? (
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() =>
+                  exportToCsv(
+                    filtered.map((b) => buyerToCsvRow(b)) as unknown as Record<string, unknown>[],
+                    `buyers-${new Date().toISOString().slice(0, 10)}`,
+                    [...BUYER_CSV_COLUMNS]
+                  )
+                }
+              >
+                <Download className="h-4 w-4 mr-1" /> Export CSV
+              </Button>
+              <Button variant="outline" onClick={() => setShowImport(true)}>
+                <Upload className="h-4 w-4 mr-1" /> Import CSV
+              </Button>
+              <Button onClick={() => setShowAdd(true)} className="bg-primary hover:bg-primary-hover text-primary-foreground">
+                <Plus className="h-4 w-4 mr-1" /> Add Buyer
+              </Button>
+            </div>
+          ) : null
+        }
+        tabs={
+          <Tabs value={tab} onValueChange={setTab}>
+            <TabsList>
+              <TabsTrigger value="rolodex" className="gap-1.5"><UsersIcon className="h-3.5 w-3.5" /> Rolodex</TabsTrigger>
+              <TabsTrigger value="finder" className="gap-1.5"><Sparkles className="h-3.5 w-3.5" /> Buyer Finder</TabsTrigger>
+            </TabsList>
+          </Tabs>
         }
       />
+      {tab === "finder" ? (
+        <div className="p-6 lg:p-8">
+          <BuyerFinderPanel onBuyerAdded={load} />
+        </div>
+      ) : (
       <div className="p-8 space-y-4">
+
         <div className="flex gap-3">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -519,6 +547,8 @@ export default function Buyers() {
           </div>
         )}
       </div>
+      )}
+
 
       <AddBuyerModal open={showAdd} onClose={() => setShowAdd(false)} onCreated={load} />
       <ImportBuyersModal open={showImport} onClose={() => setShowImport(false)} onImported={load} />
