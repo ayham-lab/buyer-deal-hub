@@ -57,10 +57,9 @@ Deno.serve(async (req) => {
       const { data: memberships } = await admin
         .from("location_memberships")
         .select("location_id")
-        .eq("user_id", userId)
-        .eq("is_owner", true);
+        .eq("user_id", userId);
       const ids = (memberships ?? []).map((m: any) => m.location_id);
-      console.log("operator-account list owned_memberships", { user_id: userId, ids });
+      console.log("operator-account list memberships", { user_id: userId, ids });
 
       let owned: any[] = [];
       if (ids.length > 0) {
