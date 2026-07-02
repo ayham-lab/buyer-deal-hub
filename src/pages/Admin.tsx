@@ -24,6 +24,7 @@ import { ArchiveTitleCompaniesTab } from "@/components/admin/ArchiveTitleCompani
 import { OperatorAccountsTab } from "@/components/admin/OperatorAccountsTab";
 import { SkiptraceBuyersTab } from "@/components/admin/SkiptraceBuyersTab";
 import { ArchiveContactsAdminTab } from "@/components/admin/ArchiveContactsAdminTab";
+import { LocationsAdminTab } from "@/components/admin/LocationsAdminTab";
 import { useActiveLocation } from "@/contexts/LocationContext";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -223,6 +224,7 @@ export default function Admin() {
           {activeTab === "archive_realtors" && isSuperAdmin && <ArchiveContactsAdminTab kind="realtors" />}
           {activeTab === "archive_notaries" && isSuperAdmin && <ArchiveContactsAdminTab kind="notaries" />}
           {activeTab === "operator_accounts" && isSuperAdmin && <OperatorAccountsTab />}
+          {activeTab === "locations" && (isAdmin || isSuperAdmin) && <LocationsAdminTab />}
           {activeTab === "audit_log" && <AuditLogTab />}
         </div>
       </div>

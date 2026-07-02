@@ -1,5 +1,5 @@
 import { NavLink, useLocation, Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Users, LayoutGrid, ShieldCheck, ChevronsLeft, ChevronsRight, Building2, UsersRound, Home, CheckSquare, Settings as SettingsIcon, GitBranch, Stamp, LayoutDashboard, Briefcase, Database, Landmark, UserCog, Tag, ScrollText } from "lucide-react";
+import { Users, LayoutGrid, ShieldCheck, ChevronsLeft, ChevronsRight, Building2, UsersRound, Home, CheckSquare, Settings as SettingsIcon, GitBranch, Stamp, LayoutDashboard, Briefcase, Database, Landmark, UserCog, Tag, ScrollText, MapPin } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveLocation } from "@/contexts/LocationContext";
 import { cn } from "@/lib/utils";
@@ -53,6 +53,7 @@ export function Sidebar() {
           items: [
             { value: "deals", label: "Deals", icon: Briefcase },
             { value: "buyer_database", label: "Buyer Database", icon: Database, show: isAdmin },
+            { value: "locations", label: "Locations", icon: MapPin, show: isAdmin || isSuperAdmin },
             { value: "archive_title", label: "Archive Title Cos", icon: Landmark, show: isSuperAdmin },
             { value: "archive_realtors", label: "Archive Realtors", icon: Building2, show: isSuperAdmin },
             { value: "archive_notaries", label: "Archive Notaries", icon: Stamp, show: isSuperAdmin },
