@@ -203,13 +203,10 @@ export default function Admin() {
             </div>
           )}
 
-          {activeTab === "users" && (
+          {(activeTab === "users" || activeTab === "roles") && (
             <UsersTab users={usersWithRoles} dealsByUser={dealsByUser} buyersByUser={buyersByUser} onOpen={setOpenUserId} onChanged={load} />
           )}
 
-          {activeTab === "roles" && (
-            <RoleManager users={usersWithRoles} onChanged={load} />
-          )}
 
           {activeTab === "deals" && (
             <DealsTab deals={deals} users={users} locationNames={locationNames} onOpenUser={setOpenUserId} />
