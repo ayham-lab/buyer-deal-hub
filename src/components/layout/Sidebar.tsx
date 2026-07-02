@@ -40,26 +40,37 @@ export function Sidebar() {
     if (isSuperAdmin && !isIframed) goAdminView(e);
   };
 
-  type AdminItem = { value: string; label: string; icon: React.ComponentType<any>; show?: boolean };
-  type AdminGroup = { label?: string; items: AdminItem[] };
+  type AdminLeaf = { value: string; label: string; icon: React.ComponentType<any>; show?: boolean };
+  type AdminSection = { label?: string; items: AdminLeaf[] };
+  type AdminGroup = { label?: string; sections: AdminSection[] };
   const adminNav: AdminGroup[] = [
-    { items: [{ value: "overview", label: "Dashboard", icon: LayoutDashboard }] },
-    { items: [
-      { value: "users", label: "Users & Roles", icon: Users },
-    ] },
-    { label: "Database", items: [
-      { value: "deals", label: "Deals", icon: Briefcase },
-      { value: "recently_deleted", label: "Recently Deleted", icon: Trash2, show: isSuperAdmin },
-      { value: "archive_buyers", label: "Archive Buyers", icon: Archive, show: isSuperAdmin },
-      { value: "import_buyers", label: "Import Buyers", icon: UsersRound, show: isSuperAdmin },
-      { value: "archive_title", label: "Archive Title Cos", icon: Landmark, show: isSuperAdmin },
-      { value: "archive_realtors", label: "Archive Realtors", icon: Building2, show: isSuperAdmin },
-      { value: "archive_notaries", label: "Archive Notaries", icon: Stamp, show: isSuperAdmin },
-      { value: "skiptrace_buyers", label: "Skiptrace Investors", icon: FileSearch },
-      { value: "operator_accounts", label: "Operator Accounts", icon: UserCog, show: isSuperAdmin },
-    ] },
-    { items: [{ value: "pricing", label: "Pricing", icon: Tag }] },
-    { items: [{ value: "audit_log", label: "Audit Log", icon: ScrollText }] },
+    { sections: [{ items: [{ value: "overview", label: "Dashboard", icon: LayoutDashboard }] }] },
+    { sections: [{ items: [{ value: "users", label: "Users & Roles", icon: Users }] }] },
+    {
+      label: "Database",
+      sections: [
+        {
+          label: "Deals",
+          items: [
+            { value: "deals", label: "Deals", icon: Briefcase },
+            { value: "recently_deleted", label: "Recently Deleted", icon: Trash2, show: isSuperAdmin },
+          ],
+        },
+        {
+          items: [
+            { value: "archive_buyers", label: "Archive Buyers", icon: Archive, show: isSuperAdmin },
+            { value: "import_buyers", label: "Import Buyers", icon: UsersRound, show: isSuperAdmin },
+            { value: "archive_title", label: "Archive Title Cos", icon: Landmark, show: isSuperAdmin },
+            { value: "archive_realtors", label: "Archive Realtors", icon: Building2, show: isSuperAdmin },
+            { value: "archive_notaries", label: "Archive Notaries", icon: Stamp, show: isSuperAdmin },
+            { value: "skiptrace_buyers", label: "Skiptrace Investors", icon: FileSearch },
+            { value: "operator_accounts", label: "Operator Accounts", icon: UserCog, show: isSuperAdmin },
+          ],
+        },
+      ],
+    },
+    { sections: [{ items: [{ value: "pricing", label: "Pricing", icon: Tag }] }] },
+    { sections: [{ items: [{ value: "audit_log", label: "Audit Log", icon: ScrollText }] }] },
   ];
 
   return (
