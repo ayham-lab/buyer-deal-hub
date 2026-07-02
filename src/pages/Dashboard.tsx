@@ -515,7 +515,9 @@ export default function Dashboard() {
             <Stat label="Total Deals" value={String(deals.length)} />
             <Stat label="Avg Assignment Fee" value={`$${deals.length ? Math.round(deals.reduce((s, d) => s + (Number(d.assignment_fee) || 0), 0) / deals.length).toLocaleString() : 0}`} />
             <Stat label="Total Buyers" value={String(buyers.length)} />
+          </div>
           </TabsContent>
+
         </Tabs>
       </div>
 
