@@ -29,10 +29,9 @@ import { useAuth } from "@/hooks/useAuth";
 
 export default function Admin() {
   const { isIframed } = useActiveLocation();
-  const { isSuperAdmin } = useAuth();
+  const { isAdmin, isSuperAdmin } = useAuth();
   const showPricing = !isIframed;
-  const showArchiveBuyers = !isIframed && isSuperAdmin;
-  const showSkiptrace = !isIframed; // visible to any admin reaching this page
+  const showBuyerDatabase = !isIframed && isAdmin;
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<any[]>([]);
   const [deals, setDeals] = useState<any[]>([]);
