@@ -200,10 +200,12 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
 
         <div className="mt-4">
           <label className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1 block">Stage</label>
-          <StageProgressBar
+          <StageProgressBarWithLocation
+            locationId={deal.ghl_location_id ?? activeLocation?.locationId ?? null}
             value={deal.status}
             onChange={(s) => saveField("status", s)}
           />
+
         </div>
 
         <Tabs defaultValue="overview" className="mt-6">
