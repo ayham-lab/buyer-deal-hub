@@ -101,30 +101,9 @@ export default function Admin() {
     return users.map((u) => ({ ...u, isAdminRole: adminSet.has(u.user_id) }));
   }, [users, roles]);
 
-  const [activeTab, setActiveTab] = useState<string>("overview");
-
-  type NavItem = { value: string; label: string; icon: React.ComponentType<any>; show?: boolean };
-  type NavGroup = { label?: string; items: NavItem[] };
-  const nav: NavGroup[] = [
-    { items: [{ value: "overview", label: "Dashboard", icon: LayoutDashboard }] },
-    { items: [{ value: "users", label: "Users", icon: Users }, { value: "roles", label: "Roles", icon: ShieldCheck }] },
-    {
-      label: "Database",
-      items: [
-        { value: "deals", label: "Deals", icon: Briefcase },
-        { value: "recently_deleted", label: "Recently Deleted", icon: Trash2, show: isSuperAdmin },
-        { value: "archive_buyers", label: "Archive Buyers", icon: Archive, show: showArchiveBuyers },
-        { value: "import_buyers", label: "Import Buyers", icon: UsersRound, show: showArchiveBuyers },
-        { value: "archive_title", label: "Archive Title Cos", icon: Landmark, show: showArchiveBuyers },
-        { value: "archive_realtors", label: "Archive Realtors", icon: Building2, show: showArchiveBuyers },
-        { value: "archive_notaries", label: "Archive Notaries", icon: Stamp, show: showArchiveBuyers },
-        { value: "skiptrace_buyers", label: "Skiptrace Investors", icon: FileSearch, show: showSkiptrace },
-        { value: "operator_accounts", label: "Operator Accounts", icon: UserCog, show: isSuperAdmin },
-      ],
-    },
-    { items: [{ value: "pricing", label: "Pricing", icon: Tag, show: showPricing }] },
-    { items: [{ value: "audit_log", label: "Audit Log", icon: ScrollText }] },
-  ];
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "overview";
+  const setActiveTab = (v: string) => setSearchParams({ tab: v });
 
   return (
     <AppLayout requireAdmin>
@@ -138,51 +117,8 @@ export default function Admin() {
           </Button>
         }
       />
-      <div className="flex gap-6 p-6 lg:p-8">
-        {/* Admin left nav */}
-        <aside className="w-56 shrink-0">
-          <nav className="sticky top-6 space-y-5">
-            {nav.map((group, gi) => {
-              const items = group.items.filter((i) => i.show !== false);
-              if (items.length === 0) return null;
-              return (
-                <div key={gi}>
-                  {group.label && (
-                    <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-2 mb-2">
-                      {group.label}
-                    </div>
-                  )}
-                  <div className="space-y-0.5">
-                    {items.map((item) => {
-                      const Icon = item.icon;
-                      const active = activeTab === item.value;
-                      return (
-                        <button
-                          key={item.value}
-                          onClick={() => setActiveTab(item.value)}
-                          className={cn(
-                            "w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm text-left transition-colors",
-                            active
-                              ? "bg-primary/10 text-primary font-medium"
-                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                          )}
-                        >
-                          <Icon className="h-4 w-4 shrink-0" />
-                          <span className="truncate">{item.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </nav>
-        </aside>
-
-        {/* Content */}
-        <div className="flex-1 min-w-0 space-y-6">
-          {activeTab === "overview" && (
-            <div className="space-y-6">
+      <div className="p-6 lg:p-8">
+        <div className="min-w-0 space-y-6">
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 <Stat icon={<Users />} label="Users" value={String(users.length)} />
                 <Stat icon={<ShieldCheck />} label="Active Subs" value={String(activeSubs)} />
