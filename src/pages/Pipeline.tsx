@@ -44,7 +44,8 @@ export interface Deal {
 
 export default function Pipeline() {
   const { user, isAdmin } = useAuth();
-  const { isIframed } = useActiveLocation();
+  const { isIframed, activeLocation } = useActiveLocation();
+  const { visibleColumns } = usePipelineStages(activeLocation?.locationId ?? null);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
