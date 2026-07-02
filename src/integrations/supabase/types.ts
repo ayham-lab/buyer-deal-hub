@@ -1107,6 +1107,7 @@ export type Database = {
           expires_at: string | null
           ghl_company_id: string | null
           ghl_location_id: string | null
+          god_mode: boolean
           id: string
           location_name: string | null
           operator_account_id: string | null
@@ -1120,6 +1121,7 @@ export type Database = {
           expires_at?: string | null
           ghl_company_id?: string | null
           ghl_location_id?: string | null
+          god_mode?: boolean
           id?: string
           location_name?: string | null
           operator_account_id?: string | null
@@ -1133,6 +1135,7 @@ export type Database = {
           expires_at?: string | null
           ghl_company_id?: string | null
           ghl_location_id?: string | null
+          god_mode?: boolean
           id?: string
           location_name?: string | null
           operator_account_id?: string | null
@@ -2309,6 +2312,18 @@ export type Database = {
         Args: { p_archive_id: string }
         Returns: undefined
       }
+      admin_list_locations: {
+        Args: never
+        Returns: {
+          archive_contributions_enabled: boolean
+          created_at: string
+          ghl_location_id: string
+          god_mode: boolean
+          location_name: string
+          operator_account_id: string
+          updated_at: string
+        }[]
+      }
       archive_buyer_distinct_sources: {
         Args: never
         Returns: {
@@ -2396,6 +2411,10 @@ export type Database = {
         Returns: boolean
       }
       set_location_archive_contributions: {
+        Args: { p_enabled: boolean; p_location: string }
+        Returns: boolean
+      }
+      set_location_god_mode: {
         Args: { p_enabled: boolean; p_location: string }
         Returns: boolean
       }
