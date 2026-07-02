@@ -207,12 +207,14 @@ export default function Admin() {
           )}
 
 
-          {activeTab === "deals" && (
-            <DealsTab deals={deals} users={users} locationNames={locationNames} onOpenUser={setOpenUserId} />
-          )}
-
-          {activeTab === "recently_deleted" && isSuperAdmin && (
-            <RecentlyDeletedTab users={users} locationNames={locationNames} />
+          {(activeTab === "deals" || activeTab === "recently_deleted") && (
+            <DealsDatabaseTab
+              deals={deals}
+              users={users}
+              locationNames={locationNames}
+              onOpenUser={setOpenUserId}
+              defaultInnerTab={activeTab === "recently_deleted" ? "recently_deleted" : "deals"}
+            />
           )}
 
           {activeTab === "pricing" && showPricing && <PricingTab />}
@@ -518,6 +520,40 @@ function BuyerDatabaseTab() {
       {isSuperAdmin && (
         <TabsContent value="archive">
           <ArchiveBuyersTab />
+        </TabsContent>
+      )}
+    </Tabs>
+  );
+}
+
+// ============== Deal Database ==============
+
+function DealsDatabaseTab({
+  deals,
+  users,
+  locationNames,
+  onOpenUser,
+  defaultInnerTab = "deals",
+}: {
+  deals: any[];
+  users: any[];
+  locationNames: Record<string, string>;
+  onOpenUser: (id: string) => void;
+  defaultInnerTab?: string;
+}) {
+  const { isSuperAdmin } = useAuth();
+  return (
+    <Tabs defaultValue={defaultInnerTab} className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="deals">Deals</TabsTrigger>
+        {isSuperAdmin && <TabsTrigger value="recently_deleted">Recently Deleted</TabsTrigger>}
+      </TabsList>
+      <TabsContent value="deals">
+        <DealsTab deals={deals} users={users} locationNames={locationNames} onOpenUser={onOpenUser} />
+      </TabsContent>
+      {isSuperAdmin && (
+        <TabsContent value="recently_deleted">
+          <RecentlyDeletedTab users={users} locationNames={locationNames} />
         </TabsContent>
       )}
     </Tabs>
