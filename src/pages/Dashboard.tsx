@@ -21,6 +21,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const COLORS = ["#CC0000", "#FF1A1A", "#FF6B6B", "#FFA07A", "#FFD93D", "#6BCB77"];
@@ -35,6 +36,7 @@ export default function Dashboard() {
     newLeads: number; revenueMTD: number; openTasks: number;
     dealsUnderContract: number; avgDaysToAssign: number | null; avgOffersPerDeal: number | null;
     newBuyersThisWeek: number; activeBuyers90d: number;
+    dealsAssignedThisWeek: number; closeRatePct: number | null; avgAssignmentFee: number | null;
   } | null>(null);
 
   // KPI / charts state
@@ -63,10 +65,12 @@ export default function Dashboard() {
       const weekISO = format(weekFromNow, "yyyy-MM-dd");
       const sevenDaysAgo = format(addDays(today, -7), "yyyy-MM-dd");
       const ninetyDaysAgoISO = addDays(today, -90).toISOString();
+      const sevenDaysAgoISO = addDays(today, -7).toISOString();
 
       const [
         closings, emd, ip, leads, revenue, openTasks,
         underContract, assigned, offerAgg, newBuyers, activeBuyerDeals,
+        assignedThisWeek, allDealsForRate, allFees,
       ] = await Promise.all([
         scopeToLocation(supabase.from("deals").select("id,property_address,city,state,closing_date,assignment_fee").is("deleted_at", null).gte("closing_date", todayISO).lte("closing_date", weekISO).order("closing_date")),
         scopeToLocation(supabase.from("deals").select("id,property_address,emd_amount,closing_date,status").is("deleted_at", null).eq("status", "under_contract").eq("emd_received", false)),
@@ -79,6 +83,9 @@ export default function Dashboard() {
         scopeToLocation(supabase.from("deals").select("id, deal_offers(id)").is("deleted_at", null)),
         scopeToLocation(supabase.from("buyers").select("id", { count: "exact", head: true }).gte("created_at", sevenDaysAgo)),
         scopeToLocation(supabase.from("deals").select("buyer_id").is("deleted_at", null).eq("status", "closed").not("buyer_id", "is", null).gte("closed_at", ninetyDaysAgoISO)),
+        scopeToLocation(supabase.from("deals").select("id", { count: "exact", head: true }).is("deleted_at", null).gte("assigned_at", sevenDaysAgoISO)),
+        scopeToLocation(supabase.from("deals").select("status").is("deleted_at", null)),
+        scopeToLocation(supabase.from("deals").select("assignment_fee").is("deleted_at", null).not("assignment_fee", "is", null)),
       ]);
 
       const assignedRows = (assigned.data as any) || [];
@@ -97,6 +104,13 @@ export default function Dashboard() {
       const activeBuyerIds = new Set<string>();
       ((activeBuyerDeals.data as any) || []).forEach((r: any) => r.buyer_id && activeBuyerIds.add(r.buyer_id));
 
+      const allRateRows = (allDealsForRate.data as any) || [];
+      const closedCount = allRateRows.filter((d: any) => d.status === "closed").length;
+      const closeRate = allRateRows.length ? (closedCount / allRateRows.length) * 100 : null;
+
+      const feeRows = ((allFees.data as any) || []).map((r: any) => Number(r.assignment_fee)).filter((n: number) => !isNaN(n) && n > 0);
+      const avgFee = feeRows.length ? feeRows.reduce((s: number, n: number) => s + n, 0) / feeRows.length : null;
+
       setSummary({
         closingsThisWeek: (closings.data as any) || [],
         emdOverdue: (emd.data as any) || [],
@@ -109,6 +123,9 @@ export default function Dashboard() {
         avgOffersPerDeal: avgOffers,
         newBuyersThisWeek: newBuyers.count || 0,
         activeBuyers90d: activeBuyerIds.size,
+        dealsAssignedThisWeek: assignedThisWeek.count || 0,
+        closeRatePct: closeRate,
+        avgAssignmentFee: avgFee,
       });
     })();
   }, [user, handshakeReady, activeLocation?.locationId, isIframed]);
@@ -234,64 +251,76 @@ export default function Dashboard() {
         subtitle="Here's what's happening across your pipeline today."
       />
 
-      <div className="px-6 lg:px-8 py-6 space-y-8">
-        {/* Live summary tiles */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <KpiCard icon={DollarSign} label="Revenue MTD" value={summary ? `$${summary.revenueMTD.toLocaleString()}` : null} tone="primary" />
-          <KpiCard icon={Sparkles} label="New Leads (7d)" value={summary ? String(summary.newLeads) : null} link="/pipeline" />
-          <KpiCard icon={CalendarClock} label="Closings This Week" value={summary ? String(summary.closingsThisWeek.length) : null} link="/pipeline" />
-          <KpiCard icon={CheckSquare} label="Open Tasks" value={summary ? String(summary.openTasks) : null} link="/tasks" />
-        </div>
+      <div className="px-6 lg:px-8 py-6">
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="mb-6">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="deals">Deal Metrics</TabsTrigger>
+            <TabsTrigger value="buyers">Buyer Metrics</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          </TabsList>
 
-        {/* Deal & Buyer metrics */}
-        <div>
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Deal Metrics</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <KpiCard icon={FileSignature} label="Deals Under Contract" value={summary ? String(summary.dealsUnderContract) : null} link="/pipeline" />
-            <KpiCard icon={Timer} label="Avg Days to Assign" value={summary ? (summary.avgDaysToAssign === null ? "—" : `${fmt(summary.avgDaysToAssign)}d`) : null} />
-            <KpiCard icon={MessageSquare} label="Avg Offers per Deal" value={summary ? (summary.avgOffersPerDeal === null ? "—" : fmt(summary.avgOffersPerDeal, 2)) : null} />
-          </div>
-        </div>
+          {/* OVERVIEW */}
+          <TabsContent value="overview" className="space-y-6 mt-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <KpiCard icon={DollarSign} label="Revenue MTD" value={summary ? `$${summary.revenueMTD.toLocaleString()}` : null} tone="primary" />
+              <KpiCard icon={Sparkles} label="New Leads (7d)" value={summary ? String(summary.newLeads) : null} link="/pipeline" />
+              <KpiCard icon={CalendarClock} label="Closings This Week" value={summary ? String(summary.closingsThisWeek.length) : null} link="/pipeline" />
+              <KpiCard icon={CheckSquare} label="Open Tasks" value={summary ? String(summary.openTasks) : null} link="/tasks" />
+            </div>
 
-        <div>
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Buyer Metrics</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <KpiCard icon={Users} label="New Buyers (7d)" value={summary ? String(summary.newBuyersThisWeek) : null} link="/buyers" />
-            <KpiCard icon={UserCheck} label="Active Buyers (90d)" value={summary ? String(summary.activeBuyers90d) : null} link="/buyers" hint="Bought a deal in the last 90 days" />
-            <KpiCard icon={TrendingUp} label="Text Blast Open %" value={summary ? "—" : null} hint="Awaiting SMS provider integration" />
-          </div>
-        </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <ListCard title="Closings this week" icon={CalendarClock} items={summary?.closingsThisWeek || []} loading={!summary} empty="No closings scheduled"
+                render={(d) => (
+                  <Link to="/pipeline" className="block py-2 px-3 rounded hover:bg-muted">
+                    <div className="text-sm font-medium truncate">{d.property_address}</div>
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>{d.city}{d.state ? `, ${d.state}` : ""}</span>
+                      <span>{format(new Date(d.closing_date), "MMM d")}</span>
+                    </div>
+                  </Link>
+                )} />
+              <ListCard title="EMD outstanding" icon={AlertTriangle} tone="warn" items={summary?.emdOverdue || []} loading={!summary} empty="All EMDs received"
+                render={(d) => (
+                  <Link to="/pipeline" className="block py-2 px-3 rounded hover:bg-muted">
+                    <div className="text-sm font-medium truncate">{d.property_address}</div>
+                    <div className="text-xs text-muted-foreground">${Number(d.emd_amount || 0).toLocaleString()} · under contract</div>
+                  </Link>
+                )} />
+              <ListCard title="IP expiring soon" icon={CalendarClock} tone="warn" items={summary?.ipExpiring || []} loading={!summary} empty="No IPs expiring"
+                render={(d) => (
+                  <Link to="/pipeline" className="block py-2 px-3 rounded hover:bg-muted">
+                    <div className="text-sm font-medium truncate">{d.property_address}</div>
+                    <div className="text-xs text-muted-foreground">Expires {format(new Date(d.ip_expiry_date), "MMM d")}</div>
+                  </Link>
+                )} />
+            </div>
+          </TabsContent>
 
-        {/* Action lists */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <ListCard title="Closings this week" icon={CalendarClock} items={summary?.closingsThisWeek || []} loading={!summary} empty="No closings scheduled"
-            render={(d) => (
-              <Link to="/pipeline" className="block py-2 px-3 rounded hover:bg-muted">
-                <div className="text-sm font-medium truncate">{d.property_address}</div>
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{d.city}{d.state ? `, ${d.state}` : ""}</span>
-                  <span>{format(new Date(d.closing_date), "MMM d")}</span>
-                </div>
-              </Link>
-            )} />
-          <ListCard title="EMD outstanding" icon={AlertTriangle} tone="warn" items={summary?.emdOverdue || []} loading={!summary} empty="All EMDs received"
-            render={(d) => (
-              <Link to="/pipeline" className="block py-2 px-3 rounded hover:bg-muted">
-                <div className="text-sm font-medium truncate">{d.property_address}</div>
-                <div className="text-xs text-muted-foreground">${Number(d.emd_amount || 0).toLocaleString()} · under contract</div>
-              </Link>
-            )} />
-          <ListCard title="IP expiring soon" icon={CalendarClock} tone="warn" items={summary?.ipExpiring || []} loading={!summary} empty="No IPs expiring"
-            render={(d) => (
-              <Link to="/pipeline" className="block py-2 px-3 rounded hover:bg-muted">
-                <div className="text-sm font-medium truncate">{d.property_address}</div>
-                <div className="text-xs text-muted-foreground">Expires {format(new Date(d.ip_expiry_date), "MMM d")}</div>
-              </Link>
-            )} />
-        </div>
+          {/* DEAL METRICS */}
+          <TabsContent value="deals" className="space-y-4 mt-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <KpiCard icon={FileSignature} label="Deals Under Contract" value={summary ? String(summary.dealsUnderContract) : null} link="/pipeline" />
+              <KpiCard icon={CalendarClock} label="Deals Assigned This Week" value={summary ? String(summary.dealsAssignedThisWeek) : null} link="/pipeline" />
+              <KpiCard icon={Target} label="Close Rate" value={summary ? (summary.closeRatePct === null ? "—" : `${summary.closeRatePct.toFixed(1)}%`) : null} hint="Closed / all deals (all-time)" />
+              <KpiCard icon={Timer} label="Avg Days to Assign" value={summary ? (summary.avgDaysToAssign === null ? "—" : `${fmt(summary.avgDaysToAssign)}d`) : null} />
+              <KpiCard icon={MessageSquare} label="Avg Offers per Deal" value={summary ? (summary.avgOffersPerDeal === null ? "—" : fmt(summary.avgOffersPerDeal, 2)) : null} />
+              <KpiCard icon={DollarSign} label="Avg Assignment Fee" value={summary ? (summary.avgAssignmentFee === null ? "—" : `$${Math.round(summary.avgAssignmentFee).toLocaleString()}`) : null} tone="primary" />
+            </div>
+          </TabsContent>
 
-        {/* KPI section (formerly /kpis) */}
-        <div className="pt-4 border-t border-border">
+          {/* BUYER METRICS */}
+          <TabsContent value="buyers" className="space-y-4 mt-0">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <KpiCard icon={Users} label="New Buyers (7d)" value={summary ? String(summary.newBuyersThisWeek) : null} link="/buyers" />
+              <KpiCard icon={UserCheck} label="Active Buyers (90d)" value={summary ? String(summary.activeBuyers90d) : null} link="/buyers" hint="Bought a deal in the last 90 days" />
+              <KpiCard icon={TrendingUp} label="Text Blast Open %" value={summary ? "—" : null} hint="Awaiting SMS provider integration" />
+            </div>
+          </TabsContent>
+
+          {/* ANALYTICS */}
+          <TabsContent value="analytics" className="space-y-6 mt-0">
+
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <h2 className="text-lg font-semibold">Performance Analytics</h2>
             <div className="flex items-center gap-2">
@@ -488,8 +517,11 @@ export default function Dashboard() {
             <Stat label="Avg Assignment Fee" value={`$${deals.length ? Math.round(deals.reduce((s, d) => s + (Number(d.assignment_fee) || 0), 0) / deals.length).toLocaleString() : 0}`} />
             <Stat label="Total Buyers" value={String(buyers.length)} />
           </div>
-        </div>
+          </TabsContent>
+
+        </Tabs>
       </div>
+
     </AppLayout>
   );
 }
