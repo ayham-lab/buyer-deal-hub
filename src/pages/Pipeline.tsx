@@ -13,6 +13,7 @@ import { DealListView } from "@/components/pipeline/DealListView";
 import { AddDealModal } from "@/components/pipeline/AddDealModal";
 import { DealDrawer } from "@/components/pipeline/DealDrawer";
 import { Skeleton } from "@/components/ui/skeleton";
+import { usePipelineStages } from "@/hooks/usePipelineStages";
 
 export type DealStatus = "lead" | "active" | "under_contract" | "closed" | "dead" | "title_issues" | "seller_issue" | "could_not_sell";
 
