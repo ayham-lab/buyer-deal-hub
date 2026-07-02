@@ -113,11 +113,12 @@ export function BuyerFinderPanel({ onBuyerAdded }: { onBuyerAdded?: () => void }
   function clearDeal() { setSelectedDealId(null); }
 
   async function findMatches() {
-    if (!street.trim() || !city.trim() || !stateCode.trim()) {
-      toast.error("Street, City, and State are required");
+    if (!stateCode.trim() && !zip.trim() && !city.trim()) {
+      toast.error("Provide at least a State, ZIP, or City");
       return;
     }
-    const address = `${street.trim()}, ${city.trim()}, ${stateCode.trim().toUpperCase()}${zip.trim() ? " " + zip.trim() : ""}`;
+    const locParts = [city.trim(), stateCode.trim().toUpperCase()].filter(Boolean).join(", ");
+    const address = [street.trim(), locParts, zip.trim()].filter(Boolean).join(street.trim() ? ", " : " ").trim();
     setLoading(true);
     setResults(null);
     try {
@@ -243,10 +244,10 @@ export function BuyerFinderPanel({ onBuyerAdded }: { onBuyerAdded?: () => void }
         <div className="grid gap-3 md:grid-cols-12">
           <div className="relative md:col-span-5">
             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input className="pl-9" placeholder="Street address *" value={street} onChange={(e) => setStreet(e.target.value)} />
+            <Input className="pl-9" placeholder="Street address (optional)" value={street} onChange={(e) => setStreet(e.target.value)} />
           </div>
-          <Input className="md:col-span-3" placeholder="City *" value={city} onChange={(e) => setCity(e.target.value)} />
-          <Input className="md:col-span-2" placeholder="State *" maxLength={2}
+          <Input className="md:col-span-3" placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} />
+          <Input className="md:col-span-2" placeholder="State" maxLength={2}
             value={stateCode}
             onChange={(e) => setStateCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, ""))} />
           <Input className="md:col-span-2" placeholder="Zip" maxLength={5} inputMode="numeric"
