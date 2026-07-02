@@ -48,6 +48,7 @@ export default function Settings() {
           {showProfile && <TabsContent value="profile"><ProfileTab /></TabsContent>}
           <TabsContent value="checklist"><ChecklistTab /></TabsContent>
           <TabsContent value="stages"><PipelineStagesTab /></TabsContent>
+          <TabsContent value="intake"><BuyerIntakeTab /></TabsContent>
           <TabsContent value="team"><TeamTab /></TabsContent>
           <TabsContent value="operator"><OperatorAccountTab /></TabsContent>
           {isIframed && <TabsContent value="billing"><BillingTab locationId={activeLocation?.locationId ?? null} /></TabsContent>}
