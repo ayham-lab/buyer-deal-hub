@@ -42,6 +42,7 @@ export default function Settings() {
             <TabsTrigger value="team">Team</TabsTrigger>
             <TabsTrigger value="operator">Operator Account</TabsTrigger>
             {isIframed && <TabsTrigger value="billing">Billing</TabsTrigger>}
+            {isIframed && <TabsTrigger value="login">Standalone Login</TabsTrigger>}
             {showGhl && <TabsTrigger value="ghl">GHL Connections</TabsTrigger>}
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
           </TabsList>
@@ -52,6 +53,7 @@ export default function Settings() {
           <TabsContent value="team"><TeamTab /></TabsContent>
           <TabsContent value="operator"><OperatorAccountTab /></TabsContent>
           {isIframed && <TabsContent value="billing"><BillingTab locationId={activeLocation?.locationId ?? null} /></TabsContent>}
+          {isIframed && <TabsContent value="login"><StandaloneLoginTab /></TabsContent>}
           {showGhl && <TabsContent value="ghl"><GhlTab /></TabsContent>}
           <TabsContent value="notifications"><NotificationsTab /></TabsContent>
         </Tabs>
