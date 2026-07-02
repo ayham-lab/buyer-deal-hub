@@ -5,15 +5,17 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function NoAccess() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const nav = useNavigate();
   // Iframe users always have access via GHL SSO — never show the no-access
   // wall to them. Bounce to /embed so LocationProvider can run the handshake.
+  // Admins also always have access via the Admin Console — bounce them there.
   useEffect(() => {
     let iframed = false;
     try { iframed = window.self !== window.top; } catch { iframed = true; }
-    if (iframed) nav("/embed", { replace: true });
-  }, [nav]);
+    if (iframed) { nav("/embed", { replace: true }); return; }
+    if (isAdmin) nav("/admin", { replace: true });
+  }, [nav, isAdmin]);
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
