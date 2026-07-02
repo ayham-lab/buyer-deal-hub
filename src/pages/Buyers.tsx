@@ -237,35 +237,59 @@ export default function Buyers() {
   }
 
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get("tab") === "finder" ? "finder" : "rolodex";
+  const setTab = (v: string) => {
+    const sp = new URLSearchParams(searchParams);
+    if (v === "rolodex") sp.delete("tab"); else sp.set("tab", v);
+    setSearchParams(sp, { replace: true });
+  };
+
   return (
     <AppLayout>
       <PageHeader
-        title="Buyer Rolodex"
-        subtitle="Your private buyer database"
+        title="Buyers"
+        subtitle="Manage your buyer database and match buyers to deals"
         actions={
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() =>
-                exportToCsv(
-                  filtered.map((b) => buyerToCsvRow(b)) as unknown as Record<string, unknown>[],
-                  `buyers-${new Date().toISOString().slice(0, 10)}`,
-                  [...BUYER_CSV_COLUMNS]
-                )
-              }
-            >
-              <Download className="h-4 w-4 mr-1" /> Export CSV
-            </Button>
-            <Button variant="outline" onClick={() => setShowImport(true)}>
-              <Upload className="h-4 w-4 mr-1" /> Import CSV
-            </Button>
-            <Button onClick={() => setShowAdd(true)} className="bg-primary hover:bg-primary-hover text-primary-foreground">
-              <Plus className="h-4 w-4 mr-1" /> Add Buyer
-            </Button>
-          </div>
+          tab === "rolodex" ? (
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() =>
+                  exportToCsv(
+                    filtered.map((b) => buyerToCsvRow(b)) as unknown as Record<string, unknown>[],
+                    `buyers-${new Date().toISOString().slice(0, 10)}`,
+                    [...BUYER_CSV_COLUMNS]
+                  )
+                }
+              >
+                <Download className="h-4 w-4 mr-1" /> Export CSV
+              </Button>
+              <Button variant="outline" onClick={() => setShowImport(true)}>
+                <Upload className="h-4 w-4 mr-1" /> Import CSV
+              </Button>
+              <Button onClick={() => setShowAdd(true)} className="bg-primary hover:bg-primary-hover text-primary-foreground">
+                <Plus className="h-4 w-4 mr-1" /> Add Buyer
+              </Button>
+            </div>
+          ) : null
+        }
+        tabs={
+          <Tabs value={tab} onValueChange={setTab}>
+            <TabsList>
+              <TabsTrigger value="rolodex" className="gap-1.5"><UsersIcon className="h-3.5 w-3.5" /> Rolodex</TabsTrigger>
+              <TabsTrigger value="finder" className="gap-1.5"><Sparkles className="h-3.5 w-3.5" /> Buyer Finder</TabsTrigger>
+            </TabsList>
+          </Tabs>
         }
       />
+      {tab === "finder" ? (
+        <div className="p-6 lg:p-8">
+          <BuyerFinderPanel onBuyerAdded={load} />
+        </div>
+      ) : (
       <div className="p-8 space-y-4">
+
         <div className="flex gap-3">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
