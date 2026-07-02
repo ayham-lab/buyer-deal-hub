@@ -502,6 +502,28 @@ function ArchiveTab({ archive, onChanged }: any) {
   );
 }
 
+// ============== Buyer Database ==============
+
+function BuyerDatabaseTab() {
+  const { isSuperAdmin } = useAuth();
+  return (
+    <Tabs defaultValue="skiptrace" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="skiptrace">Skiptrace Investors</TabsTrigger>
+        {isSuperAdmin && <TabsTrigger value="archive">Archive Buyers</TabsTrigger>}
+      </TabsList>
+      <TabsContent value="skiptrace">
+        <SkiptraceBuyersTab />
+      </TabsContent>
+      {isSuperAdmin && (
+        <TabsContent value="archive">
+          <ArchiveBuyersTab />
+        </TabsContent>
+      )}
+    </Tabs>
+  );
+}
+
 // ============== Recently Deleted ==============
 
 function RecentlyDeletedTab({ users, locationNames }: { users: any[]; locationNames: Record<string, string> }) {
