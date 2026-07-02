@@ -161,15 +161,14 @@ Deno.serve(async (req) => {
       const locId = (body.location_id ?? "").trim();
       if (!locId) return json({ error: "missing_location_id" }, 400);
 
-      // Verify caller owns the location.
+      // Verify caller is a member of the location.
       const { data: owns } = await admin
         .from("location_memberships")
         .select("id")
         .eq("user_id", userId)
         .eq("location_id", locId)
-        .eq("is_owner", true)
         .maybeSingle();
-      if (!owns) return json({ error: "not_owner_of_location" }, 403);
+      if (!owns) return json({ error: "not_member_of_location" }, 403);
 
       if (action === "add") {
         // Resolve group from active location.
