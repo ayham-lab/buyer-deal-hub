@@ -15,7 +15,7 @@ import PublicDeal from "./pages/PublicDeal";
 import Dashboard from "./pages/Dashboard";
 import Buyers from "./pages/Buyers";
 
-import Finder from "./pages/Finder";
+
 import Pipeline from "./pages/Pipeline";
 
 import Admin from "./pages/Admin";
