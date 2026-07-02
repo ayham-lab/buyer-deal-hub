@@ -344,6 +344,39 @@ export type Database = {
         }
         Relationships: []
       }
+      buyer_intake_tokens: {
+        Row: {
+          created_at: string
+          ghl_location_id: string
+          id: string
+          is_active: boolean
+          label: string | null
+          token: string
+          updated_at: string
+          workspace_owner_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          ghl_location_id: string
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          token: string
+          updated_at?: string
+          workspace_owner_user_id: string
+        }
+        Update: {
+          created_at?: string
+          ghl_location_id?: string
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          token?: string
+          updated_at?: string
+          workspace_owner_user_id?: string
+        }
+        Relationships: []
+      }
       buyers: {
         Row: {
           activity_resume_date: string | null
@@ -2303,6 +2336,7 @@ export type Database = {
         Args: { p_email: string; p_phone: string }
         Returns: number
       }
+      get_buyer_intake_form_info: { Args: { p_token: string }; Returns: Json }
       get_public_marketing_deal: { Args: { p_id: string }; Returns: Json }
       has_role: {
         Args: {
