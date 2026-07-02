@@ -460,6 +460,12 @@ function Field({ label, value, onChange, type = "text" }: { label: string; value
   );
 }
 
+function StageProgressBarWithLocation({ locationId, value, onChange }: { locationId: string | null; value: any; onChange: (s: any) => void }) {
+  const { visibleColumns } = usePipelineStages(locationId);
+  return <StageProgressBar value={value} onChange={onChange} columns={visibleColumns as any} />;
+}
+
+
 function TimelineRow({ label, value }: { label: string; value: string | null }) {
   return (
     <li className="flex items-center justify-between">
