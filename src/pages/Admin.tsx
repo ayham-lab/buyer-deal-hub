@@ -216,12 +216,11 @@ export default function Admin() {
           )}
 
           {activeTab === "pricing" && showPricing && <PricingTab />}
-          {activeTab === "archive_buyers" && showArchiveBuyers && <ArchiveBuyersTab />}
-          {activeTab === "archive_title" && showArchiveBuyers && <ArchiveTitleCompaniesTab />}
-          {activeTab === "archive_realtors" && showArchiveBuyers && <ArchiveContactsAdminTab kind="realtors" />}
-          {activeTab === "archive_notaries" && showArchiveBuyers && <ArchiveContactsAdminTab kind="notaries" />}
+          {activeTab === "buyer_database" && showBuyerDatabase && <BuyerDatabaseTab />}
+          {activeTab === "archive_title" && isSuperAdmin && <ArchiveTitleCompaniesTab />}
+          {activeTab === "archive_realtors" && isSuperAdmin && <ArchiveContactsAdminTab kind="realtors" />}
+          {activeTab === "archive_notaries" && isSuperAdmin && <ArchiveContactsAdminTab kind="notaries" />}
           {activeTab === "operator_accounts" && isSuperAdmin && <OperatorAccountsTab />}
-          {activeTab === "skiptrace_buyers" && showSkiptrace && <SkiptraceBuyersTab />}
           {activeTab === "audit_log" && <AuditLogTab />}
         </div>
       </div>
