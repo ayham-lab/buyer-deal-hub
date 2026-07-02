@@ -12,7 +12,7 @@ import { LocationSwitcherModal, type LocationOption } from "@/components/team/Lo
 export default function Login() {
   const nav = useNavigate();
   const [params] = useSearchParams();
-  const { user, loading: authLoading, isSuperAdmin } = useAuth();
+  const { user, loading: authLoading, isAdmin, isSuperAdmin } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
