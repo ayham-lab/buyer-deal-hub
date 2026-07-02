@@ -1,17 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
   Users, Briefcase, DollarSign, Database, MapPin, Search, ShieldCheck,
-  TrendingUp, Loader2, Trash2, RotateCcw,
+  TrendingUp, Loader2, Trash2, RotateCcw, LayoutDashboard, ScrollText,
+  Tag, Archive, UserCog, FileSearch, Building2, Landmark, Stamp, UsersRound, Wand2,
 } from "lucide-react";
+import { AuditLogTab } from "@/components/admin/AuditLogTab";
 import { UserDrawer } from "@/components/admin/UserDrawer";
 import { RoleManager } from "@/components/admin/RoleManager";
 import { PricingTab } from "@/components/admin/PricingTab";
