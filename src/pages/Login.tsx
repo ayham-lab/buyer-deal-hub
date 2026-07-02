@@ -170,9 +170,15 @@ export default function Login() {
         nav("/embed", { replace: true });
         return;
       }
-      // Super-admins land in the Admin Console by default — no workspace
-      // selection required. They can pick one later from the TopBar switcher.
-      if (isSuperAdmin) {
+      // Admins (regular + super) land in the Admin Console by default — no
+      // workspace selection required. Clear any stale active location so they
+      // don't get dropped back into the last workspace they were viewing.
+      if (isAdmin) {
+        try {
+          sessionStorage.removeItem("ghl_active_location");
+          sessionStorage.removeItem("ghl_effective_locations");
+          sessionStorage.removeItem("ghl_location_names");
+        } catch {}
         nav("/admin", { replace: true });
         return;
       }
