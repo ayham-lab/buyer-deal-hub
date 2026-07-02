@@ -1,5 +1,5 @@
 import { NavLink, useLocation, Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Users, LayoutGrid, ShieldCheck, ChevronsLeft, ChevronsRight, Building2, UsersRound, Home, CheckSquare, Settings as SettingsIcon, GitBranch, Stamp, LayoutDashboard, Briefcase, Trash2, Archive, Landmark, UserCog, FileSearch, Tag, ScrollText } from "lucide-react";
+import { Users, LayoutGrid, ShieldCheck, ChevronsLeft, ChevronsRight, Building2, UsersRound, Home, CheckSquare, Settings as SettingsIcon, GitBranch, Stamp, LayoutDashboard, Briefcase, Trash2, Database, Landmark, UserCog, Tag, ScrollText } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveLocation } from "@/contexts/LocationContext";
 import { cn } from "@/lib/utils";
@@ -58,11 +58,10 @@ export function Sidebar() {
         },
         {
           items: [
-            { value: "archive_buyers", label: "Archive Buyers", icon: Archive, show: isSuperAdmin },
+            { value: "buyer_database", label: "Buyer Database", icon: Database, show: isAdmin },
             { value: "archive_title", label: "Archive Title Cos", icon: Landmark, show: isSuperAdmin },
             { value: "archive_realtors", label: "Archive Realtors", icon: Building2, show: isSuperAdmin },
             { value: "archive_notaries", label: "Archive Notaries", icon: Stamp, show: isSuperAdmin },
-            { value: "skiptrace_buyers", label: "Skiptrace Investors", icon: FileSearch },
             { value: "operator_accounts", label: "Operator Accounts", icon: UserCog, show: isSuperAdmin },
           ],
         },
