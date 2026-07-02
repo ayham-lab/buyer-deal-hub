@@ -35,6 +35,7 @@ export default function Dashboard() {
     newLeads: number; revenueMTD: number; openTasks: number;
     dealsUnderContract: number; avgDaysToAssign: number | null; avgOffersPerDeal: number | null;
     newBuyersThisWeek: number; activeBuyers90d: number;
+    dealsAssignedThisWeek: number; closeRatePct: number | null; avgAssignmentFee: number | null;
   } | null>(null);
 
   // KPI / charts state
