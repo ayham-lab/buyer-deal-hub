@@ -50,9 +50,10 @@ export default function Dashboard() {
   const [fromMonth, setFromMonth] = useState(now.getMonth());
   const [toMonth, setToMonth] = useState(now.getMonth());
 
-  if (!isIframed && !authLoading && isAdmin) {
-    return <Navigate to="/admin" replace />;
-  }
+  // NOTE: don't early-return here — hooks below (useEffect/useMemo) must
+  // still be called every render to satisfy the Rules of Hooks. The admin
+  // redirect happens at the bottom of the component, after all hooks run.
+  const shouldRedirectAdmin = !isIframed && !authLoading && isAdmin;
 
   // Load top-of-page summary
   useEffect(() => {
@@ -243,6 +244,8 @@ export default function Dashboard() {
 
   const displayName = isIframed ? activeLocation?.userName || null : profile?.name || null;
   const fmt = (n: number | null, digits = 1) => n === null ? "—" : n.toFixed(digits);
+
+  if (shouldRedirectAdmin) return <Navigate to="/admin" replace />;
 
   return (
     <AppLayout>
