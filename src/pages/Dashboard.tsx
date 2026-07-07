@@ -245,6 +245,8 @@ export default function Dashboard() {
   const displayName = isIframed ? activeLocation?.userName || null : profile?.name || null;
   const fmt = (n: number | null, digits = 1) => n === null ? "—" : n.toFixed(digits);
 
+  if (shouldRedirectAdmin) return <Navigate to="/admin" replace />;
+
   return (
     <AppLayout>
       <PageHeader
