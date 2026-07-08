@@ -136,9 +136,10 @@ export default function Dashboard() {
     if (!user) return;
     const activeLoc = getActiveLocationId();
     const inLocation = isIframed || !!activeLoc || isAdmin;
+    const dealCols = "id,status,assignment_fee,expected_assignment,lead_source,owner_id,ghl_assigned_user_id,created_at,updated_at,closed_at,assigned_at,property_address,marketing_name,city,state,closing_date,ip_expiry_date";
     const dealsQ = inLocation
-      ? supabase.from("deals").select("*").is("deleted_at", null)
-      : supabase.from("deals").select("*").is("deleted_at", null).eq("user_id", user.id);
+      ? supabase.from("deals").select(dealCols).is("deleted_at", null)
+      : supabase.from("deals").select(dealCols).is("deleted_at", null).eq("user_id", user.id);
     const buyersQ = inLocation
       ? supabase.from("buyers").select("id, created_at")
       : supabase.from("buyers").select("id, created_at").eq("user_id", user.id);
