@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.get_public_marketing_deal(uuid) TO anon, authenticated;
