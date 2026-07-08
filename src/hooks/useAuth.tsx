@@ -86,11 +86,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
+    supabase.auth.getSession().then(async ({ data: { session: s } }) => {
       setSession(s);
       setUser(s?.user ?? null);
       userIdRef.current = s?.user?.id ?? null;
-      if (s?.user) loadProfile(s.user.id);
+      if (s?.user) await loadProfile(s.user.id);
       setLoading(false);
     });
 
