@@ -36,8 +36,9 @@ export function DealMarketing({ dealId, deal, onChange }: Props) {
   }, [dealId]);
 
   async function save(patch: Record<string, any>) {
-    const { error } = await supabase.from("deals").update(patch as any).eq("id", dealId);
+    const { data, error } = await supabase.from("deals").update(patch as any).eq("id", dealId).select("id");
     if (error) { toast.error(error.message); return; }
+    if (!data || data.length === 0) { toast.error("Couldn't save — check your permissions"); return; }
     onChange(patch);
   }
 
