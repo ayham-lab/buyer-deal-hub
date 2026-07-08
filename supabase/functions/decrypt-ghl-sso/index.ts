@@ -118,7 +118,6 @@ Deno.serve(async (req) => {
       email: payload.email || null,
       role: payload.role || null,
       type: payload.type || null,
-      raw: payload,
     });
   } catch (err) {
     return j({ error: "Failed to decrypt SSO token", detail: String(err) }, 400);

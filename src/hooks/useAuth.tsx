@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadProfile = useCallback(async (uid: string) => {
     const [{ data: p }, { data: roles }] = await Promise.all([
-      supabase.from("profiles").select("*").eq("user_id", uid).maybeSingle(),
+      supabase.from("profiles").select("id,user_id,email,name,ghl_location_id,subscription_status").eq("user_id", uid).maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", uid),
     ]);
     setProfile(p as any);
@@ -86,11 +86,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
+    supabase.auth.getSession().then(async ({ data: { session: s } }) => {
       setSession(s);
       setUser(s?.user ?? null);
       userIdRef.current = s?.user?.id ?? null;
-      if (s?.user) loadProfile(s.user.id);
+      if (s?.user) await loadProfile(s.user.id);
       setLoading(false);
     });
 

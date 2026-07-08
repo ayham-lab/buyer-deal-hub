@@ -50,9 +50,8 @@ export default function PublicDeal() {
           </div>
         )}
 
-        <Card><CardContent className="p-6 grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <Card><CardContent className="p-6 grid grid-cols-2 gap-4">
           <Stat label="Asking Price" value={deal.asking_price ? `$${Number(deal.asking_price).toLocaleString()}` : "—"} />
-          <Stat label="Minimum Sale Price" value={deal.minimum_sale_price ? `$${Number(deal.minimum_sale_price).toLocaleString()}` : "—"} />
           <Stat label="ARV" value={deal.arv ? `$${Number(deal.arv).toLocaleString()}` : "—"} />
         </CardContent></Card>
 
