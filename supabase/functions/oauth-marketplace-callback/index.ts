@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
 
     // Sub-account install: single upsert.
     if (locationId) {
-      const name = await resolveOrFetchName(parsed, locationId);
+      const name = await resolveOrFetchName(parsed, locationId, companyId);
       const { error: upErr } = await persistLocationToken(admin, {
         ghl_location_id: locationId,
         ghl_company_id: companyId,
@@ -209,7 +209,7 @@ Deno.serve(async (req) => {
                   continue;
                 }
                 const mintJson = JSON.parse(mintText);
-                const name = await resolveOrFetchName(loc, locId);
+                const name = await resolveOrFetchName(loc, locId, companyId);
                 const { error: upErr } = await persistLocationToken(admin, {
                   ghl_location_id: locId,
                   ghl_company_id: companyId,
