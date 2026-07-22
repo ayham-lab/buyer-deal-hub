@@ -4,6 +4,7 @@
 // re-mint per-location tokens and enumerate newly-installed sub-accounts.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { fetchAndResolveLocationName } from "../_shared/ghlLocationName.ts";
+import { getGhlPit } from "../_shared/ghlPit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -65,15 +66,49 @@ Deno.serve(async (req) => {
       }
       const parsed = JSON.parse(text);
       const newExpires = new Date(Date.now() + (Number(parsed.expires_in) || 0) * 1000).toISOString();
-      // Refresh the display name on each token-refresh pass so renames in GHL
-      // propagate (typically within 24h since tokens last 24h).
-      const pit = Deno.env.get("GHL_AGENCY_PIT_TOKEN") ?? "";
+      const returnedCompanyId: string | null = parsed.companyId ?? parsed.company_id ?? null;
       const update: Record<string, unknown> = {
         access_token: parsed.access_token,
         refresh_token: parsed.refresh_token ?? row.refresh_token,
         expires_at: newExpires,
         updated_at: new Date().toISOString(),
       };
+      // Reconciliation: if GHL returns a different companyId, the sub-account
+      // has been transferred between agencies. Update the row and log both to
+      // function logs and ownership_audit_log.
+      if (
+        returnedCompanyId &&
+        row.ghl_company_id &&
+        returnedCompanyId !== row.ghl_company_id
+      ) {
+        console.warn(
+          "ghl_company_id reconciled",
+          JSON.stringify({
+            locationId: row.ghl_location_id,
+            from: row.ghl_company_id,
+            to: returnedCompanyId,
+            source: "refresh-ghl-tokens",
+          }),
+        );
+        update.ghl_company_id = returnedCompanyId;
+        try {
+          await admin.from("ownership_audit_log").insert({
+            location_id: row.ghl_location_id,
+            action: "company_id_reconciled",
+            executed_by: "refresh-ghl-tokens",
+            detail: { from: row.ghl_company_id, to: returnedCompanyId, source: "refresh" },
+          });
+        } catch (e) {
+          console.error("ownership_audit_log insert failed (reconcile)", e);
+        }
+      } else if (returnedCompanyId && !row.ghl_company_id) {
+        update.ghl_company_id = returnedCompanyId;
+      }
+      // Refresh the display name on each pass. Use the correct per-agency PIT —
+      // if reconciled above, the NEW companyId's PIT so name resolution works
+      // for the new tenant.
+      const effectiveCompanyId = returnedCompanyId ?? row.ghl_company_id;
+      const { token: pit } = getGhlPit(effectiveCompanyId);
       if (!isCompany && pit && row.ghl_location_id) {
         const nameRes = await fetchAndResolveLocationName(row.ghl_location_id, pit);
         if (nameRes.name) update.location_name = nameRes.name;

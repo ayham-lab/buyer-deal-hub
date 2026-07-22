@@ -47,11 +47,40 @@ export async function getValidGhlAccessToken(
   }
   const j = JSON.parse(text);
   const newExpiresAt = new Date(Date.now() + (Number(j.expires_in) || 0) * 1000).toISOString();
+  const returnedCompanyId: string | null = j.companyId ?? j.company_id ?? null;
+  // Reconciliation: cross-agency transfers cause GHL to refresh with a new
+  // companyId. Log the change so operators can watch function logs, and let
+  // callers/audit-log capture it via ownership_audit_log if desired.
+  if (
+    returnedCompanyId &&
+    row.ghl_company_id &&
+    returnedCompanyId !== row.ghl_company_id
+  ) {
+    console.warn(
+      "ghl_company_id reconciled",
+      JSON.stringify({
+        locationId: row.ghl_location_id,
+        from: row.ghl_company_id,
+        to: returnedCompanyId,
+        source: "getValidGhlAccessToken",
+      }),
+    );
+    try {
+      await admin.from("ownership_audit_log").insert({
+        location_id: row.ghl_location_id,
+        action: "company_id_reconciled",
+        executed_by: "ghlToken.getValidGhlAccessToken",
+        detail: { from: row.ghl_company_id, to: returnedCompanyId, source: "refresh" },
+      });
+    } catch (e) {
+      console.error("ownership_audit_log insert failed (reconcile)", e);
+    }
+  }
   await admin.from("ghl_location_tokens").update({
     access_token: j.access_token,
     refresh_token: j.refresh_token ?? row.refresh_token,
     expires_at: newExpiresAt,
-    ghl_company_id: j.companyId ?? j.company_id ?? row.ghl_company_id,
+    ghl_company_id: returnedCompanyId ?? row.ghl_company_id,
     updated_at: new Date().toISOString(),
   }).eq("ghl_location_id", row.ghl_location_id);
 

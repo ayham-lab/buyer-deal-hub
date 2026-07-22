@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
 
     const { data: tokenRow } = await admin
       .from("ghl_location_tokens")
-      .select("access_token")
+      .select("access_token, ghl_company_id")
       .eq("ghl_location_id", locationId)
       .maybeSingle();
 
@@ -138,7 +138,8 @@ Deno.serve(async (req) => {
     if (ghlContactId) {
       let r = await fetchContactAddress(ghlContactId, tokenRow.access_token);
       if (r.source === "fetch_failed") {
-        const pit = Deno.env.get("GHL_AGENCY_PIT_TOKEN") ?? "";
+        const { getGhlPit } = await import("../_shared/ghlPit.ts");
+        const { token: pit } = getGhlPit((tokenRow as any).ghl_company_id ?? null);
         if (pit) {
           console.log("contact address: location token failed, falling back to PIT", r.source, r.detail ?? "");
           r = await fetchContactAddress(ghlContactId, pit);

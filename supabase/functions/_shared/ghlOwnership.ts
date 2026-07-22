@@ -35,7 +35,8 @@ export async function resolveGhlAdminForLocation(
   companyId: string,
   locationId: string,
 ): Promise<GhlAdminVerdict> {
-  const pit = Deno.env.get("GHL_AGENCY_PIT_TOKEN");
+  const { getGhlPit } = await import("./ghlPit.ts");
+  const { token: pit } = getGhlPit(companyId);
   if (!pit) return { verdict: "fetch_failed", detail: "missing_pit_token" };
   try {
     const r = await fetch(
