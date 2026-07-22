@@ -9,6 +9,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { fetchContactAddress } from "../_shared/ghlContactAddress.ts";
 import { resolveOppMapping } from "../_shared/oppFieldMapping.ts";
+import { getGhlPit } from "../_shared/ghlPit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,7 +19,8 @@ const corsHeaders = {
 
 const GHL_BASE = "https://services.leadconnectorhq.com";
 const GHL_API_VERSION = "2021-07-28";
-const TARGET_COMPANY = "l5O3WVAjAPg6osSnZ16i";
+// Legacy default. Callers may pass { companyId } to target a different agency.
+const DEFAULT_COMPANY = "l5O3WVAjAPg6osSnZ16i";
 const CONCURRENCY = 5;
 
 interface DealRow {
@@ -69,14 +71,19 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const force = url.searchParams.get("force") === "1";
 
+  let body: { companyId?: string } = {};
+  try { body = await req.json(); } catch {}
+  const TARGET_COMPANY = (body.companyId ?? DEFAULT_COMPANY).trim();
+
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-  const pit = Deno.env.get("GHL_AGENCY_PIT_TOKEN") ?? "";
+  const pitLookup = getGhlPit(TARGET_COMPANY);
+  const pit = pitLookup.token ?? "";
   if (!pit) {
-    return j({ error: "missing GHL_AGENCY_PIT_TOKEN" }, 500);
+    return j({ error: `missing PIT for company ${TARGET_COMPANY}`, expected: pitLookup.secretName }, 500);
   }
 
   // Cache of per-location access tokens (contacts/opportunities require sub-account scope).

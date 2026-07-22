@@ -128,7 +128,8 @@ Deno.serve(async (req) => {
   if (ghlContactId) {
     let r = await fetchContactAddress(ghlContactId, tok.access_token);
     if (r.source === "fetch_failed") {
-      const pit = Deno.env.get("GHL_AGENCY_PIT_TOKEN") ?? "";
+      const { getGhlPit } = await import("../_shared/ghlPit.ts");
+      const { token: pit } = getGhlPit((tokenRow as any).ghl_company_id ?? null);
       if (pit) r = await fetchContactAddress(ghlContactId, pit);
     }
     if (r.contact) fetchedContact = r.contact;

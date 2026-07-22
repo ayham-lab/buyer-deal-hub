@@ -11,6 +11,7 @@
 //      Else -> verdict 'multiple_unresolved'.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { getGhlPit } from "../_shared/ghlPit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,7 +21,9 @@ const corsHeaders = {
 
 const GHL_BASE = "https://services.leadconnectorhq.com";
 const GHL_VERSION = "2021-07-28";
-const TARGET_COMPANY = "l5O3WVAjAPg6osSnZ16i";
+// Legacy default. Callers may pass { companyId } to target a different agency.
+// Kept for one release so scheduled/manual invocations without a body still work.
+const DEFAULT_COMPANY = "l5O3WVAjAPg6osSnZ16i";
 const CONCURRENCY = 2;
 
 Deno.serve(async (req) => {
@@ -32,9 +35,15 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     { auth: { persistSession: false, autoRefreshToken: false } },
   );
-  const pit_token = Deno.env.get("GHL_AGENCY_PIT_TOKEN") ?? "";
-  if (!pit_token) return json({ error: "missing_pit_token" }, 500);
-  const source_used = "GHL_AGENCY_PIT_TOKEN";
+
+  let body: { companyId?: string } = {};
+  try { body = await req.json(); } catch {}
+  const TARGET_COMPANY = (body.companyId ?? DEFAULT_COMPANY).trim();
+
+  const pitLookup = getGhlPit(TARGET_COMPANY);
+  const pit_token = pitLookup.token ?? "";
+  if (!pit_token) return json({ error: "missing_pit_token", expected: pitLookup.secretName }, 500);
+  const source_used = pitLookup.secretName;
   const agency_expires_at: string | null = null;
 
   // All locations under target company.

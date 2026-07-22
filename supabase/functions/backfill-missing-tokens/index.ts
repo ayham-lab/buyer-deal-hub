@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
       }
       const j = JSON.parse(text);
       const expiresAt = new Date(Date.now() + (Number(j.expires_in) || 0) * 1000).toISOString();
-      const name = t.location_name ?? await resolveOrFetchName(null, t.location_id);
+      const name = t.location_name ?? await resolveOrFetchName(null, t.location_id, j.companyId ?? j.company_id ?? t.company_id);
       const row = {
         ghl_location_id: t.location_id,
         ghl_company_id: j.companyId ?? j.company_id ?? t.company_id,
