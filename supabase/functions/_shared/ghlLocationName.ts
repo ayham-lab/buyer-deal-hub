@@ -60,15 +60,21 @@ export async function fetchAndResolveLocationName(
 // Resolve a name from a payload first, then fall back to a PIT-backed
 // /locations/{id} fetch when the payload is empty. Returns null if nothing
 // usable was found or no PIT is configured.
+//
+// `companyId` is used to look up the correct per-agency PIT via `getGhlPit`.
+// Optional for backward compatibility during rollout — omitting it forces the
+// legacy fallback path.
 export async function resolveOrFetchName(
   loc: any | null,
   locationId: string,
+  companyId?: string | null,
 ): Promise<string | null> {
   const fromPayload = extractLocationName(loc);
   if (fromPayload.name) return fromPayload.name;
-  const pit = Deno.env.get("GHL_AGENCY_PIT_TOKEN") ?? "";
-  if (!pit) return null;
-  const fetched = await fetchAndResolveLocationName(locationId, pit);
+  const { getGhlPit } = await import("./ghlPit.ts");
+  const { token } = getGhlPit(companyId ?? null);
+  if (!token) return null;
+  const fetched = await fetchAndResolveLocationName(locationId, token);
   return fetched.name;
 }
 
