@@ -199,26 +199,42 @@ Deno.serve(async (req) => {
       const locId = (body.location_id ?? "").trim();
       if (!locId) return json({ error: "missing_location_id" }, 400);
 
-      // Verify caller is a member of the location.
-      const { data: owns } = await admin
-        .from("location_memberships")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("location_id", locId)
-        .maybeSingle();
-      if (!owns) return json({ error: "not_member_of_location" }, 403);
+      // Verify caller is a member of the location (admins bypass).
+      if (!isAdmin) {
+        const { data: owns } = await admin
+          .from("location_memberships")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("location_id", locId)
+          .maybeSingle();
+        if (!owns) return json({ error: "not_member_of_location" }, 403);
+      }
 
       if (action === "add") {
-        // Resolve group from active location.
+        // Resolve group from active location, falling back to a group the
+        // caller owns (active location may not be in the group yet).
         const activeLoc = caller.viaIframe ? caller.ssoLocationId : null;
-        if (!activeLoc) return json({ error: "no_active_location" }, 400);
-        const { data: meTok } = await admin
-          .from("ghl_location_tokens")
-          .select("operator_account_id")
-          .eq("ghl_location_id", activeLoc)
-          .maybeSingle();
-        const opId = (meTok as any)?.operator_account_id ?? null;
+        let opId: string | null = null;
+        if (activeLoc) {
+          const { data: meTok } = await admin
+            .from("ghl_location_tokens")
+            .select("operator_account_id")
+            .eq("ghl_location_id", activeLoc)
+            .maybeSingle();
+          opId = (meTok as any)?.operator_account_id ?? null;
+        }
+        if (!opId) {
+          const { data: ownedOp } = await admin
+            .from("operator_accounts")
+            .select("id")
+            .eq("owner_user_id", userId)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          opId = (ownedOp as any)?.id ?? null;
+        }
         if (!opId) return json({ error: "active_location_not_in_group" }, 400);
+
 
         const { error: upErr } = await admin
           .from("ghl_location_tokens")
