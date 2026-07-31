@@ -52,34 +52,48 @@ Deno.serve(async (req) => {
     const body = (await req.json().catch(() => ({}))) as Body;
     const action = body.action;
 
+    // Admins/super_admins can see and group every location on the platform,
+    // including the ~27 sub-accounts that have no location_memberships rows.
+    const { data: roleRows } = await admin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    const isAdmin = (roleRows ?? []).some(
+      (r: any) => r.role === "admin" || r.role === "super_admin",
+    );
+
     // ---- list: owned locations (with names) + current group context ----
     if (action === "list") {
-      const { data: memberships } = await admin
-        .from("location_memberships")
-        .select("location_id")
-        .eq("user_id", userId);
-      const ids = (memberships ?? []).map((m: any) => m.location_id);
-      console.log("operator-account list memberships", { user_id: userId, ids });
-
       let owned: any[] = [];
-      if (ids.length > 0) {
+      if (isAdmin) {
         const { data: tokens } = await admin
           .from("ghl_location_tokens")
           .select("ghl_location_id, location_name, operator_account_id")
-          .in("ghl_location_id", ids);
-        console.log("operator-account list token_rows", {
-          user_id: userId,
-          rows: (tokens ?? []).map((t: any) => ({
-            ghl_location_id: t.ghl_location_id,
-            location_name: t.location_name,
-            operator_account_id: t.operator_account_id,
-          })),
-        });
+          .not("ghl_location_id", "is", null);
         owned = (tokens ?? []).map((t: any) => ({
           location_id: t.ghl_location_id,
           name: t.location_name || null,
           operator_account_id: t.operator_account_id ?? null,
         }));
+      } else {
+        const { data: memberships } = await admin
+          .from("location_memberships")
+          .select("location_id")
+          .eq("user_id", userId);
+        const ids = (memberships ?? []).map((m: any) => m.location_id);
+        console.log("operator-account list memberships", { user_id: userId, ids });
+
+        if (ids.length > 0) {
+          const { data: tokens } = await admin
+            .from("ghl_location_tokens")
+            .select("ghl_location_id, location_name, operator_account_id")
+            .in("ghl_location_id", ids);
+          owned = (tokens ?? []).map((t: any) => ({
+            location_id: t.ghl_location_id,
+            name: t.location_name || null,
+            operator_account_id: t.operator_account_id ?? null,
+          }));
+        }
       }
 
       // Active location is whatever the iframe sent OR (standalone) the
@@ -89,14 +103,33 @@ Deno.serve(async (req) => {
           ? caller.ssoLocationId
           : owned[0]?.location_id ?? null;
 
+      // Resolve the current group. Prefer the active location's group, but
+      // fall back to a group the caller owns / belongs to so a freshly
+      // created group doesn't "disappear" when the active location isn't
+      // part of it.
+      const currentRow = owned.find((l) => l.location_id === activeLoc);
+      let opId: string | null = currentRow?.operator_account_id ?? null;
+      if (!opId) {
+        const { data: ownedOp } = await admin
+          .from("operator_accounts")
+          .select("id")
+          .eq("owner_user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        opId = (ownedOp as any)?.id ?? null;
+      }
+      if (!opId) {
+        opId = owned.find((l) => l.operator_account_id)?.operator_account_id ?? null;
+      }
+
       let op: any = null;
       let opLocations: any[] = [];
-      const currentRow = owned.find((l) => l.location_id === activeLoc);
-      if (currentRow?.operator_account_id) {
+      if (opId) {
         const { data: opRow } = await admin
           .from("operator_accounts")
           .select("id,name,subscription_status,current_period_end,credit_balance,owner_user_id")
-          .eq("id", currentRow.operator_account_id)
+          .eq("id", opId)
           .maybeSingle();
         op = opRow ?? null;
         // Include ALL locations in the group, even ones the caller doesn't
@@ -104,7 +137,7 @@ Deno.serve(async (req) => {
         const { data: sibs } = await admin
           .from("ghl_location_tokens")
           .select("ghl_location_id, location_name, operator_account_id")
-          .eq("operator_account_id", currentRow.operator_account_id);
+          .eq("operator_account_id", opId);
         opLocations = (sibs ?? []).map((t: any) => ({
           location_id: t.ghl_location_id,
           name: t.location_name || null,
@@ -114,12 +147,14 @@ Deno.serve(async (req) => {
 
       return json({
         viewer_user_id: userId,
+        is_admin: isAdmin,
         active_location_id: activeLoc,
         owned,
         op,
         op_locations: opLocations,
       });
     }
+
 
     // ---- create: name + selected owned location ids ----
     if (action === "create") {
