@@ -145,14 +145,19 @@ Deno.serve(async (req) => {
         }));
       }
 
+      const activeInGroup =
+        !!activeLoc && opLocations.some((l: any) => l.location_id === activeLoc);
+
       return json({
         viewer_user_id: userId,
         is_admin: isAdmin,
         active_location_id: activeLoc,
+        active_in_group: activeInGroup,
         owned,
         op,
         op_locations: opLocations,
       });
+
     }
 
 

@@ -3,6 +3,7 @@
 // agency installs, enumerates installed sub-accounts and mints per-location
 // tokens so Dispo Pro can act on each sub-account independently.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { assignCustodianMembership } from "../_shared/custodianMembership.ts";
 import { resolveGhlAdminForLocation, ghlUserDisplayName, provisionAuthUserByEmail } from "../_shared/ghlOwnership.ts";
 import { resolveOrFetchName } from "../_shared/ghlLocationName.ts";
 
@@ -312,6 +313,7 @@ async function ensureOwnerMembership(admin: any, locationId: string, companyId: 
     // 2. No link yet — ask GHL who the admin is.
     if (!companyId) {
       await queueManual(admin, locationId, null, "no_company_id_on_install", null);
+      await assignCustodianMembership(admin, locationId, null, "oauth-marketplace-callback", "no_company_id_on_install");
       return;
     }
     const verdict = await resolveGhlAdminForLocation(companyId, locationId);
@@ -349,13 +351,20 @@ async function ensureOwnerMembership(admin: any, locationId: string, companyId: 
       });
       return;
     }
+    // GHL ownership unresolved. Queue for human review AND assign a custodian
+    // membership so the location is never invisible (orphan) in the app.
+    let reason: string;
     if (verdict.verdict === "no_admin") {
-      await queueManual(admin, locationId, companyId, "no_ghl_admin", null);
+      reason = "no_ghl_admin";
+      await queueManual(admin, locationId, companyId, reason, null);
     } else if (verdict.verdict === "unresolved") {
-      await queueManual(admin, locationId, companyId, "multiple_unresolved", verdict.admins);
+      reason = "multiple_unresolved";
+      await queueManual(admin, locationId, companyId, reason, verdict.admins);
     } else {
-      await queueManual(admin, locationId, companyId, `fetch_failed: ${verdict.detail.slice(0, 200)}`, null);
+      reason = `fetch_failed: ${verdict.detail.slice(0, 200)}`;
+      await queueManual(admin, locationId, companyId, reason, null);
     }
+    await assignCustodianMembership(admin, locationId, companyId, "oauth-marketplace-callback", reason);
   } catch (e) {
     console.error("ensureOwnerMembership failed", e);
   }

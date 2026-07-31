@@ -2,6 +2,7 @@
 // mint per-location tokens. Uses an existing token in ghl_location_tokens to
 // authenticate against GHL.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { assignCustodianMembership } from "../_shared/custodianMembership.ts";
 import { resolveGhlAdminForLocation, ghlUserDisplayName, provisionAuthUserByEmail } from "../_shared/ghlOwnership.ts";
 import { resolveOrFetchName } from "../_shared/ghlLocationName.ts";
 
@@ -259,12 +260,18 @@ async function seedOwnerFromGhl(admin: any, locationId: string, companyId: strin
         ghl_admin_user_id: u.id, ghl_admin_email: u.email,
         executed_by: "sync-ghl-sub-accounts", detail: { source: "ghl_admin_lookup" },
       });
-    } else if (verdict.verdict === "no_admin") {
-      await queueManual(admin, locationId, companyId, "no_ghl_admin", null);
-    } else if (verdict.verdict === "unresolved") {
-      await queueManual(admin, locationId, companyId, "multiple_unresolved", verdict.admins);
     } else {
-      await queueManual(admin, locationId, companyId, `fetch_failed: ${verdict.detail.slice(0, 200)}`, null);
+      // Unresolvable GHL ownership: still queue for review, but assign a
+      // custodian membership so we never create an orphan location again.
+      let reason: string;
+      if (verdict.verdict === "no_admin") reason = "no_ghl_admin";
+      else if (verdict.verdict === "unresolved") reason = "multiple_unresolved";
+      else reason = `fetch_failed: ${verdict.detail.slice(0, 200)}`;
+      await queueManual(
+        admin, locationId, companyId, reason,
+        verdict.verdict === "unresolved" ? verdict.admins : null,
+      );
+      await assignCustodianMembership(admin, locationId, companyId, "sync-ghl-sub-accounts", reason);
     }
   } catch (e) {
     console.error("seedOwnerFromGhl failed", e);

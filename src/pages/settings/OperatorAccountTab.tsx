@@ -54,6 +54,8 @@ export default function OperatorAccountTab() {
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [groupName, setGroupName] = useState("");
   const [viewerEmail, setViewerEmail] = useState<string>("");
+  const [activeLocId, setActiveLocId] = useState<string | null>(null);
+  const [activeInGroup, setActiveInGroup] = useState(true);
 
   async function load() {
     setLoading(true);
@@ -71,6 +73,8 @@ export default function OperatorAccountTab() {
     setOwned(ownedList);
     setOp(d.op ?? null);
     setOpLocations(d.op_locations ?? []);
+    setActiveLocId(d.active_location_id ?? activeLocation?.locationId ?? null);
+    setActiveInGroup(!!d.active_in_group);
 
     if (!d.op) {
       const currentLoc = d.active_location_id || activeLocation?.locationId;
@@ -159,8 +163,23 @@ export default function OperatorAccountTab() {
     const isActive =
       op.subscription_status === "active" &&
       (!op.current_period_end || new Date(op.current_period_end) > new Date());
+    const activeRow =
+      owned.find((l) => l.location_id === activeLocId) ??
+      (activeLocId ? { location_id: activeLocId, name: null, operator_account_id: null } : null);
     return (
       <div className="space-y-6 mt-6">
+        {!activeInGroup && activeRow && (
+          <div className="border rounded-md p-4 bg-muted/40 flex items-start justify-between gap-4">
+            <div className="text-sm">
+              You have a group (<span className="font-semibold">{op.name}</span>) but{" "}
+              <span className="font-medium">{displayName(activeRow)}</span> isn't part of it.
+              <div className="text-xs text-muted-foreground font-mono mt-1">{activeRow.location_id}</div>
+            </div>
+            <Button size="sm" disabled={busy} onClick={() => addLocation(activeRow.location_id)}>
+              <Plus className="h-4 w-4 mr-1" /> Add this location to group
+            </Button>
+          </div>
+        )}
         <div className="border rounded-md p-4">
           <div className="flex items-center gap-2 mb-2">
             <Layers className="h-4 w-4 text-primary" />
