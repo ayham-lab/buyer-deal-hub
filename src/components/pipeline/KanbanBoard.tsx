@@ -40,7 +40,7 @@ export function KanbanBoard({ deals, onStatusChange, onSelect, locationNames, co
 function Column({ id, label, deals, onSelect, locationNames }: { id: string; label: string; deals: Deal[]; onSelect: (id: string) => void; locationNames?: Record<string, string> }) {
   const { setNodeRef, isOver } = useDroppable({ id });
   return (
-    <div className="bg-muted/50 border border-border rounded-xl p-3 min-h-[400px]">
+    <div className="shrink-0 snap-start w-[85vw] xs:w-[300px] sm:w-[290px] bg-muted/50 border border-border rounded-xl p-3 min-h-[400px] flex flex-col">
       <div className="flex items-center justify-between mb-3 px-1">
         <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">{label}</h3>
         <span className="text-[11px] text-muted-foreground bg-card border border-border rounded-full px-2 py-0.5">{deals.length}</span>
