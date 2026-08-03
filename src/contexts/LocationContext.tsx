@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { ActivateWorkspace, type PendingActivation } from "@/components/ActivateWorkspace";
 
 interface ActiveLocation {
   locationId: string;
@@ -105,6 +106,9 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   });
   const [iframeSigninPending, setIframeSigninPending] = useState(false);
   const [iframeSigninDone, setIframeSigninDone] = useState(false);
+  const [pendingActivation, setPendingActivation] = useState<PendingActivation | null>(null);
+  const [activating, setActivating] = useState(false);
+  const [activationError, setActivationError] = useState<string | null>(null);
   const isIframed = (() => {
     try { return window.self !== window.top; } catch { return true; }
   })();
@@ -194,7 +198,19 @@ export function LocationProvider({ children }: { children: ReactNode }) {
                 { body: { sso: ssoBlob } },
               );
               if (signinErr || !signin?.access_token || !signin?.refresh_token) {
-                console.warn("iframe-signin failed:", signinErr?.message ?? (signin as any)?.error ?? "unknown");
+                if ((signin as any)?.needs_activation) {
+                  // Dormant sub-account: no account exists here yet and we do
+                  // NOT create one automatically. Show the opt-in screen.
+                  setPendingActivation({
+                    locationId: (signin as any).location_id ?? locationId,
+                    locationName: (signin as any).location_name ?? null,
+                    email: (signin as any).email ?? null,
+                    userName: (signin as any).user_name ?? null,
+                  });
+                } else {
+                  console.warn("iframe-signin failed:", signinErr?.message ?? (signin as any)?.error ?? "unknown");
+                }
+
               } else {
                 const { data: setData, error: setErr } = await supabase.auth.setSession({
                   access_token: signin.access_token,
@@ -343,9 +359,55 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     setActiveLocation(null);
   };
 
+  // Opt-in workspace creation: only this explicit call provisions an account
+  // for a dormant GHL sub-account.
+  const activateWorkspace = async () => {
+    let ssoBlob: string | null = null;
+    try { ssoBlob = sessionStorage.getItem("ghl_sso_blob"); } catch {}
+    if (!ssoBlob) {
+      setActivationError("Session expired — reload the app inside GoHighLevel and try again.");
+      return;
+    }
+    setActivating(true);
+    setActivationError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("iframe-signin", {
+        body: { sso: ssoBlob, activate: true },
+      });
+      if (error || !data?.access_token || !data?.refresh_token) {
+        setActivationError((data as any)?.error ?? error?.message ?? "Activation failed. Please try again.");
+        return;
+      }
+      const { error: setErr } = await supabase.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+      });
+      if (setErr) {
+        setActivationError(setErr.message);
+        return;
+      }
+      setPendingActivation(null);
+      window.location.reload();
+    } catch (e: any) {
+      setActivationError(e?.message ?? "Activation failed. Please try again.");
+    } finally {
+      setActivating(false);
+    }
+  };
+
   return (
     <LocationContext.Provider value={{ activeLocation, isIframed, handshakeReady, iframeSigninPending, clearActiveLocation }}>
-      {children}
+      {pendingActivation ? (
+        <ActivateWorkspace
+          pending={pendingActivation}
+          activating={activating}
+          error={activationError}
+          onActivate={activateWorkspace}
+        />
+      ) : (
+        children
+      )}
     </LocationContext.Provider>
   );
 }
+

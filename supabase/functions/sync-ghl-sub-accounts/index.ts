@@ -242,6 +242,15 @@ async function seedOwnerFromGhl(admin: any, locationId: string, companyId: strin
       .not("workspace_owner_user_id", "is", null)
       .limit(1).maybeSingle();
     if (existingLink?.workspace_owner_user_id) return;
+    // ACTIVATION GATE: syncing sub-accounts mints tokens only. Dormant
+    // locations get no auth users and no memberships until someone activates
+    // the workspace from the GHL iframe.
+    const { data: tok } = await admin
+      .from("ghl_location_tokens")
+      .select("activated_at")
+      .eq("ghl_location_id", locationId)
+      .maybeSingle();
+    if (!tok?.activated_at) return;
     const verdict = await resolveGhlAdminForLocation(companyId, locationId);
     if (verdict.verdict === "admin") {
       const u = verdict.user;

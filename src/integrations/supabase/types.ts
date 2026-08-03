@@ -1102,6 +1102,8 @@ export type Database = {
       ghl_location_tokens: {
         Row: {
           access_token: string
+          activated_at: string | null
+          activated_by: string | null
           archive_contributions_enabled: boolean
           created_at: string
           expires_at: string | null
@@ -1116,6 +1118,8 @@ export type Database = {
         }
         Insert: {
           access_token: string
+          activated_at?: string | null
+          activated_by?: string | null
           archive_contributions_enabled?: boolean
           created_at?: string
           expires_at?: string | null
@@ -1130,6 +1134,8 @@ export type Database = {
         }
         Update: {
           access_token?: string
+          activated_at?: string | null
+          activated_by?: string | null
           archive_contributions_enabled?: boolean
           created_at?: string
           expires_at?: string | null
@@ -2311,6 +2317,10 @@ export type Database = {
       _sync_archive_from_buyers: {
         Args: { p_archive_id: string }
         Returns: undefined
+      }
+      activate_location: {
+        Args: { _location_id: string; _user_id: string }
+        Returns: boolean
       }
       admin_list_locations: {
         Args: never

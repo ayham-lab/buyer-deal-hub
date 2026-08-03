@@ -19,7 +19,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const ssoBlob = req.headers.get("x-ghl-sso") ?? (await req.json().catch(() => ({}))).sso;
+    const body = await req.json().catch(() => ({} as any));
+    const ssoBlob = req.headers.get("x-ghl-sso") ?? body?.sso;
+    const wantsActivation = body?.activate === true;
     if (!ssoBlob || typeof ssoBlob !== "string") {
       return json({ error: "missing_sso" }, 400);
     }
@@ -47,6 +49,27 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
       { auth: { autoRefreshToken: false, persistSession: false } },
     );
+
+    // 0) ACTIVATION GATE — installing the app in a GHL sub-account no longer
+    //    creates an account here. The location stays dormant until a real
+    //    person opens the iframe and explicitly activates the workspace.
+    const { data: tokenRow } = await admin
+      .from("ghl_location_tokens")
+      .select("activated_at, location_name")
+      .eq("ghl_location_id", locationId)
+      .maybeSingle();
+    const isActivated = !!tokenRow?.activated_at;
+    if (!isActivated && !wantsActivation) {
+      return json({
+        needs_activation: true,
+        location_id: locationId,
+        location_name: tokenRow?.location_name ?? null,
+        company_id: companyId,
+        email,
+        user_name: userName,
+      });
+    }
+
 
     // 1) Find or create the auth.users row FIRST so we have a stable uuid
     //    before writing any related rows.
@@ -136,6 +159,16 @@ Deno.serve(async (req) => {
       queueForReview = { reason: "no_company_id_in_sso", snapshot: null };
     }
 
+    // Activation: the person who explicitly activated the workspace becomes
+    // the owner when GHL ownership couldn't be resolved. They asked for the
+    // account, so there's no orphan/custodian situation to clean up later.
+    if (!isActivated && wantsActivation && !ownerId) {
+      ownerId = userId;
+      ownerSourceDetail = { source: "self_activation", activated_by_email: email };
+      queueForReview = null;
+    }
+
+
     // Insert link row. If we have an owner, the trigger upserts membership as
     // owner (when user_id === workspace_owner_user_id) or member (otherwise).
     // If we don't have an owner yet, we still create a member-only membership
@@ -155,7 +188,7 @@ Deno.serve(async (req) => {
           { onConflict: "user_id,ghl_location_id", ignoreDuplicates: true },
         );
       // Audit only when this call is the one that established ownership.
-      if (ownerSourceDetail.source === "ghl_admin_lookup") {
+      if (ownerSourceDetail.source === "ghl_admin_lookup" || ownerSourceDetail.source === "self_activation") {
         await admin.from("ownership_audit_log").insert({
           location_id: locationId,
           action: "insert",
@@ -193,6 +226,13 @@ Deno.serve(async (req) => {
         });
       }
     }
+
+    // Stamp the workspace as activated so future visitors skip the gate.
+    if (!isActivated && wantsActivation) {
+      await admin.rpc("activate_location", { _location_id: locationId, _user_id: userId });
+    }
+
+
 
     // 4) Mint a session: generate a magiclink, then verify it to get tokens.
     const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
