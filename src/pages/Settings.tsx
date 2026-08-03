@@ -32,7 +32,7 @@ export default function Settings() {
   return (
     <AppLayout>
       <PageHeader title="Settings" subtitle="Manage your account and integrations" />
-      <div className="p-6 lg:p-8 max-w-3xl">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-3xl">
         <Tabs value={tab} onValueChange={(v) => { setTab(v); setParams({ tab: v }, { replace: true }); }}>
           <TabsList>
             {showProfile && <TabsTrigger value="profile">Profile</TabsTrigger>}

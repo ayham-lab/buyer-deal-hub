@@ -72,14 +72,14 @@ export function PageHeader({
 }) {
   return (
     <div className="bg-card border-b border-border sticky top-14 z-10">
-      <div className="px-6 lg:px-8 pt-5 pb-3 flex items-start justify-between gap-4">
+      <div className="px-4 sm:px-6 lg:px-8 pt-5 pb-3 flex items-start justify-between gap-4">
         <div className="min-w-0">
           <h1 className="text-xl font-semibold tracking-tight text-foreground">{title}</h1>
           {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
         </div>
         <div className="flex items-center gap-2 shrink-0">{actions}</div>
       </div>
-      {tabs && <div className="px-6 lg:px-8">{tabs}</div>}
+      {tabs && <div className="px-4 sm:px-6 lg:px-8">{tabs}</div>}
     </div>
   );
 }

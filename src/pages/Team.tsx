@@ -63,7 +63,7 @@ export default function Team() {
           </Button>
         }
       />
-      <div className="p-6 lg:p-8 space-y-4">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-4">
         <Input placeholder="Search by name or email…" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
         <div className="rounded-lg border border-border bg-card">
           <Table>

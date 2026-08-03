@@ -118,7 +118,7 @@ export default function Admin() {
           </Button>
         }
       />
-      <div className="p-6 lg:p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="min-w-0 space-y-6">
           {activeTab === "overview" && (
             <div className="space-y-6">

@@ -255,7 +255,7 @@ export default function Dashboard() {
         subtitle="Here's what's happening across your pipeline today."
       />
 
-      <div className="px-6 lg:px-8 py-6">
+      <div className="px-4 sm:px-6 lg:px-8 py-6">
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="mb-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>

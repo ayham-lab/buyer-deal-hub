@@ -117,7 +117,7 @@ export default function Tasks() {
         }
       />
 
-      <div className="px-6 lg:px-8 py-5">
+      <div className="px-4 sm:px-6 lg:px-8 py-5">
         {loading ? (
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}

@@ -284,7 +284,7 @@ export default function Buyers() {
         }
       />
       {tab === "finder" ? (
-        <div className="p-6 lg:p-8">
+        <div className="p-4 sm:p-6 lg:p-8">
           <BuyerFinderPanel onBuyerAdded={load} />
         </div>
       ) : (
