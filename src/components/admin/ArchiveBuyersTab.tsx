@@ -322,7 +322,7 @@ export function ArchiveBuyersTab() {
         <div className="flex flex-wrap gap-2 items-center">
           {/* State */}
           <Select value={stateF} onValueChange={setStateF}>
-            <SelectTrigger className="h-9 w-[180px]"><SelectValue placeholder="State" /></SelectTrigger>
+            <SelectTrigger className="h-9 w-full sm:w-[180px]"><SelectValue placeholder="State" /></SelectTrigger>
             <SelectContent className="max-h-72">
               <SelectItem value="__any__">All states</SelectItem>
               <SelectItem value="__national__">National / Any</SelectItem>
@@ -351,7 +351,7 @@ export function ArchiveBuyersTab() {
 
           {/* Has email */}
           <Select value={hasEmail} onValueChange={(v: any) => setHasEmail(v)}>
-            <SelectTrigger className="h-9 w-[140px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-full sm:w-[140px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="any">Email: Any</SelectItem>
               <SelectItem value="yes">Has email</SelectItem>
@@ -361,7 +361,7 @@ export function ArchiveBuyersTab() {
 
           {/* Has phone */}
           <Select value={hasPhone} onValueChange={(v: any) => setHasPhone(v)}>
-            <SelectTrigger className="h-9 w-[140px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-full sm:w-[140px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="any">Phone: Any</SelectItem>
               <SelectItem value="yes">Has phone</SelectItem>
@@ -391,7 +391,7 @@ export function ArchiveBuyersTab() {
 
           {/* Sort */}
           <Select value={sort} onValueChange={(v: any) => setSort(v)}>
-            <SelectTrigger className="h-9 w-[180px] ml-auto"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-full sm:w-[180px] sm:ml-auto"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="newest">Newest first</SelectItem>
               <SelectItem value="oldest">Oldest first</SelectItem>
