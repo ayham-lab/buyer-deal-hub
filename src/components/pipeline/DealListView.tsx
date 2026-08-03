@@ -6,8 +6,8 @@ import { Badge } from "@/components/ui/badge";
 export function DealListView({ deals, onSelect }: { deals: Deal[]; onSelect: (id: string) => void }) {
   if (!deals.length) return <div className="empty-state"><p className="text-muted-foreground">No deals yet.</p></div>;
   return (
-    <div className="rounded-lg border border-border overflow-hidden">
-      <table className="data-table w-full">
+    <div className="rounded-lg border border-border overflow-x-auto">
+      <table className="data-table w-full min-w-[720px]">
         <thead>
           <tr>
             <th>Property</th>

@@ -83,8 +83,8 @@ export function LocationsAdminTab() {
         </div>
       </div>
 
-      <div className="border rounded-md overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="border rounded-md overflow-x-auto">
+        <table className="w-full text-sm min-w-[720px]">
           <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               <th className="text-left p-2 font-medium">Workspace</th>

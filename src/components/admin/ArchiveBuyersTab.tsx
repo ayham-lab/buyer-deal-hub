@@ -418,8 +418,8 @@ export function ArchiveBuyersTab() {
       {loading && rows.length === 0 ? (
         <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
       ) : (
-        <div className="rounded-lg border border-border overflow-hidden">
-          <table className="data-table w-full">
+        <div className="rounded-lg border border-border overflow-x-auto">
+          <table className="data-table w-full min-w-[720px]">
             <thead>
               <tr>
                 <th>Name</th><th>Status</th><th>System Deals</th><th>Location</th><th>Markets</th><th>Price</th>

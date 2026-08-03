@@ -74,8 +74,8 @@ export function ArchiveContactsBrowser({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input className="pl-9" placeholder="Search…" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <div className="rounded-lg border border-border overflow-hidden">
-          <table className="data-table w-full text-sm">
+        <div className="rounded-lg border border-border overflow-x-auto">
+          <table className="data-table w-full text-sm min-w-[720px]">
             <thead>
               <tr>
                 <th>Name</th>

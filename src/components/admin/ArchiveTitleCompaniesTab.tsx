@@ -129,8 +129,8 @@ export function ArchiveTitleCompaniesTab() {
         </Button>
       </div>
 
-      <div className="rounded-lg border border-border overflow-hidden bg-card">
-        <table className="data-table w-full">
+      <div className="rounded-lg border border-border overflow-x-auto bg-card">
+        <table className="data-table w-full min-w-[720px]">
           <thead>
             <tr>
               <th>Name</th><th>Source</th><th>Type</th><th>Contact</th><th>States</th><th>Cities</th>
