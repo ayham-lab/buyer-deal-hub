@@ -29,6 +29,16 @@ export function TopBar() {
   const [memberships, setMemberships] = useState<MembershipOption[] | null>(null);
   const [loadingMemberships, setLoadingMemberships] = useState(false);
   const [iframeLocationName, setIframeLocationName] = useState<string | null>(null);
+  const [locSearch, setLocSearch] = useState("");
+
+  const filteredMemberships = (memberships ?? []).filter((m) => {
+    const q = locSearch.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      (m.location_name ?? "").toLowerCase().includes(q) ||
+      m.location_id.toLowerCase().includes(q)
+    );
+  });
 
   const ghlName = activeLocation?.userName || null;
   const ghlEmail = activeLocation?.email || null;
