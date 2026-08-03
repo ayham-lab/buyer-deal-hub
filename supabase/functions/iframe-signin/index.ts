@@ -159,6 +159,16 @@ Deno.serve(async (req) => {
       queueForReview = { reason: "no_company_id_in_sso", snapshot: null };
     }
 
+    // Activation: the person who explicitly activated the workspace becomes
+    // the owner when GHL ownership couldn't be resolved. They asked for the
+    // account, so there's no orphan/custodian situation to clean up later.
+    if (!isActivated && wantsActivation && !ownerId) {
+      ownerId = userId;
+      ownerSourceDetail = { source: "self_activation", activated_by_email: email };
+      queueForReview = null;
+    }
+
+
     // Insert link row. If we have an owner, the trigger upserts membership as
     // owner (when user_id === workspace_owner_user_id) or member (otherwise).
     // If we don't have an owner yet, we still create a member-only membership
