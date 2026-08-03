@@ -55,7 +55,7 @@ export function DealBuyerMatch({
       <label className="text-[11px] uppercase tracking-wider text-muted-foreground">Sold To Buyer</label>
       {matched ? (
         <div className="flex items-center gap-2 p-2 rounded-md border border-border bg-muted/40">
-          <Check className="h-4 w-4 text-green-600" />
+          <Check className="h-4 w-4 text-success" />
           <div className="flex-1">
             <div className="text-sm font-medium">{matched.name}</div>
             {matched.company_name && <div className="text-xs text-muted-foreground">{matched.company_name}</div>}

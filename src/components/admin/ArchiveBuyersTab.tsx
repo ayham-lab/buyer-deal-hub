@@ -67,9 +67,9 @@ const STATUS_OPTIONS: { value: NonNullable<Row["status"]>; label: string }[] = [
 const STATUS_LABEL: Record<string, string> = Object.fromEntries(STATUS_OPTIONS.map(s => [s.value, s.label]));
 const STATUS_COLOR: Record<string, string> = {
   not_vetted: "bg-muted text-muted-foreground",
-  vetted: "bg-green-100 text-green-700 border-green-200",
-  vetted_and_closed: "bg-amber-100 text-amber-800 border-amber-300",
-  repeat: "bg-blue-100 text-blue-700 border-blue-200",
+  vetted: "bg-success/10 text-success border-success/25",
+  vetted_and_closed: "bg-warning/15 text-warning border-warning/30",
+  repeat: "bg-info/10 text-info border-info/25",
   recurring: "bg-purple-100 text-purple-700 border-purple-200",
 };
 // Legacy filter keys retained for back-compat on quality_tier
@@ -454,7 +454,7 @@ export function ArchiveBuyersTab() {
                           <span className="text-muted-foreground">—</span>
                         )}
                         {r.status_override_by_admin && (
-                          <span title="Admin override active" className="inline-flex items-center text-amber-600">
+                          <span title="Admin override active" className="inline-flex items-center text-warning">
                             <ShieldAlert className="h-3 w-3" />
                           </span>
                         )}
@@ -572,7 +572,7 @@ export function ArchiveBuyersTab() {
             <div className="text-xs text-muted-foreground">
               Saving sets an admin override that prevents auto-sync from changing this status.
               Current: <span className="font-medium text-foreground">{statusModal?.status ? STATUS_LABEL[statusModal.status] : "—"}</span>
-              {statusModal?.status_override_by_admin && <span className="ml-1 text-amber-600">(override active)</span>}
+              {statusModal?.status_override_by_admin && <span className="ml-1 text-warning">(override active)</span>}
             </div>
             <Select value={statusDraft} onValueChange={(v) => setStatusDraft(v as any)}>
               <SelectTrigger><SelectValue /></SelectTrigger>

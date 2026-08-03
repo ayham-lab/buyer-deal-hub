@@ -200,7 +200,7 @@ export function TopBar() {
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium">
                         Admin view
-                        <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-blue-500">
+                        <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-info">
                           All workspaces
                         </span>
                       </div>
@@ -255,7 +255,7 @@ export function TopBar() {
                           </span>
                         )}
                         {!m.is_owner && isSuperAdmin && (
-                          <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-blue-500">
+                          <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-info">
                             Admin
                           </span>
                         )}

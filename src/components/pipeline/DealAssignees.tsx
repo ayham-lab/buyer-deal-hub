@@ -72,7 +72,7 @@ export function DealAssignees({ dealId }: { dealId: string }) {
       <div className="flex items-center justify-between">
         <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Team & Commission Splits</div>
         {assignees.length > 0 && (
-          <span className={`text-xs ${totalSplit === 100 ? "text-muted-foreground" : "text-amber-500"}`}>Total: {totalSplit}%</span>
+          <span className={`text-xs ${totalSplit === 100 ? "text-muted-foreground" : "text-warning"}`}>Total: {totalSplit}%</span>
         )}
       </div>
 

@@ -125,7 +125,7 @@ export function LocationsAdminTab() {
                       onCheckedChange={(v) => toggleGod(r, v)}
                     />
                     {r.god_mode && (
-                      <Badge className="bg-amber-500/15 text-amber-700 border-amber-500/30" variant="outline">
+                      <Badge className="bg-warning/15 text-warning border-warning/30" variant="outline">
                         <Sparkles className="h-3 w-3 mr-1" /> Unlimited
                       </Badge>
                     )}

@@ -110,8 +110,8 @@ export default function OAuthCallback() {
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="items-center space-y-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-              <AlertCircle className="h-10 w-10 text-red-600 dark:text-red-400" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+              <AlertCircle className="h-10 w-10 text-destructive" />
             </div>
             <CardTitle className="text-center text-2xl font-semibold">Install failed</CardTitle>
           </CardHeader>
