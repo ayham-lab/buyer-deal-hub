@@ -20,7 +20,7 @@ export function KanbanBoard({ deals, onStatusChange, onSelect, locationNames, co
   }
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-4">
+      <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
         {cols.map((col) => {
           const knownStatuses = new Set(STATUS_COLS.map((c) => c.id));
           const colDeals =
