@@ -310,12 +310,27 @@ async function ensureOwnerMembership(admin: any, locationId: string, companyId: 
       return;
     }
 
+    // 1b. ACTIVATION GATE: installing the app no longer creates an account for
+    // every sub-account. A location stays dormant (token only) until a real
+    // human opens it in the iframe and clicks "Activate workspace"
+    // (iframe-signin with activate=true). Nothing is provisioned before that.
+    const { data: tok } = await admin
+      .from("ghl_location_tokens")
+      .select("activated_at")
+      .eq("ghl_location_id", locationId)
+      .maybeSingle();
+    if (!tok?.activated_at) {
+      console.log("ensureOwnerMembership: location dormant, skipping provisioning", locationId);
+      return;
+    }
+
     // 2. No link yet — ask GHL who the admin is.
     if (!companyId) {
       await queueManual(admin, locationId, null, "no_company_id_on_install", null);
       await assignCustodianMembership(admin, locationId, null, "oauth-marketplace-callback", "no_company_id_on_install");
       return;
     }
+
     const verdict = await resolveGhlAdminForLocation(companyId, locationId);
     if (verdict.verdict === "admin") {
       const adminUser = verdict.user;
