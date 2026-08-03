@@ -194,7 +194,19 @@ export function LocationProvider({ children }: { children: ReactNode }) {
                 { body: { sso: ssoBlob } },
               );
               if (signinErr || !signin?.access_token || !signin?.refresh_token) {
-                console.warn("iframe-signin failed:", signinErr?.message ?? (signin as any)?.error ?? "unknown");
+                if ((signin as any)?.needs_activation) {
+                  // Dormant sub-account: no account exists here yet and we do
+                  // NOT create one automatically. Show the opt-in screen.
+                  setPendingActivation({
+                    locationId: (signin as any).location_id ?? locationId,
+                    locationName: (signin as any).location_name ?? null,
+                    email: (signin as any).email ?? null,
+                    userName: (signin as any).user_name ?? null,
+                  });
+                } else {
+                  console.warn("iframe-signin failed:", signinErr?.message ?? (signin as any)?.error ?? "unknown");
+                }
+
               } else {
                 const { data: setData, error: setErr } = await supabase.auth.setSession({
                   access_token: signin.access_token,
