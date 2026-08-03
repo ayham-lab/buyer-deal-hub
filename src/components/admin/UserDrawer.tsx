@@ -76,7 +76,7 @@ export function UserDrawer({ userId, onClose, onChanged }: Props) {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <MiniStat icon={<Briefcase className="h-4 w-4" />} label="Deals" value={String(deals.length)} />
               <MiniStat icon={<UsersIcon className="h-4 w-4" />} label="Buyers" value={String(buyers.length)} />
               <MiniStat icon={<BarChart3 className="h-4 w-4" />} label="Revenue" value={`$${revenue.toLocaleString()}`} />
