@@ -19,7 +19,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const ssoBlob = req.headers.get("x-ghl-sso") ?? (await req.json().catch(() => ({}))).sso;
+    const body = await req.json().catch(() => ({} as any));
+    const ssoBlob = req.headers.get("x-ghl-sso") ?? body?.sso;
+    const wantsActivation = body?.activate === true;
     if (!ssoBlob || typeof ssoBlob !== "string") {
       return json({ error: "missing_sso" }, 400);
     }
@@ -47,6 +49,27 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
       { auth: { autoRefreshToken: false, persistSession: false } },
     );
+
+    // 0) ACTIVATION GATE — installing the app in a GHL sub-account no longer
+    //    creates an account here. The location stays dormant until a real
+    //    person opens the iframe and explicitly activates the workspace.
+    const { data: tokenRow } = await admin
+      .from("ghl_location_tokens")
+      .select("activated_at, location_name")
+      .eq("ghl_location_id", locationId)
+      .maybeSingle();
+    const isActivated = !!tokenRow?.activated_at;
+    if (!isActivated && !wantsActivation) {
+      return json({
+        needs_activation: true,
+        location_id: locationId,
+        location_name: tokenRow?.location_name ?? null,
+        company_id: companyId,
+        email,
+        user_name: userName,
+      });
+    }
+
 
     // 1) Find or create the auth.users row FIRST so we have a stable uuid
     //    before writing any related rows.
