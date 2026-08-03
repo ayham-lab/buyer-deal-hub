@@ -25,7 +25,16 @@ export function Sidebar() {
   const { pathname } = useLocation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [collapsed, setCollapsed] = useState(false);
+  // Auto-collapse to the icon rail on narrow screens so content keeps room.
+  const [collapsed, setCollapsed] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth < 1024 : false,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const onChange = (e: MediaQueryListEvent | MediaQueryList) => setCollapsed(e.matches);
+    mq.addEventListener("change", onChange as (e: MediaQueryListEvent) => void);
+    return () => mq.removeEventListener("change", onChange as (e: MediaQueryListEvent) => void);
+  }, []);
   const onAdmin = pathname.startsWith("/admin");
   const adminTab = searchParams.get("tab") || "overview";
 
