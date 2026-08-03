@@ -164,8 +164,8 @@ export function PricingTab() {
             <Plus className="h-4 w-4 mr-1" /> Add pack
           </Button>
         </div>
-        <div className="rounded-lg border border-border overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="rounded-lg border border-border overflow-x-auto">
+          <table className="w-full text-sm min-w-[720px]">
             <thead className="bg-muted/50">
               <tr>
                 <th className="text-left p-2">Name</th>
@@ -229,8 +229,8 @@ export function PricingTab() {
             <Plus className="h-4 w-4 mr-1" /> Add plan
           </Button>
         </div>
-        <div className="rounded-lg border border-border overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="rounded-lg border border-border overflow-x-auto">
+          <table className="w-full text-sm min-w-[720px]">
             <thead className="bg-muted/50">
               <tr>
                 <th className="text-left p-2">Name</th>
@@ -289,8 +289,8 @@ export function PricingTab() {
 
       <section>
         <h3 className="font-semibold mb-3">Action Costs</h3>
-        <div className="rounded-lg border border-border overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="rounded-lg border border-border overflow-x-auto">
+          <table className="w-full text-sm min-w-[720px]">
             <thead className="bg-muted/50">
               <tr>
                 <th className="text-left p-2">Action</th>

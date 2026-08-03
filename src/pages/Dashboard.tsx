@@ -255,7 +255,7 @@ export default function Dashboard() {
         subtitle="Here's what's happening across your pipeline today."
       />
 
-      <div className="px-6 lg:px-8 py-6">
+      <div className="px-4 sm:px-6 lg:px-8 py-6">
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="mb-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -498,7 +498,7 @@ export default function Dashboard() {
               {byOwner.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No deals yet.</p>
               ) : (
-                <table className="data-table w-full">
+                <table className="data-table w-full min-w-[720px]">
                   <thead><tr><th>Owner</th><th>Deals</th><th>Closed</th><th>Revenue</th></tr></thead>
                   <tbody>
                     {byOwner.map((o) => (

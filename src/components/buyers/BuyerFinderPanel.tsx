@@ -204,7 +204,7 @@ export function BuyerFinderPanel({ onBuyerAdded }: { onBuyerAdded?: () => void }
           </label>
           {selectedDeal ? (
             <div className="flex items-center gap-2 p-2 rounded-md border border-border bg-muted/40">
-              <Check className="h-4 w-4 text-green-600 shrink-0" />
+              <Check className="h-4 w-4 text-success shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium truncate">{selectedDeal.property_address || "(no address)"}</div>
                 <div className="text-xs text-muted-foreground truncate">
@@ -343,7 +343,7 @@ function MatchCard({ b, i, canAdd, onAdd }: { b: Match; i: number; canAdd: boole
         <span className="font-medium text-sm flex-1 truncate">{b.name}</span>
         {b.profile_complete && (
           <span title={`Complete profile (${b.profile_completeness ?? 100}%)`}>
-            <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+            <CheckCircle2 className="h-3.5 w-3.5 text-success" />
           </span>
         )}
         <Badge variant="outline" className="text-[10px]">{Math.round(b.score)}</Badge>
@@ -383,7 +383,7 @@ function ArchiveCard({ b, i, revealCost, onReveal, onAdd }: { b: Match; i: numbe
         <span className="font-medium text-sm flex-1 truncate">{revealed ? b.name : maskName(b.name)}</span>
         {b.profile_complete && (
           <span title={`Complete profile (${b.profile_completeness ?? 100}%)`}>
-            <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+            <CheckCircle2 className="h-3.5 w-3.5 text-success" />
           </span>
         )}
         <Badge variant="outline" className="text-[10px]">{Math.round(b.score)}</Badge>

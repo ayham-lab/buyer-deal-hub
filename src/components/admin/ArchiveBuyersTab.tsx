@@ -67,9 +67,9 @@ const STATUS_OPTIONS: { value: NonNullable<Row["status"]>; label: string }[] = [
 const STATUS_LABEL: Record<string, string> = Object.fromEntries(STATUS_OPTIONS.map(s => [s.value, s.label]));
 const STATUS_COLOR: Record<string, string> = {
   not_vetted: "bg-muted text-muted-foreground",
-  vetted: "bg-green-100 text-green-700 border-green-200",
-  vetted_and_closed: "bg-amber-100 text-amber-800 border-amber-300",
-  repeat: "bg-blue-100 text-blue-700 border-blue-200",
+  vetted: "bg-success/10 text-success border-success/25",
+  vetted_and_closed: "bg-warning/15 text-warning border-warning/30",
+  repeat: "bg-info/10 text-info border-info/25",
   recurring: "bg-purple-100 text-purple-700 border-purple-200",
 };
 // Legacy filter keys retained for back-compat on quality_tier
@@ -322,7 +322,7 @@ export function ArchiveBuyersTab() {
         <div className="flex flex-wrap gap-2 items-center">
           {/* State */}
           <Select value={stateF} onValueChange={setStateF}>
-            <SelectTrigger className="h-9 w-[180px]"><SelectValue placeholder="State" /></SelectTrigger>
+            <SelectTrigger className="h-9 w-full sm:w-[180px]"><SelectValue placeholder="State" /></SelectTrigger>
             <SelectContent className="max-h-72">
               <SelectItem value="__any__">All states</SelectItem>
               <SelectItem value="__national__">National / Any</SelectItem>
@@ -351,7 +351,7 @@ export function ArchiveBuyersTab() {
 
           {/* Has email */}
           <Select value={hasEmail} onValueChange={(v: any) => setHasEmail(v)}>
-            <SelectTrigger className="h-9 w-[140px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-full sm:w-[140px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="any">Email: Any</SelectItem>
               <SelectItem value="yes">Has email</SelectItem>
@@ -361,7 +361,7 @@ export function ArchiveBuyersTab() {
 
           {/* Has phone */}
           <Select value={hasPhone} onValueChange={(v: any) => setHasPhone(v)}>
-            <SelectTrigger className="h-9 w-[140px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-full sm:w-[140px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="any">Phone: Any</SelectItem>
               <SelectItem value="yes">Has phone</SelectItem>
@@ -391,7 +391,7 @@ export function ArchiveBuyersTab() {
 
           {/* Sort */}
           <Select value={sort} onValueChange={(v: any) => setSort(v)}>
-            <SelectTrigger className="h-9 w-[180px] ml-auto"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-full sm:w-[180px] sm:ml-auto"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="newest">Newest first</SelectItem>
               <SelectItem value="oldest">Oldest first</SelectItem>
@@ -418,8 +418,8 @@ export function ArchiveBuyersTab() {
       {loading && rows.length === 0 ? (
         <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
       ) : (
-        <div className="rounded-lg border border-border overflow-hidden">
-          <table className="data-table w-full">
+        <div className="rounded-lg border border-border overflow-x-auto">
+          <table className="data-table w-full min-w-[720px]">
             <thead>
               <tr>
                 <th>Name</th><th>Status</th><th>System Deals</th><th>Location</th><th>Markets</th><th>Price</th>
@@ -454,7 +454,7 @@ export function ArchiveBuyersTab() {
                           <span className="text-muted-foreground">—</span>
                         )}
                         {r.status_override_by_admin && (
-                          <span title="Admin override active" className="inline-flex items-center text-amber-600">
+                          <span title="Admin override active" className="inline-flex items-center text-warning">
                             <ShieldAlert className="h-3 w-3" />
                           </span>
                         )}
@@ -572,7 +572,7 @@ export function ArchiveBuyersTab() {
             <div className="text-xs text-muted-foreground">
               Saving sets an admin override that prevents auto-sync from changing this status.
               Current: <span className="font-medium text-foreground">{statusModal?.status ? STATUS_LABEL[statusModal.status] : "—"}</span>
-              {statusModal?.status_override_by_admin && <span className="ml-1 text-amber-600">(override active)</span>}
+              {statusModal?.status_override_by_admin && <span className="ml-1 text-warning">(override active)</span>}
             </div>
             <Select value={statusDraft} onValueChange={(v) => setStatusDraft(v as any)}>
               <SelectTrigger><SelectValue /></SelectTrigger>

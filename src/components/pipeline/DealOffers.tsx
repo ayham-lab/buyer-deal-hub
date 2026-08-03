@@ -59,9 +59,9 @@ const STATUS_OPTIONS = [
 
 function statusClasses(status: string) {
   switch (status) {
-    case "accepted": return "bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30";
-    case "countered": return "bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-500/30";
-    case "rejected": return "bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/30";
+    case "accepted": return "bg-success/15 text-success border-success/30";
+    case "countered": return "bg-warning/15 text-warning border-warning/30";
+    case "rejected": return "bg-destructive/15 text-destructive border-destructive/30";
     case "withdrawn": return "bg-muted text-muted-foreground border-border";
     default: return "bg-secondary text-secondary-foreground border-border";
   }

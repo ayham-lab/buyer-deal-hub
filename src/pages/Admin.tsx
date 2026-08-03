@@ -118,7 +118,7 @@ export default function Admin() {
           </Button>
         }
       />
-      <div className="p-6 lg:p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="min-w-0 space-y-6">
           {activeTab === "overview" && (
             <div className="space-y-6">
@@ -287,8 +287,8 @@ function UsersTab({ users, dealsByUser, buyersByUser, onOpen, onChanged }: any) 
           </SelectContent>
         </Select>
       </div>
-      <div className="rounded-lg border border-border overflow-hidden">
-        <table className="data-table w-full">
+      <div className="rounded-lg border border-border overflow-x-auto">
+        <table className="data-table w-full min-w-[720px]">
           <thead><tr><th>Name</th><th>Email</th><th>Subscription</th><th>Role</th><th>Deals</th><th>Buyers</th><th>Last Active</th><th className="text-right">Actions</th></tr></thead>
           <tbody>
             {filtered.map((u: any) => (
@@ -371,8 +371,8 @@ function DealsTab({ deals, users, locationNames, onOpenUser }: any) {
           </SelectContent>
         </Select>
       </div>
-      <div className="rounded-lg border border-border overflow-hidden">
-        <table className="data-table w-full">
+      <div className="rounded-lg border border-border overflow-x-auto">
+        <table className="data-table w-full min-w-[720px]">
           <thead><tr><th>Owner</th><th>Source</th><th>Address</th><th>Status</th><th>Asking</th><th>Fee</th><th>Created</th><th>Closed</th></tr></thead>
           <tbody>
             {filtered.map((d: any) => (
@@ -437,8 +437,8 @@ function BuyersTab({ buyers, users, onOpenUser }: any) {
           </SelectContent>
         </Select>
       </div>
-      <div className="rounded-lg border border-border overflow-hidden">
-        <table className="data-table w-full">
+      <div className="rounded-lg border border-border overflow-x-auto">
+        <table className="data-table w-full min-w-[720px]">
           <thead><tr><th>Owner</th><th>Name</th><th>Email</th><th>Status</th><th>Markets</th><th>Deals</th></tr></thead>
           <tbody>
             {filtered.map((b: any) => (
@@ -482,8 +482,8 @@ function ArchiveTab({ archive, onChanged }: any) {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input className="pl-9" placeholder="Search name, email, market…" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
-      <div className="rounded-lg border border-border overflow-hidden">
-        <table className="data-table w-full">
+      <div className="rounded-lg border border-border overflow-x-auto">
+        <table className="data-table w-full min-w-[720px]">
           <thead><tr><th>Name</th><th>Email</th><th>Markets</th><th>Source</th><th>Added</th><th></th></tr></thead>
           <tbody>
             {filtered.map((b: any) => (
@@ -613,8 +613,8 @@ function RecentlyDeletedTab({ users, locationNames }: { users: any[]; locationNa
           Refresh
         </Button>
       </div>
-      <div className="rounded-lg border border-border overflow-hidden">
-        <table className="data-table w-full">
+      <div className="rounded-lg border border-border overflow-x-auto">
+        <table className="data-table w-full min-w-[720px]">
           <thead>
             <tr>
               <th>Address / Homeowner</th>

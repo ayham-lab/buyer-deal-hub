@@ -176,7 +176,7 @@ export function DealDrawer({ dealId, onClose, onUpdated }: { dealId: string | nu
 
   return (
     <Sheet open={!!dealId} onOpenChange={(o) => !o && handleClose()}>
-      <SheetContent className="bg-card border-border w-[560px] sm:max-w-[560px] overflow-y-auto pb-24">
+      <SheetContent className="bg-card border-border w-full sm:w-[560px] sm:max-w-[560px] overflow-y-auto pb-24">
         <SheetHeader>
           <SheetTitle className="text-lg">{view.property_address}</SheetTitle>
           <div className="flex items-center justify-between gap-2 mt-1">

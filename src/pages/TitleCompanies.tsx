@@ -142,8 +142,8 @@ export default function TitleCompanies() {
             </Button>
           </div>
         ) : (
-          <div className="rounded-xl border border-border overflow-hidden bg-card shadow-sm">
-            <table className="data-table w-full">
+          <div className="rounded-xl border border-border overflow-x-auto bg-card shadow-sm">
+            <table className="data-table w-full min-w-[720px]">
               <thead>
                 <tr>
                   <th>Name</th>

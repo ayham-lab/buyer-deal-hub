@@ -31,8 +31,8 @@ interface Task {
 
 const PRIORITY_COLOR: Record<string, string> = {
   low: "bg-muted text-muted-foreground",
-  medium: "bg-blue-100 text-blue-700 border-blue-200",
-  high: "bg-red-100 text-red-700 border-red-200",
+  medium: "bg-info/10 text-info border-info/25",
+  high: "bg-destructive/10 text-destructive border-destructive/25",
 };
 
 export default function Tasks() {
@@ -117,7 +117,7 @@ export default function Tasks() {
         }
       />
 
-      <div className="px-6 lg:px-8 py-5">
+      <div className="px-4 sm:px-6 lg:px-8 py-5">
         {loading ? (
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}

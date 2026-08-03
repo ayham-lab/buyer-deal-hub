@@ -455,7 +455,7 @@ export function SkiptraceBuyersTab() {
       </div>
 
       <div className="rounded-lg border border-border overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm min-w-[720px]">
           <thead className="bg-muted/40">
             <tr className="text-left">
               <th className="p-2">Owner(s)</th>

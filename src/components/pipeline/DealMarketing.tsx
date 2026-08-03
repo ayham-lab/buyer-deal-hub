@@ -140,7 +140,7 @@ export function DealMarketing({ dealId, deal, onChange }: Props) {
 
       <div>
         <label className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2 block">Photos</label>
-        <div className="grid grid-cols-3 gap-2 mb-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
           {photos.map((p) => (
             <div key={p} className="relative group aspect-square rounded-md overflow-hidden border border-border">
               <img src={p} alt="" className="w-full h-full object-cover" />

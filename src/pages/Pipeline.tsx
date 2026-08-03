@@ -110,7 +110,7 @@ export default function Pipeline() {
           </div>
         }
       />
-      <div className="p-6 lg:p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <Tabs defaultValue="kanban">
           <TabsList>
             <TabsTrigger value="kanban"><LayoutGrid className="h-4 w-4 mr-1" />Kanban</TabsTrigger>

@@ -76,7 +76,7 @@ export function UserDrawer({ userId, onClose, onChanged }: Props) {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <MiniStat icon={<Briefcase className="h-4 w-4" />} label="Deals" value={String(deals.length)} />
               <MiniStat icon={<UsersIcon className="h-4 w-4" />} label="Buyers" value={String(buyers.length)} />
               <MiniStat icon={<BarChart3 className="h-4 w-4" />} label="Revenue" value={`$${revenue.toLocaleString()}`} />
@@ -98,8 +98,8 @@ export function UserDrawer({ userId, onClose, onChanged }: Props) {
             {/* Recent deals */}
             <div>
               <div className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Recent deals</div>
-              <div className="rounded-lg border border-border overflow-hidden">
-                <table className="data-table w-full text-sm">
+              <div className="rounded-lg border border-border overflow-x-auto">
+                <table className="data-table w-full text-sm min-w-[720px]">
                   <thead><tr><th>Address</th><th>Status</th><th>Fee</th></tr></thead>
                   <tbody>
                     {deals.slice(0, 8).map((d) => (
@@ -118,8 +118,8 @@ export function UserDrawer({ userId, onClose, onChanged }: Props) {
             {/* Buyers */}
             <div>
               <div className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Buyers</div>
-              <div className="rounded-lg border border-border overflow-hidden">
-                <table className="data-table w-full text-sm">
+              <div className="rounded-lg border border-border overflow-x-auto">
+                <table className="data-table w-full text-sm min-w-[720px]">
                   <thead><tr><th>Name</th><th>Status</th><th>Markets</th></tr></thead>
                   <tbody>
                     {buyers.slice(0, 8).map((b) => (

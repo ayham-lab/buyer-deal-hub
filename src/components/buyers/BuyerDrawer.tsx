@@ -130,7 +130,7 @@ export function BuyerDrawer({ buyer, onClose, onUpdated }: { buyer: Buyer | null
 
   return (
     <Sheet open={!!buyer} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent className="bg-card border-border w-[520px] sm:max-w-[520px] overflow-y-auto">
+      <SheetContent className="bg-card border-border w-full sm:w-[520px] sm:max-w-[520px] overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="text-xl">{buyer.name}</SheetTitle>
         </SheetHeader>

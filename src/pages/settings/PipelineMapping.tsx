@@ -114,7 +114,7 @@ export default function PipelineMapping() {
         title="Pipeline Mapping"
         subtitle="Choose which GoHighLevel pipeline stages should sync deals into Dispo Pro."
       />
-      <div className="p-6 lg:p-8 max-w-4xl space-y-6">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl space-y-6">
         {isIframed ? (
           !activeLocation?.locationId ? (
             <div className="text-sm text-muted-foreground p-6 border border-dashed rounded-md">

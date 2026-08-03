@@ -56,8 +56,8 @@ export function RoleManager({ users, onChanged }: Props) {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input className="pl-9" placeholder="Search users…" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
-      <div className="rounded-lg border border-border overflow-hidden">
-        <table className="data-table w-full">
+      <div className="rounded-lg border border-border overflow-x-auto">
+        <table className="data-table w-full min-w-[720px]">
           <thead><tr><th>Name</th><th>Email</th><th>Role</th><th className="text-right">Actions</th></tr></thead>
           <tbody>
             {filtered.map((u) => {

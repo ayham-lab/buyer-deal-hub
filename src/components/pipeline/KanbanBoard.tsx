@@ -20,7 +20,7 @@ export function KanbanBoard({ deals, onStatusChange, onSelect, locationNames, co
   }
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-4">
+      <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
         {cols.map((col) => {
           const knownStatuses = new Set(STATUS_COLS.map((c) => c.id));
           const colDeals =
@@ -40,12 +40,12 @@ export function KanbanBoard({ deals, onStatusChange, onSelect, locationNames, co
 function Column({ id, label, deals, onSelect, locationNames }: { id: string; label: string; deals: Deal[]; onSelect: (id: string) => void; locationNames?: Record<string, string> }) {
   const { setNodeRef, isOver } = useDroppable({ id });
   return (
-    <div className="bg-muted/50 border border-border rounded-xl p-3 min-h-[400px]">
+    <div className="shrink-0 snap-start w-[82vw] sm:w-[290px] bg-muted/50 border border-border rounded-xl p-3 min-h-[400px] flex flex-col">
       <div className="flex items-center justify-between mb-3 px-1">
         <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">{label}</h3>
         <span className="text-[11px] text-muted-foreground bg-card border border-border rounded-full px-2 py-0.5">{deals.length}</span>
       </div>
-      <div ref={setNodeRef} className={cn("space-y-2 min-h-[300px] rounded transition-colors", isOver && "bg-primary/5 ring-1 ring-primary/30")}>
+      <div ref={setNodeRef} className={cn("space-y-2 flex-1 min-h-[300px] rounded transition-colors", isOver && "bg-primary/5 ring-1 ring-primary/30")}>
         {deals.map((d) => <Card key={d.id} deal={d} onSelect={onSelect} locationNames={locationNames} />)}
       </div>
     </div>

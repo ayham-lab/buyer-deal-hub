@@ -120,9 +120,9 @@ const STATUS_LABEL: Record<string, string> = {
 };
 const STATUS_COLOR: Record<string, string> = {
   not_vetted: "bg-muted text-muted-foreground",
-  vetted: "bg-green-100 text-green-700 border-green-200",
-  vetted_and_closed: "bg-amber-100 text-amber-800 border-amber-300",
-  repeat: "bg-blue-100 text-blue-700 border-blue-200",
+  vetted: "bg-success/10 text-success border-success/25",
+  vetted_and_closed: "bg-warning/15 text-warning border-warning/30",
+  repeat: "bg-info/10 text-info border-info/25",
   recurring: "bg-purple-100 text-purple-700 border-purple-200",
 };
 
@@ -284,7 +284,7 @@ export default function Buyers() {
         }
       />
       {tab === "finder" ? (
-        <div className="p-6 lg:p-8">
+        <div className="p-4 sm:p-6 lg:p-8">
           <BuyerFinderPanel onBuyerAdded={load} />
         </div>
       ) : (
@@ -439,8 +439,8 @@ export default function Buyers() {
             </Button>
           </div>
         ) : (
-          <div className="rounded-xl border border-border overflow-hidden bg-card shadow-sm">
-            <table className="data-table w-full">
+          <div className="rounded-xl border border-border overflow-x-auto bg-card shadow-sm">
+            <table className="data-table w-full min-w-[720px]">
               <thead>
                 <tr>
                   <th>Name</th>
@@ -470,11 +470,11 @@ export default function Buyers() {
                           <TooltipTrigger asChild>
                             <span className="inline-flex items-center gap-1">
                               {c.isComplete ? (
-                                <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                                <CheckCircle2 className="h-3.5 w-3.5 text-success" />
                               ) : (
                                 <CircleDashed className="h-3.5 w-3.5 text-muted-foreground" />
                               )}
-                              <span className={`text-[11px] font-medium ${c.isComplete ? "text-green-700" : "text-muted-foreground"}`}>
+                              <span className={`text-[11px] font-medium ${c.isComplete ? "text-success" : "text-muted-foreground"}`}>
                                 {c.score}%
                               </span>
                             </span>
