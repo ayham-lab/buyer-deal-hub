@@ -188,7 +188,7 @@ Deno.serve(async (req) => {
           { onConflict: "user_id,ghl_location_id", ignoreDuplicates: true },
         );
       // Audit only when this call is the one that established ownership.
-      if (ownerSourceDetail.source === "ghl_admin_lookup") {
+      if (ownerSourceDetail.source === "ghl_admin_lookup" || ownerSourceDetail.source === "self_activation") {
         await admin.from("ownership_audit_log").insert({
           location_id: locationId,
           action: "insert",
