@@ -74,6 +74,7 @@ export function LocationsAdminTab() {
           <h2 className="text-lg font-semibold">Locations</h2>
           <p className="text-sm text-muted-foreground">
             Manage workspaces. Enable <span className="inline-flex items-center gap-1 font-medium"><Sparkles className="h-3.5 w-3.5" />God Mode</span> to give a location unlimited buyer archive reveals and skiptrace usage — no credit charges, no restrictions.
+            {" "}Dormant locations have the app installed but no workspace yet — they activate when someone opts in from the GHL iframe.
           </p>
         </div>
         <div className="relative w-72">
@@ -88,6 +89,7 @@ export function LocationsAdminTab() {
             <tr>
               <th className="text-left p-2 font-medium">Workspace</th>
               <th className="text-left p-2 font-medium">Location ID</th>
+              <th className="text-left p-2 font-medium">Status</th>
               <th className="text-left p-2 font-medium">Operator</th>
               <th className="text-left p-2 font-medium">Archive contributions</th>
               <th className="text-left p-2 font-medium">God Mode</th>
@@ -98,6 +100,11 @@ export function LocationsAdminTab() {
               <tr key={r.ghl_location_id} className="border-t">
                 <td className="p-2 font-medium">{r.location_name || <span className="text-muted-foreground">—</span>}</td>
                 <td className="p-2 font-mono text-xs text-muted-foreground">{r.ghl_location_id}</td>
+                <td className="p-2">
+                  {activated[r.ghl_location_id]
+                    ? <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30" variant="outline">Active</Badge>
+                    : <Badge variant="outline" className="text-muted-foreground">Dormant</Badge>}
+                </td>
                 <td className="p-2">
                   {r.operator_account_id
                     ? <Badge variant="secondary">Operator</Badge>
@@ -127,7 +134,7 @@ export function LocationsAdminTab() {
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={5} className="p-6 text-center text-muted-foreground text-sm">No locations found.</td></tr>
+              <tr><td colSpan={6} className="p-6 text-center text-muted-foreground text-sm">No locations found.</td></tr>
             )}
           </tbody>
         </table>
