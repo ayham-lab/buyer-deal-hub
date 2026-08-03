@@ -18,6 +18,7 @@ type Row = {
 
 export function LocationsAdminTab() {
   const [rows, setRows] = useState<Row[]>([]);
+  const [activated, setActivated] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
@@ -27,6 +28,12 @@ export function LocationsAdminTab() {
     const { data, error } = await supabase.rpc("admin_list_locations" as any);
     if (error) toast.error(error.message);
     setRows(((data as any) || []) as Row[]);
+    const { data: toks } = await supabase
+      .from("ghl_location_tokens")
+      .select("ghl_location_id, activated_at");
+    const map: Record<string, boolean> = {};
+    ((toks as any[]) || []).forEach((t) => { map[t.ghl_location_id] = !!t.activated_at; });
+    setActivated(map);
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
