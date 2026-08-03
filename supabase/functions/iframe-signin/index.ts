@@ -227,6 +227,13 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Stamp the workspace as activated so future visitors skip the gate.
+    if (!isActivated && wantsActivation) {
+      await admin.rpc("activate_location", { _location_id: locationId, _user_id: userId });
+    }
+
+
+
     // 4) Mint a session: generate a magiclink, then verify it to get tokens.
     const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
       type: "magiclink",
