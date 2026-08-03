@@ -173,7 +173,12 @@ export function TopBar() {
               <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-72">
+          <DropdownMenuContent
+            align="start"
+            className="w-80 max-h-[70vh] overflow-y-auto overscroll-contain"
+            onWheel={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
+          >
             <DropdownMenuLabel>Switch workspace</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {isAdmin && (
@@ -198,6 +203,16 @@ export function TopBar() {
                 <DropdownMenuSeparator />
               </>
             )}
+            <div className="px-2 pb-2 sticky top-0 bg-popover z-10">
+              <Input
+                autoFocus
+                value={locSearch}
+                onChange={(e) => setLocSearch(e.target.value)}
+                onKeyDown={(e) => e.stopPropagation()}
+                placeholder="Search workspaces…"
+                className="h-8 text-sm"
+              />
+            </div>
             {loadingMemberships && (
               <div className="px-2 py-3 flex items-center gap-2 text-xs text-muted-foreground">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
@@ -208,7 +223,10 @@ export function TopBar() {
                 You're not a member of any workspace yet.
               </div>
             )}
-            {!loadingMemberships && memberships?.map((m) => {
+            {!loadingMemberships && filteredMemberships.length === 0 && (memberships?.length ?? 0) > 0 && (
+              <div className="px-2 py-3 text-xs text-muted-foreground">No workspaces match "{locSearch}".</div>
+            )}
+            {!loadingMemberships && filteredMemberships.map((m) => {
               const active = m.location_id === activeLocationId;
               return (
                 <DropdownMenuItem
@@ -243,6 +261,7 @@ export function TopBar() {
               );
             })}
           </DropdownMenuContent>
+
         </DropdownMenu>
       )}
 
