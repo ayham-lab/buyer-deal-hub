@@ -72,14 +72,14 @@ export function PageHeader({
 }) {
   return (
     <div className="bg-card border-b border-border sticky top-14 z-10">
-      <div className="px-4 sm:px-6 lg:px-8 pt-5 pb-3 flex items-start justify-between gap-4">
+      <div className="px-4 sm:px-6 lg:px-8 pt-4 sm:pt-5 pb-3 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">{title}</h1>
-          {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
+          <h1 className="text-lg sm:text-xl font-semibold tracking-tight text-foreground truncate">{title}</h1>
+          {subtitle && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{subtitle}</p>}
         </div>
-        <div className="flex items-center gap-2 shrink-0">{actions}</div>
+        <div className="flex flex-wrap items-center gap-2 sm:shrink-0">{actions}</div>
       </div>
-      {tabs && <div className="px-4 sm:px-6 lg:px-8">{tabs}</div>}
+      {tabs && <div className="px-4 sm:px-6 lg:px-8 overflow-x-auto">{tabs}</div>}
     </div>
   );
 }
