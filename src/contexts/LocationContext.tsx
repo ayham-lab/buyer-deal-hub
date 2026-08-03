@@ -359,9 +359,55 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     setActiveLocation(null);
   };
 
+  // Opt-in workspace creation: only this explicit call provisions an account
+  // for a dormant GHL sub-account.
+  const activateWorkspace = async () => {
+    let ssoBlob: string | null = null;
+    try { ssoBlob = sessionStorage.getItem("ghl_sso_blob"); } catch {}
+    if (!ssoBlob) {
+      setActivationError("Session expired — reload the app inside GoHighLevel and try again.");
+      return;
+    }
+    setActivating(true);
+    setActivationError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("iframe-signin", {
+        body: { sso: ssoBlob, activate: true },
+      });
+      if (error || !data?.access_token || !data?.refresh_token) {
+        setActivationError((data as any)?.error ?? error?.message ?? "Activation failed. Please try again.");
+        return;
+      }
+      const { error: setErr } = await supabase.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+      });
+      if (setErr) {
+        setActivationError(setErr.message);
+        return;
+      }
+      setPendingActivation(null);
+      window.location.reload();
+    } catch (e: any) {
+      setActivationError(e?.message ?? "Activation failed. Please try again.");
+    } finally {
+      setActivating(false);
+    }
+  };
+
   return (
     <LocationContext.Provider value={{ activeLocation, isIframed, handshakeReady, iframeSigninPending, clearActiveLocation }}>
-      {children}
+      {pendingActivation ? (
+        <ActivateWorkspace
+          pending={pendingActivation}
+          activating={activating}
+          error={activationError}
+          onActivate={activateWorkspace}
+        />
+      ) : (
+        children
+      )}
     </LocationContext.Provider>
   );
 }
+
