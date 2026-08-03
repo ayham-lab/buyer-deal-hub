@@ -105,6 +105,9 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   });
   const [iframeSigninPending, setIframeSigninPending] = useState(false);
   const [iframeSigninDone, setIframeSigninDone] = useState(false);
+  const [pendingActivation, setPendingActivation] = useState<PendingActivation | null>(null);
+  const [activating, setActivating] = useState(false);
+  const [activationError, setActivationError] = useState<string | null>(null);
   const isIframed = (() => {
     try { return window.self !== window.top; } catch { return true; }
   })();
