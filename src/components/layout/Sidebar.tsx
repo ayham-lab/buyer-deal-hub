@@ -3,7 +3,7 @@ import { Users, LayoutGrid, ShieldCheck, ChevronsLeft, ChevronsRight, Building2,
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveLocation } from "@/contexts/LocationContext";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import logo from "@/assets/logo.png";
 import { Launchpad } from "./Launchpad";
 
