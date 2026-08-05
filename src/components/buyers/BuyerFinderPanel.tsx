@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BuyCreditsModal } from "@/components/credits/BuyCreditsModal";
+import { BuyerDrawer } from "@/components/buyers/BuyerDrawer";
 import { MapPin, Sparkles, Loader2, Users, Archive, Globe, Lock, Mail, Phone, Check, Briefcase, X, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -288,7 +289,7 @@ export function BuyerFinderPanel({ onBuyerAdded }: { onBuyerAdded?: () => void }
         </div>
       ) : (
         <div className="grid gap-6 lg:grid-cols-3">
-          <ResultGroup title="My Buyer Rolodex" icon={<Users className="h-4 w-4" />} matches={results.rolodex} canAdd={false} onAdd={(b) => addToMine(b)} />
+          <ResultGroup title="My Buyer Rolodex" icon={<Users className="h-4 w-4" />} matches={results.rolodex} canAdd={false} onAdd={(b) => addToMine(b)} onOpen={(b) => openBuyerProfile(b.id)} />
           <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
               <div className="text-primary"><Archive className="h-4 w-4" /></div>
@@ -316,13 +317,14 @@ export function BuyerFinderPanel({ onBuyerAdded }: { onBuyerAdded?: () => void }
         </div>
       )}
       <BuyCreditsModal open={buyOpen} onOpenChange={setBuyOpen} ghlLocationId={activeLocation?.locationId ?? null} />
+      <BuyerDrawer buyer={activeBuyer} onClose={() => setActiveBuyer(null)} onUpdated={() => { if (activeBuyer?.id) openBuyerProfile(activeBuyer.id); onBuyerAdded?.(); }} />
     </div>
   );
 }
 
-function ResultGroup({ title, icon, matches, canAdd, onAdd, emptyHint }: {
+function ResultGroup({ title, icon, matches, canAdd, onAdd, emptyHint, onOpen }: {
   title: string; icon: React.ReactNode; matches: Match[]; canAdd: boolean;
-  onAdd: (m: Match) => void; emptyHint?: string;
+  onAdd: (m: Match) => void; emptyHint?: string; onOpen?: (m: Match) => void;
 }) {
   return (
     <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
@@ -335,16 +337,22 @@ function ResultGroup({ title, icon, matches, canAdd, onAdd, emptyHint }: {
         <p className="text-xs text-muted-foreground py-6 text-center">{emptyHint || "No matches in this source."}</p>
       ) : (
         <div className="space-y-2">
-          {matches.map((b, i) => <MatchCard key={b.id} b={b} i={i} canAdd={canAdd} onAdd={() => onAdd(b)} />)}
+          {matches.map((b, i) => <MatchCard key={b.id} b={b} i={i} canAdd={canAdd} onAdd={() => onAdd(b)} onOpen={onOpen ? () => onOpen(b) : undefined} />)}
         </div>
       )}
     </div>
   );
 }
 
-function MatchCard({ b, i, canAdd, onAdd }: { b: Match; i: number; canAdd: boolean; onAdd: () => void }) {
+function MatchCard({ b, i, canAdd, onAdd, onOpen }: { b: Match; i: number; canAdd: boolean; onAdd: () => void; onOpen?: () => void }) {
   return (
-    <div className="border border-border rounded-lg p-3">
+    <div
+      onClick={onOpen}
+      role={onOpen ? "button" : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+      onKeyDown={onOpen ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } } : undefined}
+      className={`border border-border rounded-lg p-3 ${onOpen ? "cursor-pointer hover:border-primary/50 hover:bg-muted/40 transition-colors" : ""}`}
+    >
       <div className="flex items-center gap-2">
         <span className="text-xs text-muted-foreground w-4">#{i + 1}</span>
         <span className="font-medium text-sm flex-1 truncate">{b.name}</span>
@@ -359,8 +367,24 @@ function MatchCard({ b, i, canAdd, onAdd }: { b: Match; i: number; canAdd: boole
       <div className="flex flex-wrap gap-1 mt-2">
         {b.markets?.slice(0, 2).map((m) => <Badge key={m} variant="outline" className="text-[10px]">{m}</Badge>)}
       </div>
+      {(b.email || b.phone) && (
+        <div className="mt-2 space-y-1 text-xs">
+          {b.email && (
+            <div className="flex items-center gap-1.5">
+              <Mail className="h-3 w-3 text-muted-foreground shrink-0" />
+              <span className="truncate">{b.email}</span>
+            </div>
+          )}
+          {b.phone && (
+            <div className="flex items-center gap-1.5">
+              <Phone className="h-3 w-3 text-muted-foreground shrink-0" />
+              <span>{b.phone}</span>
+            </div>
+          )}
+        </div>
+      )}
       {canAdd && (
-        <Button size="sm" variant="outline" onClick={onAdd} className="mt-2 h-7 text-xs w-full">Add to Rolodex</Button>
+        <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onAdd(); }} className="mt-2 h-7 text-xs w-full">Add to Rolodex</Button>
       )}
     </div>
   );
