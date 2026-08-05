@@ -68,6 +68,13 @@ export function BuyerFinderPanel({ onBuyerAdded }: { onBuyerAdded?: () => void }
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<Results | null>(null);
   const [buyOpen, setBuyOpen] = useState(false);
+  const [activeBuyer, setActiveBuyer] = useState<any | null>(null);
+
+  async function openBuyerProfile(id: string) {
+    const { data, error } = await supabase.from("buyers").select("*").eq("id", id).maybeSingle();
+    if (error || !data) { toast.error("Could not load buyer profile"); return; }
+    setActiveBuyer(data);
+  }
 
   const [deals, setDeals] = useState<DealOption[]>([]);
   const [selectedDealId, setSelectedDealId] = useState<string | null>(null);
