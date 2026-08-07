@@ -33,7 +33,15 @@ export type Database = {
           id?: string
           revealed_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "archive_buyer_reveals_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "archive_buyers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       archive_buyers: {
         Row: {
@@ -567,7 +575,15 @@ export type Database = {
           to_value?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "deal_activity_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       deal_assignees: {
         Row: {
@@ -597,7 +613,22 @@ export type Database = {
           role?: string
           team_member_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "deal_assignees_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_assignees_team_member_id_fkey"
+            columns: ["team_member_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       deal_checklist: {
         Row: {
@@ -2361,6 +2392,11 @@ export type Database = {
         Args: { p_location: string }
         Returns: string
       }
+      purge_debug_logs: {
+        Args: { p_install_days?: number; p_webhook_days?: number }
+        Returns: Json
+      }
+      redact_request_headers: { Args: { p: Json }; Returns: Json }
       reveal_archive_buyer: {
         Args: { p_buyer_id: string; p_location: string }
         Returns: Json
