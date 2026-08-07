@@ -2409,6 +2409,11 @@ export type Database = {
         Args: { p_location: string }
         Returns: string
       }
+      purge_debug_logs: {
+        Args: { p_install_days?: number; p_webhook_days?: number }
+        Returns: Json
+      }
+      redact_request_headers: { Args: { p: Json }; Returns: Json }
       reveal_archive_buyer: {
         Args: { p_buyer_id: string; p_location: string }
         Returns: Json
