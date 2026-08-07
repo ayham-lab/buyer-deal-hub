@@ -120,12 +120,21 @@ export function ArchiveTitleCompaniesBrowser({ open, onClose, onAdded }: {
                       </Badge>
                       {t.contact_name && <span className="text-sm text-muted-foreground">· {t.contact_name}</span>}
                       {t.source === "archive" && <Badge variant="secondary" className="text-[10px]">Curated</Badge>}
+                      {t.source === "community" && (
+                        <Badge variant="outline" className="text-[10px]" title="Used by other operators. Contact details are not shared.">
+                          Community
+                        </Badge>
+                      )}
                       {t.usage_count > 1 && <Badge variant="outline" className="text-[10px]">Used by {t.usage_count}</Badge>}
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1 space-x-3">
-                      {t.phone && <span>{t.phone}</span>}
-                      {t.email && <span>{t.email}</span>}
-                    </div>
+                    {/* Community rows come back with contact fields nulled by
+                        list_title_company_archive() — they belong to other tenants. */}
+                    {(t.phone || t.email) && (
+                      <div className="text-xs text-muted-foreground mt-1 space-x-3">
+                        {t.phone && <span>{t.phone}</span>}
+                        {t.email && <span>{t.email}</span>}
+                      </div>
+                    )}
                     <div className="flex flex-wrap gap-1 mt-2">
                       {t.service_states.slice(0, 6).map((s) => <Badge key={s} variant="secondary" className="text-[10px]">{s}</Badge>)}
                       {t.service_cities.slice(0, 4).map((c) => <Badge key={c} variant="outline" className="text-[10px]">{c}</Badge>)}

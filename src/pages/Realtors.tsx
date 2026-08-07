@@ -50,9 +50,13 @@ export default function Realtors() {
         subtitle="Track agents, their brokerages, novation appetite, and markets"
         actions={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setShowArchive(true)}>
-              <Library className="h-4 w-4 mr-1" /> Browse Archive
-            </Button>
+            {/* The shared realtor catalog is admin-only; without this the dialog
+                would just open empty for everyone else. */}
+            {isAdmin && (
+              <Button variant="outline" onClick={() => setShowArchive(true)}>
+                <Library className="h-4 w-4 mr-1" /> Browse Archive
+              </Button>
+            )}
             <Button onClick={() => setShowAdd(true)} className="bg-primary hover:bg-primary-hover">
               <Plus className="h-4 w-4 mr-1" /> Add Realtor
             </Button>

@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BuyCreditsModal } from "@/components/credits/BuyCreditsModal";
 import { BuyerDrawer } from "@/components/buyers/BuyerDrawer";
+import { BuyerMatchDetailsDialog } from "@/components/buyers/BuyerMatchDetailsDialog";
+import { cardActivationProps } from "@/lib/cardActivation";
 import { MapPin, Sparkles, Loader2, Users, Archive, Globe, Lock, Mail, Phone, Check, Briefcase, X, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -70,12 +72,25 @@ export function BuyerFinderPanel({ onBuyerAdded }: { onBuyerAdded?: () => void }
   const [results, setResults] = useState<Results | null>(null);
   const [buyOpen, setBuyOpen] = useState(false);
   const [activeBuyer, setActiveBuyer] = useState<any | null>(null);
+  // Archive / public-data matches aren't rows in `buyers`, so they get a
+  // read-only details dialog instead of the editable BuyerDrawer. Track the id
+  // rather than the row so the dialog reflects a reveal that happens while open.
+  const [activeMatchId, setActiveMatchId] = useState<string | null>(null);
 
   async function openBuyerProfile(id: string) {
     const { data, error } = await supabase.from("buyers").select("*").eq("id", id).maybeSingle();
     if (error || !data) { toast.error("Could not load buyer profile"); return; }
     setActiveBuyer(data);
   }
+
+  const activeMatch = useMemo(() => {
+    if (!activeMatchId || !results) return null;
+    return (
+      results.archive?.find((m) => m.id === activeMatchId) ??
+      results.public?.find((m) => m.id === activeMatchId) ??
+      null
+    );
+  }, [activeMatchId, results]);
 
   const [deals, setDeals] = useState<DealOption[]>([]);
   const [selectedDealId, setSelectedDealId] = useState<string | null>(null);
@@ -307,17 +322,26 @@ export function BuyerFinderPanel({ onBuyerAdded }: { onBuyerAdded?: () => void }
                   </div>
                 )}
                 {results.archive.map((b, i) => (
-                  <ArchiveCard key={b.id} b={b} i={i} revealCost={results.archive_reveal_cost} onReveal={() => revealArchiveBuyer(b)} onAdd={() => addToMine(b)} />
+                  <ArchiveCard key={b.id} b={b} i={i} revealCost={results.archive_reveal_cost} onReveal={() => revealArchiveBuyer(b)} onAdd={() => addToMine(b)} onOpen={() => setActiveMatchId(b.id)} />
                 ))}
               </div>
             )}
           </div>
           <ResultGroup title="Public Data Buyers" icon={<Globe className="h-4 w-4" />} matches={results.public} canAdd onAdd={(b) => addToMine(b)}
+            onOpen={(b) => setActiveMatchId(b.id)}
             emptyHint={!results.public_available ? "Public data source not connected yet." : undefined} />
         </div>
       )}
       <BuyCreditsModal open={buyOpen} onOpenChange={setBuyOpen} ghlLocationId={activeLocation?.locationId ?? null} />
       <BuyerDrawer buyer={activeBuyer} onClose={() => setActiveBuyer(null)} onUpdated={() => { if (activeBuyer?.id) openBuyerProfile(activeBuyer.id); onBuyerAdded?.(); }} />
+      <BuyerMatchDetailsDialog
+        match={activeMatch}
+        displayName={activeMatch ? (activeMatch.revealed ? activeMatch.name : maskName(activeMatch.name)) : ""}
+        revealCost={results?.archive_reveal_cost}
+        onReveal={activeMatch && !activeMatch.revealed ? () => revealArchiveBuyer(activeMatch) : undefined}
+        onAdd={activeMatch?.revealed ? () => { addToMine(activeMatch); setActiveMatchId(null); } : undefined}
+        onClose={() => setActiveMatchId(null)}
+      />
     </div>
   );
 }
@@ -347,10 +371,7 @@ function ResultGroup({ title, icon, matches, canAdd, onAdd, emptyHint, onOpen }:
 function MatchCard({ b, i, canAdd, onAdd, onOpen }: { b: Match; i: number; canAdd: boolean; onAdd: () => void; onOpen?: () => void }) {
   return (
     <div
-      onClick={onOpen}
-      role={onOpen ? "button" : undefined}
-      tabIndex={onOpen ? 0 : undefined}
-      onKeyDown={onOpen ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } } : undefined}
+      {...cardActivationProps(onOpen)}
       className={`border border-border rounded-lg p-3 ${onOpen ? "cursor-pointer hover:border-primary/50 hover:bg-muted/40 transition-colors" : ""}`}
     >
       <div className="flex items-center gap-2">
@@ -405,10 +426,13 @@ function maskName(raw: string | null | undefined): string {
   }).join(" ");
 }
 
-function ArchiveCard({ b, i, revealCost, onReveal, onAdd }: { b: Match; i: number; revealCost: number; onReveal: () => void; onAdd: () => void }) {
+function ArchiveCard({ b, i, revealCost, onReveal, onAdd, onOpen }: { b: Match; i: number; revealCost: number; onReveal: () => void; onAdd: () => void; onOpen?: () => void }) {
   const revealed = !!b.revealed;
   return (
-    <div className="border border-border rounded-lg p-3">
+    <div
+      {...cardActivationProps(onOpen)}
+      className={`border border-border rounded-lg p-3 ${onOpen ? "cursor-pointer hover:border-primary/50 hover:bg-muted/40 transition-colors" : ""}`}
+    >
       <div className="flex items-center gap-2">
         <span className="text-xs text-muted-foreground w-4">#{i + 1}</span>
         <span className="font-medium text-sm flex-1 truncate">{revealed ? b.name : maskName(b.name)}</span>
@@ -434,11 +458,11 @@ function ArchiveCard({ b, i, revealCost, onReveal, onAdd }: { b: Match; i: numbe
         </div>
       </div>
       {revealed ? (
-        <Button size="sm" variant="outline" onClick={onAdd} className="mt-2 h-7 text-xs w-full">
+        <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onAdd(); }} className="mt-2 h-7 text-xs w-full">
           <Check className="h-3 w-3 mr-1" /> Add to Rolodex
         </Button>
       ) : (
-        <Button size="sm" onClick={onReveal} className="mt-2 h-7 text-xs w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+        <Button size="sm" onClick={(e) => { e.stopPropagation(); onReveal(); }} className="mt-2 h-7 text-xs w-full bg-primary hover:bg-primary/90 text-primary-foreground">
           <Lock className="h-3 w-3 mr-1" /> Reveal Contact ({revealCost} credits)
         </Button>
       )}

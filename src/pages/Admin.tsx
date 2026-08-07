@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Users, Briefcase, DollarSign, Database, MapPin, Search, ShieldCheck,
+  Users, Briefcase, DollarSign, MapPin, Search, ShieldCheck,
   TrendingUp, Loader2, Trash2, RotateCcw, LayoutDashboard, ScrollText,
   Tag,
 } from "lucide-react";
@@ -37,22 +37,20 @@ export default function Admin() {
   const [users, setUsers] = useState<any[]>([]);
   const [deals, setDeals] = useState<any[]>([]);
   const [buyers, setBuyers] = useState<any[]>([]);
-  const [archive, setArchive] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
   const [locationNames, setLocationNames] = useState<Record<string, string>>({});
   const [openUserId, setOpenUserId] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
-    const [{ data: pf }, { data: dl }, { data: by }, { data: ar }, { data: rl }, { data: lt }] = await Promise.all([
+    const [{ data: pf }, { data: dl }, { data: by }, { data: rl }, { data: lt }] = await Promise.all([
       supabase.from("profiles").select("*").order("created_at", { ascending: false }),
       supabase.from("deals").select("*").is("deleted_at", null).order("created_at", { ascending: false }),
       supabase.from("buyers").select("*").order("created_at", { ascending: false }),
-      supabase.from("buyer_archive").select("*").order("created_at", { ascending: false }),
       supabase.from("user_roles").select("*"),
       supabase.from("ghl_location_tokens").select("ghl_location_id, location_name"),
     ]);
-    setUsers(pf || []); setDeals(dl || []); setBuyers(by || []); setArchive(ar || []); setRoles(rl || []);
+    setUsers(pf || []); setDeals(dl || []); setBuyers(by || []); setRoles(rl || []);
     const map: Record<string, string> = {};
     (lt || []).forEach((r: any) => { if (r.ghl_location_id) map[r.ghl_location_id] = r.location_name || ""; });
     setLocationNames(map);
@@ -129,7 +127,6 @@ export default function Admin() {
                 <Stat icon={<Briefcase />} label="Deals" value={String(deals.length)} />
                 <Stat icon={<TrendingUp />} label="Closed" value={String(closedDeals)} />
                 <Stat icon={<DollarSign />} label="Revenue" value={`$${totalRevenue.toLocaleString()}`} />
-                <Stat icon={<Database />} label="Archive" value={String(archive.length)} />
               </div>
 
               <div className="grid lg:grid-cols-2 gap-6">
@@ -462,50 +459,6 @@ function BuyersTab({ buyers, users, onOpenUser }: any) {
     </div>
   );
 }
-
-function ArchiveTab({ archive, onChanged }: any) {
-  const [q, setQ] = useState("");
-  const filtered = archive.filter((b: any) => {
-    const s = q.toLowerCase();
-    return !s || b.name?.toLowerCase().includes(s) || b.email?.toLowerCase().includes(s) ||
-      (b.markets || []).some((m: string) => m.toLowerCase().includes(s));
-  });
-  async function del(id: string) {
-    if (!confirm("Delete this archive entry?")) return;
-    const { error } = await supabase.from("buyer_archive").delete().eq("id", id);
-    if (error) return alert(error.message);
-    onChanged();
-  }
-  return (
-    <div className="space-y-4">
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input className="pl-9" placeholder="Search name, email, market…" value={q} onChange={(e) => setQ(e.target.value)} />
-      </div>
-      <div className="rounded-lg border border-border overflow-x-auto">
-        <table className="data-table w-full min-w-[720px]">
-          <thead><tr><th>Name</th><th>Email</th><th>Markets</th><th>Source</th><th>Added</th><th></th></tr></thead>
-          <tbody>
-            {filtered.map((b: any) => (
-              <tr key={b.id}>
-                <td className="font-medium">{b.name}</td>
-                <td className="text-muted-foreground">{b.email || "—"}</td>
-                <td className="text-xs text-muted-foreground truncate max-w-[200px]">{(b.markets || []).join(", ") || "—"}</td>
-                <td className="text-xs">{b.source || "—"}</td>
-                <td className="text-xs text-muted-foreground">{new Date(b.created_at).toLocaleDateString()}</td>
-                <td className="text-right">
-                  <Button size="sm" variant="outline" onClick={() => del(b.id)}>Delete</Button>
-                </td>
-              </tr>
-            ))}
-            {filtered.length === 0 && <tr><td colSpan={6} className="text-center py-6 text-muted-foreground">No archive entries match.</td></tr>}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
 // ============== Buyer Database ==============
 
 function BuyerDatabaseTab() {

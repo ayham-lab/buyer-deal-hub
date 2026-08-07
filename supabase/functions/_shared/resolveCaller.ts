@@ -10,6 +10,29 @@ export type ResolvedCaller =
   | { ok: true; userId: string; viaIframe: boolean; ssoLocationId: string | null; email: string | null }
   | { ok: false; status: number; error: string };
 
+/**
+ * Find an auth.users id by email, paginating properly.
+ *
+ * The previous single `listUsers({ page: 1, perPage: 200 })` silently stopped at
+ * 200 accounts: past that an existing user would not be found, createUser would
+ * then fail on the duplicate email, and the request would 500.
+ */
+async function findAuthUserIdByEmail(
+  admin: SupabaseClient,
+  email: string,
+  maxPages = 20,
+): Promise<string | null> {
+  for (let page = 1; page <= maxPages; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+    if (error) throw error;
+    const users = data?.users ?? [];
+    const hit = users.find((u: any) => u.email?.toLowerCase() === email);
+    if (hit) return hit.id;
+    if (users.length < 200) return null; // last page
+  }
+  return null;
+}
+
 export async function resolveCaller(req: Request, admin: SupabaseClient): Promise<ResolvedCaller> {
   const authHeader = req.headers.get("Authorization") ?? "";
   const ssoHeader = req.headers.get("x-ghl-sso") ?? "";
@@ -29,45 +52,42 @@ export async function resolveCaller(req: Request, admin: SupabaseClient): Promis
     }
     const email = String(payload?.email ?? "").trim().toLowerCase();
     if (!email) return { ok: false, status: 401, error: "sso_missing_email" };
-    let { data: prof } = await admin
-      .from("profiles")
-      .select("user_id")
-      .eq("email", email)
-      .maybeSingle();
-    if (!prof?.user_id) {
-      // Auto-provision: find or create auth user, then upsert profile.
-      // Mirrors iframe-signin so any iframe-handling function works even if
-      // the user hasn't yet hit iframe-signin in this session.
-      const userName: string | null = payload?.userName ?? payload?.name ?? null;
-      let newUserId: string | null = null;
-      try {
-        const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-        const existing = list?.users?.find((u: any) => u.email?.toLowerCase() === email);
-        if (existing) {
-          newUserId = existing.id;
-        } else {
-          const { data: created, error: createErr } = await admin.auth.admin.createUser({
-            email,
-            email_confirm: true,
-            user_metadata: { name: userName ?? email, source: "ghl_iframe_sso_autoprov" },
-          });
-          if (createErr || !created?.user) {
-            return { ok: false, status: 500, error: `autoprov_create_user_failed: ${createErr?.message ?? "unknown"}` };
-          }
-          newUserId = created.user.id;
+
+    // Identity comes from auth.users, NOT from public.profiles.
+    //
+    // profiles.email is only a mirror: it has no uniqueness constraint and, until
+    // the accompanying migration, any user could rewrite their own row's email.
+    // Looking a caller up by profiles.email therefore let one user's SSO session
+    // resolve to another user's id. auth.users.email is the authoritative
+    // identity and GoTrue enforces its uniqueness, which is why iframe-signin
+    // (which already resolves this way) was never affected.
+    const userName: string | null = payload?.userName ?? payload?.name ?? null;
+    let userId: string | null = null;
+    try {
+      userId = await findAuthUserIdByEmail(admin, email);
+      if (!userId) {
+        const { data: created, error: createErr } = await admin.auth.admin.createUser({
+          email,
+          email_confirm: true,
+          user_metadata: { name: userName ?? email, source: "ghl_iframe_sso_autoprov" },
+        });
+        if (createErr || !created?.user) {
+          return { ok: false, status: 500, error: `autoprov_create_user_failed: ${createErr?.message ?? "unknown"}` };
         }
-        await admin.from("profiles").upsert(
-          { user_id: newUserId, email, name: userName ?? email },
-          { onConflict: "user_id" },
-        );
-        prof = { user_id: newUserId } as any;
-      } catch (e: any) {
-        return { ok: false, status: 500, error: `autoprov_failed: ${String(e?.message ?? e)}` };
+        userId = created.user.id;
       }
+      // Keep the profile mirror present and in sync. Keyed on user_id, never email.
+      await admin.from("profiles").upsert(
+        { user_id: userId, email, name: userName ?? email },
+        { onConflict: "user_id" },
+      );
+    } catch (e: any) {
+      return { ok: false, status: 500, error: `autoprov_failed: ${String(e?.message ?? e)}` };
     }
+
     return {
       ok: true,
-      userId: prof!.user_id,
+      userId: userId!,
       viaIframe: true,
       ssoLocationId: payload?.activeLocation || payload?.locationId || null,
       email,

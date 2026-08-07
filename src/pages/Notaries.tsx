@@ -11,7 +11,7 @@ import { NotaryModal, NotaryRow } from "@/components/contacts/NotaryModal";
 import { ArchiveContactsBrowser } from "@/components/contacts/ArchiveContactsBrowser";
 
 export default function Notaries() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [items, setItems] = useState<NotaryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -47,9 +47,13 @@ export default function Notaries() {
         subtitle="Mobile and on-site notaries by service area"
         actions={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setShowArchive(true)}>
-              <Library className="h-4 w-4 mr-1" /> Browse Archive
-            </Button>
+            {/* The shared notary catalog is admin-only; without this the dialog
+                would just open empty for everyone else. */}
+            {isAdmin && (
+              <Button variant="outline" onClick={() => setShowArchive(true)}>
+                <Library className="h-4 w-4 mr-1" /> Browse Archive
+              </Button>
+            )}
             <Button onClick={() => setShowAdd(true)} className="bg-primary hover:bg-primary-hover">
               <Plus className="h-4 w-4 mr-1" /> Add Notary
             </Button>
