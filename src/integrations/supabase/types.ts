@@ -296,6 +296,54 @@ export type Database = {
         }
         Relationships: []
       }
+      buyer_archive: {
+        Row: {
+          added_by_user_id: string | null
+          created_at: string
+          email: string | null
+          ghl_location_id: string | null
+          id: string
+          is_shared: boolean
+          markets: string[] | null
+          name: string
+          phone: string | null
+          price_max: number | null
+          price_min: number | null
+          property_types: string[] | null
+          source: string | null
+        }
+        Insert: {
+          added_by_user_id?: string | null
+          created_at?: string
+          email?: string | null
+          ghl_location_id?: string | null
+          id?: string
+          is_shared?: boolean
+          markets?: string[] | null
+          name: string
+          phone?: string | null
+          price_max?: number | null
+          price_min?: number | null
+          property_types?: string[] | null
+          source?: string | null
+        }
+        Update: {
+          added_by_user_id?: string | null
+          created_at?: string
+          email?: string | null
+          ghl_location_id?: string | null
+          id?: string
+          is_shared?: boolean
+          markets?: string[] | null
+          name?: string
+          phone?: string | null
+          price_max?: number | null
+          price_min?: number | null
+          property_types?: string[] | null
+          source?: string | null
+        }
+        Relationships: []
+      }
       buyer_intake_tokens: {
         Row: {
           created_at: string
