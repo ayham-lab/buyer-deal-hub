@@ -33,7 +33,15 @@ export type Database = {
           id?: string
           revealed_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "archive_buyer_reveals_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "archive_buyers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       archive_buyers: {
         Row: {
@@ -293,54 +301,6 @@ export type Database = {
           service_states?: string[]
           sources?: Json
           updated_at?: string
-        }
-        Relationships: []
-      }
-      buyer_archive: {
-        Row: {
-          added_by_user_id: string | null
-          created_at: string
-          email: string | null
-          ghl_location_id: string | null
-          id: string
-          is_shared: boolean
-          markets: string[] | null
-          name: string
-          phone: string | null
-          price_max: number | null
-          price_min: number | null
-          property_types: string[] | null
-          source: string | null
-        }
-        Insert: {
-          added_by_user_id?: string | null
-          created_at?: string
-          email?: string | null
-          ghl_location_id?: string | null
-          id?: string
-          is_shared?: boolean
-          markets?: string[] | null
-          name: string
-          phone?: string | null
-          price_max?: number | null
-          price_min?: number | null
-          property_types?: string[] | null
-          source?: string | null
-        }
-        Update: {
-          added_by_user_id?: string | null
-          created_at?: string
-          email?: string | null
-          ghl_location_id?: string | null
-          id?: string
-          is_shared?: boolean
-          markets?: string[] | null
-          name?: string
-          phone?: string | null
-          price_max?: number | null
-          price_min?: number | null
-          property_types?: string[] | null
-          source?: string | null
         }
         Relationships: []
       }
@@ -615,7 +575,15 @@ export type Database = {
           to_value?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "deal_activity_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       deal_assignees: {
         Row: {
@@ -645,7 +613,22 @@ export type Database = {
           role?: string
           team_member_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "deal_assignees_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_assignees_team_member_id_fkey"
+            columns: ["team_member_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       deal_checklist: {
         Row: {
