@@ -1141,6 +1141,95 @@ export type Database = {
           },
         ]
       }
+      global_buyer_registry: {
+        Row: {
+          all_sources_deleted_at: string | null
+          company_name: string | null
+          email: string | null
+          email_norm: string | null
+          first_name: string | null
+          first_seen_at: string
+          id: string
+          last_name: string | null
+          last_synced_at: string
+          name: string | null
+          phone: string | null
+          phone_norm: string | null
+        }
+        Insert: {
+          all_sources_deleted_at?: string | null
+          company_name?: string | null
+          email?: string | null
+          email_norm?: string | null
+          first_name?: string | null
+          first_seen_at?: string
+          id?: string
+          last_name?: string | null
+          last_synced_at?: string
+          name?: string | null
+          phone?: string | null
+          phone_norm?: string | null
+        }
+        Update: {
+          all_sources_deleted_at?: string | null
+          company_name?: string | null
+          email?: string | null
+          email_norm?: string | null
+          first_name?: string | null
+          first_seen_at?: string
+          id?: string
+          last_name?: string | null
+          last_synced_at?: string
+          name?: string | null
+          phone?: string | null
+          phone_norm?: string | null
+        }
+        Relationships: []
+      }
+      global_buyer_registry_sources: {
+        Row: {
+          buyer_data: Json
+          first_seen_at: string
+          ghl_location_id: string | null
+          id: string
+          last_synced_at: string
+          registry_id: string
+          source_buyer_id: string
+          source_deleted_at: string | null
+          source_user_id: string | null
+        }
+        Insert: {
+          buyer_data?: Json
+          first_seen_at?: string
+          ghl_location_id?: string | null
+          id?: string
+          last_synced_at?: string
+          registry_id: string
+          source_buyer_id: string
+          source_deleted_at?: string | null
+          source_user_id?: string | null
+        }
+        Update: {
+          buyer_data?: Json
+          first_seen_at?: string
+          ghl_location_id?: string | null
+          id?: string
+          last_synced_at?: string
+          registry_id?: string
+          source_buyer_id?: string
+          source_deleted_at?: string | null
+          source_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "global_buyer_registry_sources_registry_id_fkey"
+            columns: ["registry_id"]
+            isOneToOne: false
+            referencedRelation: "global_buyer_registry"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jv_partners: {
         Row: {
           company: string | null
@@ -2388,6 +2477,8 @@ export type Database = {
         Args: { p_id: string }
         Returns: undefined
       }
+      normalize_email: { Args: { p: string }; Returns: string }
+      normalize_phone: { Args: { p: string }; Returns: string }
       operator_id_for_location: {
         Args: { p_location: string }
         Returns: string
@@ -2419,6 +2510,13 @@ export type Database = {
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       soft_delete_deal: { Args: { p_deal_id: string }; Returns: boolean }
+      upsert_global_buyer: {
+        Args: {
+          b: Database["public"]["Tables"]["buyers"]["Row"]
+          p_seen_at?: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user" | "super_admin"
