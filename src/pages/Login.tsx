@@ -126,19 +126,27 @@ export default function Login() {
           if (pending?.locationId) {
             (async () => {
               try {
-                await supabase
-                  .from("ghl_location_links")
-                  .upsert(
-                    {
-                      user_id: user.id,
-                      workspace_owner_user_id: user.id,
-                      linked_by_user_id: user.id,
-                      ghl_location_id: pending.locationId,
-                      ghl_company_id: pending.companyId ?? null,
-                      ghl_location_name: null,
-                    },
-                    { onConflict: "user_id,ghl_location_id", ignoreDuplicates: true },
+                // Ownership must be decided server-side: standalone RLS hides
+                // other users' link rows, so a client-side "existing owner"
+                // check always comes back empty. link-ghl-location refuses to
+                // touch a location whose ownership is already established.
+                const { data, error } = await supabase.functions.invoke("link-ghl-location", {
+                  body: {
+                    ghl_location_id: pending.locationId,
+                    ghl_location_name: null,
+                    ghl_company_id: pending.companyId ?? null,
+                  },
+                });
+                if ((data as any)?.reason === "location_already_linked") {
+                  toast.info("This GHL location is already connected to another workspace", {
+                    description: "Ask the workspace owner to invite you, or open the app inside GoHighLevel.",
+                  });
+                } else if (error || (data as any)?.error) {
+                  console.error(
+                    "pending marketplace install link failed",
+                    (data as any)?.error ?? error?.message,
                   );
+                }
               } catch (e) {
                 console.error("pending marketplace install link failed", e);
               } finally {
