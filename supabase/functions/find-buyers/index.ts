@@ -1,4 +1,12 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { METRO_MAP, normalizeState } from "../_shared/matching/geo.ts";
+import { parsePrice } from "../_shared/matching/price.ts";
+import {
+  archiveBuyerToFacts,
+  rolodexBuyerToFacts,
+  scoreBuyer,
+} from "../_shared/matching/score.ts";
+import type { CanonicalPropertyType, PropertyQuery } from "../_shared/matching/types.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,102 +16,14 @@ const corsHeaders = {
 
 const REVEAL_COST = 100;
 
-// US state abbrev <-> full name
-const STATE_FULL: Record<string, string> = {
-  AL:"Alabama",AK:"Alaska",AZ:"Arizona",AR:"Arkansas",CA:"California",CO:"Colorado",CT:"Connecticut",DE:"Delaware",DC:"District of Columbia",FL:"Florida",GA:"Georgia",HI:"Hawaii",ID:"Idaho",IL:"Illinois",IN:"Indiana",IA:"Iowa",KS:"Kansas",KY:"Kentucky",LA:"Louisiana",ME:"Maine",MD:"Maryland",MA:"Massachusetts",MI:"Michigan",MN:"Minnesota",MS:"Mississippi",MO:"Missouri",MT:"Montana",NE:"Nebraska",NV:"Nevada",NH:"New Hampshire",NJ:"New Jersey",NM:"New Mexico",NY:"New York",NC:"North Carolina",ND:"North Dakota",OH:"Ohio",OK:"Oklahoma",OR:"Oregon",PA:"Pennsylvania",RI:"Rhode Island",SC:"South Carolina",SD:"South Dakota",TN:"Tennessee",TX:"Texas",UT:"Utah",VT:"Vermont",VA:"Virginia",WA:"Washington",WV:"West Virginia",WI:"Wisconsin",WY:"Wyoming"
-};
-const STATE_ABBR: Record<string, string> = Object.fromEntries(
-  Object.entries(STATE_FULL).map(([k, v]) => [v.toLowerCase(), k])
-);
+const CANONICAL_TYPES = ["SFH", "MFH 2-4", "MFH 5+", "Commercial", "Land", "Mobile"];
 
-// Best-effort metro/proximity map keyed by "city, ST" → nearby cities (lowercase)
-const METRO_MAP: Record<string, string[]> = {
-  "montgomery, al": ["prattville","wetumpka","millbrook","tallassee","tuskegee","pike road"],
-  "birmingham, al": ["hoover","bessemer","homewood","vestavia","mountain brook","trussville","alabaster","pelham"],
-  "huntsville, al": ["madison","decatur","athens","huntsville"],
-  "mobile, al": ["daphne","fairhope","spanish fort","saraland","prichard"],
-  "philadelphia, pa": ["camden","trenton","wilmington","norristown","king of prussia","cherry hill","upper darby","chester","levittown"],
-  "pittsburgh, pa": ["mckeesport","monroeville","bethel park","greensburg","cranberry"],
-  "phoenix, az": ["scottsdale","mesa","tempe","chandler","glendale","gilbert","peoria","surprise"],
-  "atlanta, ga": ["marietta","alpharetta","sandy springs","roswell","decatur","smyrna","kennesaw","duluth","lawrenceville"],
-  "dallas, tx": ["plano","irving","arlington","fort worth","frisco","mckinney","garland","richardson","mesquite"],
-  "houston, tx": ["pasadena","sugar land","katy","pearland","spring","baytown","conroe","the woodlands"],
-  "austin, tx": ["round rock","cedar park","pflugerville","georgetown","leander","kyle","buda"],
-  "san antonio, tx": ["new braunfels","schertz","seguin","converse"],
-  "miami, fl": ["hialeah","coral gables","miami beach","doral","kendall","homestead","aventura"],
-  "orlando, fl": ["kissimmee","winter park","sanford","altamonte springs","apopka","ocoee"],
-  "tampa, fl": ["st petersburg","st. petersburg","clearwater","brandon","largo","plant city"],
-  "jacksonville, fl": ["orange park","st augustine","fernandina beach"],
-  "chicago, il": ["naperville","aurora","joliet","evanston","oak park","schaumburg","cicero","skokie"],
-  "los angeles, ca": ["long beach","glendale","santa monica","pasadena","burbank","torrance","inglewood","compton"],
-  "san francisco, ca": ["oakland","berkeley","san jose","daly city","san mateo","fremont","hayward"],
-  "san diego, ca": ["chula vista","oceanside","escondido","carlsbad","el cajon"],
-  "new york, ny": ["brooklyn","queens","bronx","staten island","jersey city","newark","yonkers","hoboken"],
-  "boston, ma": ["cambridge","quincy","newton","somerville","brookline","waltham","medford"],
-  "denver, co": ["aurora","lakewood","centennial","arvada","westminster","thornton"],
-  "seattle, wa": ["bellevue","tacoma","everett","redmond","kirkland","renton","kent"],
-  "detroit, mi": ["dearborn","warren","sterling heights","livonia","southfield","royal oak"],
-  "charlotte, nc": ["concord","gastonia","huntersville","matthews","monroe"],
-  "raleigh, nc": ["cary","durham","chapel hill","apex","wake forest"],
-  "nashville, tn": ["franklin","brentwood","murfreesboro","hendersonville","mount juliet"],
-  "memphis, tn": ["germantown","collierville","bartlett","southaven"],
-  "las vegas, nv": ["henderson","north las vegas","paradise","summerlin"],
-  "columbus, oh": ["dublin","westerville","gahanna","hilliard","grove city"],
-  "cleveland, oh": ["lakewood","parma","euclid","cleveland heights"],
-  "cincinnati, oh": ["covington","norwood","blue ash"],
-  "indianapolis, in": ["carmel","fishers","noblesville","greenwood","lawrence"],
-  "kansas city, mo": ["overland park","independence","lee's summit","olathe","blue springs"],
-  "st louis, mo": ["st. louis","clayton","ferguson","florissant","chesterfield"],
-  "minneapolis, mn": ["st paul","st. paul","bloomington","plymouth","eagan","maple grove"],
-  "milwaukee, wi": ["waukesha","racine","kenosha","west allis"],
-  "baltimore, md": ["columbia","towson","dundalk","bel air","glen burnie"],
-  "washington, dc": ["arlington","alexandria","silver spring","bethesda","rockville","gaithersburg"],
-  "richmond, va": ["henrico","chesterfield","midlothian","mechanicsville"],
-  "norfolk, va": ["virginia beach","chesapeake","portsmouth","hampton","newport news","suffolk"],
-  "salt lake city, ut": ["west valley city","west jordan","sandy","orem","provo","ogden"],
-  "portland, or": ["beaverton","gresham","hillsboro","tigard","lake oswego","vancouver"],
-  "oklahoma city, ok": ["norman","edmond","moore","midwest city"],
-  "tulsa, ok": ["broken arrow","owasso","bixby","sand springs"],
-  "albuquerque, nm": ["rio rancho","santa fe","los lunas"],
-  "louisville, ky": ["jeffersontown","st matthews","new albany"],
-  "new orleans, la": ["metairie","kenner","gretna","slidell"],
-  "honolulu, hi": ["pearl city","kailua","waipahu","kaneohe"],
-};
+// Sanitize a value for use inside a PostgREST .or() filter: strip quotes/backslashes
+// (lossy but safe) and wrap in double quotes so commas/braces can't break the parser.
+const pgQuote = (v: string) => `"${v.replace(/[\\"]/g, "").trim()}"`;
 
-const NATIONAL_KEYWORDS = ["all","any","anywhere","national","nationwide","everywhere","usa","u.s.","united states","open","flexible"];
-const STATEWIDE_PHRASES = ["any in the state","anywhere in the state","entire state","whole state","statewide","state wide","all over"];
-
-function nonEmptyStr(v: unknown): boolean { return typeof v === "string" && v.trim().length > 0; }
-function nonEmptyArr(v: unknown): boolean { return Array.isArray(v) && v.length > 0; }
-
-// Mirrors src/lib/buyerCompleteness.ts (rolodex buyers)
-function rolodexCompleteness(b: any): { score: number; isComplete: boolean } {
-  let score = 0;
-  if (nonEmptyStr(b.name) || nonEmptyStr(b.first_name) || nonEmptyStr(b.last_name)) score += 10;
-  if (nonEmptyStr(b.email)) score += 10;
-  if (nonEmptyStr(b.phone)) score += 10;
-  if (nonEmptyArr(b.markets)) score += 15;
-  if (nonEmptyArr(b.property_types)) score += 10;
-  if (b.price_min != null && b.price_max != null) score += 10;
-  if (nonEmptyArr(b.proof_of_funds_files)) score += 15;
-  if (nonEmptyStr(b.previous_deals)) score += 10;
-  if (nonEmptyStr(b.experience)) score += 10;
-  const vetted = b.buyer_status === "vetted" || b.buyer_status === "vetted_and_closed";
-  return { score, isComplete: score >= 90 || (vetted && score >= 80) };
-}
-
-function archiveCompleteness(b: any): { score: number; isComplete: boolean } {
-  let score = 0;
-  if (nonEmptyStr(b.full_name) || nonEmptyStr(b.first_name) || nonEmptyStr(b.last_name)) score += 15;
-  if (nonEmptyStr(b.email)) score += 15;
-  if (nonEmptyStr(b.phone)) score += 10;
-  if (nonEmptyArr(b.preferred_markets)) score += 25;
-  if (nonEmptyArr(b.property_types)) score += 15;
-  if (b.price_min != null && b.price_max != null) score += 10;
-  if (nonEmptyStr(b.city) || nonEmptyStr(b.state)) score += 10;
-  return { score, isComplete: score >= 85 };
-}
-
+const ARCHIVE_COLS =
+  "id, full_name, first_name, last_name, email, phone, preferred_markets, preferred_zips, property_types, price_min, price_max, sources, city, state, national, status, buyer_activity, completed_transaction, system_deals_purchased, last_active_at";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -121,7 +41,6 @@ Deno.serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) return json({ error: "LOVABLE_API_KEY not configured" }, 500);
 
     const authHeader = req.headers.get("Authorization") ?? "";
     const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
@@ -169,69 +88,77 @@ Deno.serve(async (req) => {
       for (const r of reveals || []) revealedIds.add(r.buyer_id);
     }
 
-    // ── Build 4-tier candidate pool from archive_buyers ──
+    // ── Build the property query once ──
     const cityLc = (ctx.city || "").toLowerCase().trim();
-    let stateRaw = (ctx.state || "").trim();
-    let stateAbbr = "";
-    let stateFull = "";
-    if (stateRaw.length === 2 && STATE_FULL[stateRaw.toUpperCase()]) {
-      stateAbbr = stateRaw.toUpperCase();
-      stateFull = STATE_FULL[stateAbbr];
-    } else if (STATE_ABBR[stateRaw.toLowerCase()]) {
-      stateFull = stateRaw;
-      stateAbbr = STATE_ABBR[stateRaw.toLowerCase()];
-    }
+    const { abbr: stateAbbr, full: stateFull } = normalizeState(ctx.state);
     const stateAbbrLc = stateAbbr.toLowerCase();
     const stateFullLc = stateFull.toLowerCase();
+    const zipClean = String(ctx.zip || "").trim().match(/^\d{5}/)?.[0] ?? "";
 
-    const metroKey = cityLc && stateAbbr ? `${cityLc}, ${stateAbbr.toLowerCase()}` : "";
+    const metroKey = cityLc && stateAbbr ? `${cityLc}, ${stateAbbrLc}` : "";
     const metroCities = METRO_MAP[metroKey] || [];
 
-    // Fetch state-scoped candidates (covers tier 1/2/3 for buyers with state column)
-    // plus national/empty buyers (tier 4). Use parallel queries and merge by id.
-    const queries: Promise<any>[] = [];
+    const pq: PropertyQuery = {
+      city: (ctx.city || "").trim(),
+      stateAbbr,
+      stateFull,
+      zip: zipClean,
+      propertyType: CANONICAL_TYPES.includes(propertyType)
+        ? propertyType as CanonicalPropertyType
+        : "",
+      price: parsePrice(priceHint),
+      metroCities,
+    };
+
+    // ── Build candidate pool from archive_buyers ──
+    // Each query is ordered so the row cap keeps proven/recent buyers first.
+    const archiveQuery = () =>
+      admin.from("archive_buyers")
+        .select(ARCHIVE_COLS)
+        .eq("is_active", true)
+        .order("completed_transaction", { ascending: false })
+        .order("last_active_at", { ascending: false, nullsFirst: false });
+
+    const queries: PromiseLike<any>[] = [];
     if (stateFull || stateAbbr) {
       const stateOr = [
-        stateFull && `state.ilike.${stateFull}`,
-        stateAbbr && `state.ilike.${stateAbbr}`,
+        stateFull && `state.ilike.${pgQuote(stateFull)}`,
+        stateAbbr && `state.ilike.${pgQuote(stateAbbr)}`,
       ].filter(Boolean).join(",");
-      queries.push(
-        admin.from("archive_buyers")
-          .select("id, full_name, first_name, last_name, email, phone, preferred_markets, property_types, price_min, price_max, sources, city, state, national")
-          .eq("is_active", true).or(stateOr).limit(2000)
-      );
+      queries.push(archiveQuery().or(stateOr).limit(3000));
     }
     // National flagged buyers
-    queries.push(
-      admin.from("archive_buyers")
-        .select("id, full_name, first_name, last_name, email, phone, preferred_markets, property_types, price_min, price_max, sources, city, state, national")
-        .eq("is_active", true).eq("national", true).limit(1000)
-    );
+    queries.push(archiveQuery().eq("national", true).limit(1000));
     // Undeclared buyers — no state column AND empty preferred_markets. Surface as tier 4
     // so legacy rolodex auto-promoted records (no location data) still appear.
     queries.push(
-      admin.from("archive_buyers")
-        .select("id, full_name, first_name, last_name, email, phone, preferred_markets, property_types, price_min, price_max, sources, city, state, national")
-        .eq("is_active", true).is("state", null).or("preferred_markets.eq.{},preferred_markets.is.null").limit(500)
+      archiveQuery().is("state", null)
+        .or("preferred_markets.eq.{},preferred_markets.is.null").limit(500)
     );
-    // Buyers whose preferred_markets text contains the state name/abbrev or city — catches rows
+    // Buyers whose preferred_markets contains the state name/abbrev or city — catches rows
     // that don't have the state column populated.
     if (cityLc || stateFullLc || stateAbbrLc) {
       const tokens = [cityLc, stateFullLc, stateAbbrLc, ...metroCities].filter(Boolean);
-      const orParts = tokens.map((t) => `preferred_markets.cs.{${t}}`).join(",");
-      if (orParts) {
-        queries.push(
-          admin.from("archive_buyers")
-            .select("id, full_name, first_name, last_name, email, phone, preferred_markets, property_types, price_min, price_max, sources, city, state, national")
-            .eq("is_active", true).or(orParts).limit(1500)
-        );
-      }
+      const orParts = tokens
+        .map(pgQuote)
+        .filter((t) => t !== '""')
+        .map((t) => `preferred_markets.cs.{${t}}`)
+        .join(",");
+      if (orParts) queries.push(archiveQuery().or(orParts).limit(2000));
+    }
+    // Zip-targeted buyers: 'zip:12345' market tokens or preferred_zips jsonb entries
+    if (zipClean) {
+      queries.push(
+        archiveQuery()
+          .or(`preferred_markets.cs.{${pgQuote(`zip:${zipClean}`)}},preferred_zips.cs.${JSON.stringify([zipClean])}`)
+          .limit(500)
+      );
     }
 
     const [rolodexResp, ...archiveResps] = await Promise.all([
       userId
         ? admin.from("buyers")
-            .select("id, name, first_name, last_name, email, phone, markets, property_types, price_min, price_max, source, company_name, buyer_status, proof_of_funds_files, previous_deals, experience")
+            .select("id, name, first_name, last_name, email, phone, markets, property_types, other_property_type, price_min, price_max, source, company_name, buyer_status, buyer_types, buyer_activity, deals_purchased, criteria_notes, proof_of_funds_files, previous_deals, experience")
             .eq("user_id", userId).eq("is_archived", false).limit(300)
         : Promise.resolve({ data: [] as any[] }),
       ...queries,
@@ -244,59 +171,12 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Score candidates
+    // ── Score archive candidates (deterministic multi-factor) ──
     const scored: any[] = [];
     for (const r of seen.values()) {
-      const markets: string[] = (r.preferred_markets || []).map((m: string) => String(m).toLowerCase());
-      const marketsBlob = markets.join(" | ");
-      const rowStateLc = (r.state || "").toLowerCase().trim();
-      const rowCityLc = (r.city || "").toLowerCase().trim();
-
-      let score = 0;
-      let tier = 0;
-      const reasons: string[] = [];
-
-      const stateMatches =
-        (stateFullLc && (rowStateLc === stateFullLc || marketsBlob.includes(stateFullLc))) ||
-        (stateAbbrLc && (rowStateLc === stateAbbrLc || markets.some((m) => m === stateAbbrLc || m.endsWith(`, ${stateAbbrLc}`) || m.includes(`state:${stateAbbrLc}`))));
-
-      const cityDirect =
-        cityLc && (rowCityLc === cityLc ||
-          markets.some((m) => m === cityLc || m.startsWith(`${cityLc},`) || m.includes(`city:${cityLc}`)));
-
-      const metroMatch = metroCities.some((mc) => markets.some((m) => m.includes(mc)));
-
-      const isStatewide = STATEWIDE_PHRASES.some((p) => marketsBlob.includes(p));
-      const isNational = r.national === true ||
-        NATIONAL_KEYWORDS.some((kw) => markets.some((m) => m === kw || m === kw.toUpperCase().toLowerCase())) ||
-        markets.includes("all") || markets.includes("any") || markets.includes("anywhere");
-      const noMarkets = markets.length === 0;
-
-      if (cityDirect && (stateMatches || !stateFullLc)) {
-        tier = 1; score = 95;
-        reasons.push(`direct city match: ${ctx.city}`);
-      } else if (metroMatch && stateMatches) {
-        tier = 2; score = 75;
-        reasons.push(`metro area match near ${ctx.city}`);
-      } else if (stateMatches && (isStatewide || markets.length === 0 || markets.some((m) => m === stateFullLc || m === stateAbbrLc))) {
-        tier = 3; score = 50;
-        reasons.push(`statewide buyer in ${stateFull || stateAbbr}`);
-      } else if (stateMatches) {
-        tier = 3; score = 40;
-        reasons.push(`buyer in ${stateFull || stateAbbr}`);
-      } else if (isNational) {
-        tier = 4; score = 25;
-        reasons.push("national/all-markets buyer");
-      } else if (noMarkets) {
-        tier = 4; score = 15;
-        reasons.push("undeclared market preferences");
-      } else {
-        continue;
-      }
-
-      const comp = archiveCompleteness(r);
-      // Completeness boost: up to +12 to nudge fuller profiles up within the same tier
-      const boost = Math.round((comp.score / 100) * 12);
+      const facts = archiveBuyerToFacts(r);
+      const res = scoreBuyer(pq, facts);
+      if (res.dropped) continue;
 
       scored.push({
         id: r.id,
@@ -310,11 +190,11 @@ Deno.serve(async (req) => {
         city: r.city,
         state: r.state,
         source: Array.isArray(r.sources) && r.sources.length ? `${r.sources.length} tenant(s)` : null,
-        score: score + boost,
-        tier,
-        reason: comp.isComplete ? `${reasons.join(", ")} · complete profile` : reasons.join(", "),
-        profile_completeness: comp.score,
-        profile_complete: comp.isComplete,
+        score: res.score,
+        tier: res.tier,
+        reason: res.reason,
+        profile_completeness: facts.completeness,
+        profile_complete: facts.profileComplete,
       });
     }
 
@@ -325,41 +205,53 @@ Deno.serve(async (req) => {
     );
     const archiveMatches = scored.slice(0, 60);
 
-    // Rolodex (private buyers) — keep AI ranking, small pool
-    const rolodex = (rolodexResp.data || []).map((b: any) => {
-      const comp = rolodexCompleteness(b);
-      return {
-        id: b.id, name: b.name, email: b.email, phone: b.phone,
-        markets: b.markets || [], property_types: b.property_types || [],
-        price_min: b.price_min, price_max: b.price_max, source: b.source,
-        buyer_status: b.buyer_status,
-        profile_completeness: comp.score,
-        profile_complete: comp.isComplete,
-      };
-    });
-    const rolodexRanked = await rankWithAI(rolodex, address, ctx, propertyType, priceHint, LOVABLE_API_KEY);
-    // Apply completeness boost + re-sort so complete profiles get priority within rolodex
-    const rolodexMatches = rolodexRanked
-      .map((m: any) => {
-        const c = rolodex.find((r) => r.id === m.id);
-        const cs = c?.profile_completeness ?? 0;
-        const boost = Math.round((cs / 100) * 15);
+    // ── Rolodex (private buyers): deterministic scoring + optional AI nudge ──
+    const rolodexScored = (rolodexResp.data || [])
+      .map((b: any) => {
+        const facts = rolodexBuyerToFacts(b);
+        const res = scoreBuyer(pq, facts);
+        return { b, facts, res };
+      })
+      .filter((x: any) => !x.res.dropped)
+      .sort((a: any, b: any) =>
+        b.res.score - a.res.score ||
+        b.facts.completeness - a.facts.completeness
+      );
+
+    const aiPool = rolodexScored.slice(0, 12).map(({ b, res }: any) => ({
+      id: b.id, name: b.name, markets: b.markets || [],
+      property_types: b.property_types || [],
+      price_min: b.price_min, price_max: b.price_max, source: b.source,
+      det_score: res.score, det_reason: res.reason,
+    }));
+    const aiById = LOVABLE_API_KEY
+      ? await rankWithAI(aiPool, address, ctx, propertyType, priceHint, LOVABLE_API_KEY)
+      : new Map<string, { score: number; reason: string }>();
+
+    const rolodexMatches = rolodexScored.slice(0, 12)
+      .map(({ b, facts, res }: any) => {
+        const ai = aiById.get(b.id);
+        // AI may nudge the deterministic score by at most ±8, half-weighted
+        const score = ai
+          ? Math.max(0, Math.min(100, Math.round(res.score + Math.max(-8, Math.min(8, ai.score - res.score)) * 0.5)))
+          : res.score;
         return {
-          ...m,
-          score: (m.score ?? 50) + boost,
-          profile_completeness: cs,
-          profile_complete: c?.profile_complete ?? false,
-          reason: c?.profile_complete ? `${m.reason} · complete profile` : m.reason,
+          id: b.id, name: b.name, email: b.email, phone: b.phone,
+          markets: b.markets || [], property_types: b.property_types || [],
+          price_min: b.price_min, price_max: b.price_max, source: b.source,
+          buyer_status: b.buyer_status,
+          score,
+          tier: res.tier,
+          reason: ai?.reason?.trim() ? ai.reason : res.reason,
+          profile_completeness: facts.completeness,
+          profile_complete: facts.profileComplete,
         };
       })
       .sort((a: any, b: any) =>
         (b.score ?? 0) - (a.score ?? 0) ||
         (b.profile_completeness ?? 0) - (a.profile_completeness ?? 0)
-      );
-
-
-    // Optional: AI re-rank top archive candidates within tier 1 only (keep tiers stable)
-    // Skipped for now — deterministic order is fine and avoids dropping rows on AI flakiness.
+      )
+      .slice(0, 5);
 
     const autoReveal = archiveState === "admin" || archiveState === "subscription";
     const archivePayload = archiveMatches.map((m: any) => {
@@ -387,6 +279,9 @@ Deno.serve(async (req) => {
   }
 });
 
+// Optional AI re-rank of the top deterministic rolodex candidates.
+// Returns a map of buyer_id → {score, reason}; empty map on any failure so the
+// deterministic ranking always stands on its own.
 async function rankWithAI(
   candidates: any[],
   address: string,
@@ -394,17 +289,12 @@ async function rankWithAI(
   propertyType: string | undefined,
   priceHint: string | undefined,
   apiKey: string,
-): Promise<any[]> {
-  if (!candidates || candidates.length === 0) return [];
+): Promise<Map<string, { score: number; reason: string }>> {
+  const out = new Map<string, { score: number; reason: string }>();
+  if (!candidates || candidates.length === 0) return out;
 
-  const compact = candidates.map((b) => ({
-    id: b.id, name: b.name, markets: b.markets || [],
-    property_types: b.property_types || [],
-    price_min: b.price_min, price_max: b.price_max, source: b.source,
-  }));
-
-  const sys = `You are a real-estate acquisitions assistant. Given a property and a list of cash buyers, return the top 5 best matches. Be concise.`;
-  const userPrompt = `Property: ${address}\nCity: ${ctx.city || ""}, State: ${ctx.state || ""}, Zip: ${ctx.zip || ""}\n${propertyType ? `Type: ${propertyType}\n` : ""}${priceHint ? `Price: ${priceHint}\n` : ""}\nBuyers: ${JSON.stringify(compact)}\nReturn top 5 with score 0-100 and 1-sentence reason each.`;
+  const sys = `You are a real-estate acquisitions assistant. Given a property and a list of cash buyers (each with a deterministic pre-score), return a refined score 0-100 and a 1-sentence reason for each buyer. Be concise.`;
+  const userPrompt = `Property: ${address}\nCity: ${ctx.city || ""}, State: ${ctx.state || ""}, Zip: ${ctx.zip || ""}\n${propertyType ? `Type: ${propertyType}\n` : ""}${priceHint ? `Price: ${priceHint}\n` : ""}\nBuyers: ${JSON.stringify(candidates)}\nReturn every buyer with score 0-100 and a 1-sentence reason.`;
 
   try {
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -433,16 +323,15 @@ async function rankWithAI(
       const aiJson = await aiResp.json();
       const toolCall = aiJson.choices?.[0]?.message?.tool_calls?.[0];
       const args = toolCall ? JSON.parse(toolCall.function.arguments) : { matches: [] };
-      const byId = new Map(candidates.map((c) => [c.id, c]));
-      const mapped = (args.matches || [])
-        .map((m: any) => ({ ...byId.get(m.buyer_id), score: m.score, reason: m.reason }))
-        .filter((m: any) => m.id);
-      if (mapped.length) return mapped;
+      for (const m of args.matches || []) {
+        if (typeof m.buyer_id === "string" && typeof m.score === "number") {
+          out.set(m.buyer_id, { score: m.score, reason: String(m.reason ?? "") });
+        }
+      }
     }
   } catch (e) { console.error("AI rank error", e); }
 
-  // Fallback deterministic
-  return candidates.slice(0, 5).map((c) => ({ ...c, score: 50, reason: "Candidate match" }));
+  return out;
 }
 
 function json(body: unknown, status = 200) {
