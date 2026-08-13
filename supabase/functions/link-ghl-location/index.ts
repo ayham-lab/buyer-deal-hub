@@ -25,9 +25,11 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_ANON_KEY")!,
     { global: { headers: { Authorization: `Bearer ${jwt}` } } },
   );
-  const { data: claims, error } = await userClient.auth.getClaims(jwt);
-  if (error || !claims?.claims) return j({ error: "unauthorized" }, 401);
-  const user_id = claims.claims.sub as string;
+  // getUser(), not getClaims() — the latter isn't in the pinned supabase-js
+  // 2.45.0 and threw at runtime. Same pattern as _shared/resolveCaller.ts.
+  const { data: { user }, error } = await userClient.auth.getUser();
+  if (error || !user) return j({ error: "unauthorized" }, 401);
+  const user_id = user.id;
 
   const { ghl_location_id, ghl_location_name, ghl_company_id } = await req.json().catch(() => ({}));
   if (!ghl_location_id) return j({ error: "missing_location" }, 400);

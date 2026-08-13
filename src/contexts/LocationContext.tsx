@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, ReactNode } fro
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ActivateWorkspace, type PendingActivation } from "@/components/ActivateWorkspace";
+import { JoinWorkspace, type PendingSignup } from "@/components/JoinWorkspace";
 
 interface ActiveLocation {
   locationId: string;
@@ -109,6 +110,9 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   const [pendingActivation, setPendingActivation] = useState<PendingActivation | null>(null);
   const [activating, setActivating] = useState(false);
   const [activationError, setActivationError] = useState<string | null>(null);
+  const [pendingSignup, setPendingSignup] = useState<PendingSignup | null>(null);
+  const [joining, setJoining] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
   const isIframed = (() => {
     try { return window.self !== window.top; } catch { return true; }
   })();
@@ -206,6 +210,16 @@ export function LocationProvider({ children }: { children: ReactNode }) {
                     locationName: (signin as any).location_name ?? null,
                     email: (signin as any).email ?? null,
                     userName: (signin as any).user_name ?? null,
+                  });
+                } else if ((signin as any)?.needs_signup) {
+                  // Live workspace, but this GHL user has never joined it. Same
+                  // rule as activation: nothing is created until they opt in.
+                  setPendingSignup({
+                    locationId: (signin as any).location_id ?? locationId,
+                    locationName: (signin as any).location_name ?? null,
+                    email: (signin as any).email ?? null,
+                    userName: (signin as any).user_name ?? null,
+                    hasAccount: !!(signin as any).has_account,
                   });
                 } else {
                   console.warn("iframe-signin failed:", signinErr?.message ?? (signin as any)?.error ?? "unknown");
@@ -359,40 +373,64 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     setActiveLocation(null);
   };
 
-  // Opt-in workspace creation: only this explicit call provisions an account
-  // for a dormant GHL sub-account.
-  const activateWorkspace = async () => {
+  // Consented account creation. Both opt-in screens funnel through here: the
+  // edge function refuses to write anything unless one of these flags is set.
+  // Returns an error message, or null once the session is live.
+  const mintSessionFromSso = async (
+    extra: Record<string, unknown>,
+    fallbackError: string,
+  ): Promise<string | null> => {
     let ssoBlob: string | null = null;
     try { ssoBlob = sessionStorage.getItem("ghl_sso_blob"); } catch {}
     if (!ssoBlob) {
-      setActivationError("Session expired — reload the app inside GoHighLevel and try again.");
-      return;
+      return "Session expired — reload the app inside GoHighLevel and try again.";
     }
-    setActivating(true);
-    setActivationError(null);
     try {
       const { data, error } = await supabase.functions.invoke("iframe-signin", {
-        body: { sso: ssoBlob, activate: true },
+        body: { sso: ssoBlob, ...extra },
       });
       if (error || !data?.access_token || !data?.refresh_token) {
-        setActivationError((data as any)?.error ?? error?.message ?? "Activation failed. Please try again.");
-        return;
+        return (data as any)?.error ?? error?.message ?? fallbackError;
       }
       const { error: setErr } = await supabase.auth.setSession({
         access_token: data.access_token,
         refresh_token: data.refresh_token,
       });
-      if (setErr) {
-        setActivationError(setErr.message);
-        return;
-      }
-      setPendingActivation(null);
-      window.location.reload();
+      if (setErr) return setErr.message;
+      return null;
     } catch (e: any) {
-      setActivationError(e?.message ?? "Activation failed. Please try again.");
-    } finally {
-      setActivating(false);
+      return e?.message ?? fallbackError;
     }
+  };
+
+  // Opt-in workspace creation: only this explicit call provisions an account
+  // for a dormant GHL sub-account.
+  const activateWorkspace = async () => {
+    setActivating(true);
+    setActivationError(null);
+    const err = await mintSessionFromSso({ activate: true }, "Activation failed. Please try again.");
+    if (err) {
+      setActivationError(err);
+      setActivating(false);
+      return;
+    }
+    setPendingActivation(null);
+    window.location.reload();
+  };
+
+  // Opt-in account creation for a GHL user who has never joined this (already
+  // active) workspace.
+  const joinWorkspace = async () => {
+    setJoining(true);
+    setJoinError(null);
+    const err = await mintSessionFromSso({ signup: true }, "Sign-up failed. Please try again.");
+    if (err) {
+      setJoinError(err);
+      setJoining(false);
+      return;
+    }
+    setPendingSignup(null);
+    window.location.reload();
   };
 
   return (
@@ -403,6 +441,13 @@ export function LocationProvider({ children }: { children: ReactNode }) {
           activating={activating}
           error={activationError}
           onActivate={activateWorkspace}
+        />
+      ) : pendingSignup ? (
+        <JoinWorkspace
+          pending={pendingSignup}
+          joining={joining}
+          error={joinError}
+          onJoin={joinWorkspace}
         />
       ) : (
         children

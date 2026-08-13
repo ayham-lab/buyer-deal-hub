@@ -5,33 +5,11 @@
 
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { decryptGhlSso } from "./ghlSso.ts";
+import { findAuthUserIdByEmail } from "./authUsers.ts";
 
 export type ResolvedCaller =
   | { ok: true; userId: string; viaIframe: boolean; ssoLocationId: string | null; email: string | null }
   | { ok: false; status: number; error: string };
-
-/**
- * Find an auth.users id by email, paginating properly.
- *
- * The previous single `listUsers({ page: 1, perPage: 200 })` silently stopped at
- * 200 accounts: past that an existing user would not be found, createUser would
- * then fail on the duplicate email, and the request would 500.
- */
-async function findAuthUserIdByEmail(
-  admin: SupabaseClient,
-  email: string,
-  maxPages = 20,
-): Promise<string | null> {
-  for (let page = 1; page <= maxPages; page++) {
-    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
-    if (error) throw error;
-    const users = data?.users ?? [];
-    const hit = users.find((u: any) => u.email?.toLowerCase() === email);
-    if (hit) return hit.id;
-    if (users.length < 200) return null; // last page
-  }
-  return null;
-}
 
 export async function resolveCaller(req: Request, admin: SupabaseClient): Promise<ResolvedCaller> {
   const authHeader = req.headers.get("Authorization") ?? "";
@@ -61,20 +39,18 @@ export async function resolveCaller(req: Request, admin: SupabaseClient): Promis
     // resolve to another user's id. auth.users.email is the authoritative
     // identity and GoTrue enforces its uniqueness, which is why iframe-signin
     // (which already resolves this way) was never affected.
+    // NO auto-provisioning here. This used to create an account for any caller
+    // presenting a valid SSO blob, which reopened the exact hole the
+    // iframe-signin signup gate closes: a user who declined (or never saw) the
+    // consent screen still got an account the moment the app called any
+    // SSO-authenticated edge function. Unknown callers are rejected; the client
+    // sends them through iframe-signin, which shows the opt-in screen.
     const userName: string | null = payload?.userName ?? payload?.name ?? null;
     let userId: string | null = null;
     try {
       userId = await findAuthUserIdByEmail(admin, email);
       if (!userId) {
-        const { data: created, error: createErr } = await admin.auth.admin.createUser({
-          email,
-          email_confirm: true,
-          user_metadata: { name: userName ?? email, source: "ghl_iframe_sso_autoprov" },
-        });
-        if (createErr || !created?.user) {
-          return { ok: false, status: 500, error: `autoprov_create_user_failed: ${createErr?.message ?? "unknown"}` };
-        }
-        userId = created.user.id;
+        return { ok: false, status: 403, error: "signup_required" };
       }
       // Keep the profile mirror present and in sync. Keyed on user_id, never email.
       await admin.from("profiles").upsert(
@@ -82,7 +58,7 @@ export async function resolveCaller(req: Request, admin: SupabaseClient): Promis
         { onConflict: "user_id" },
       );
     } catch (e: any) {
-      return { ok: false, status: 500, error: `autoprov_failed: ${String(e?.message ?? e)}` };
+      return { ok: false, status: 500, error: `caller_lookup_failed: ${String(e?.message ?? e)}` };
     }
 
     return {

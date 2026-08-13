@@ -1,10 +1,18 @@
 // Mints a real Supabase session for a GHL iframe user authenticated via SSO.
-// Flow: decrypt SSO blob -> find or auto-create confirmed auth user ->
-// upsert profile + ghl_location_links (trigger fills location_memberships) ->
-// generate magiclink + verify it server-side to return access/refresh tokens.
+// Flow: decrypt SSO blob -> gate on workspace activation + per-user signup ->
+// find or create confirmed auth user -> upsert profile + ghl_location_links
+// (trigger fills location_memberships) -> generate magiclink + verify it
+// server-side to return access/refresh tokens.
+//
+// Two consent gates, both of which return early WITHOUT writing anything:
+//   needs_activation — the sub-account has no workspace here yet.
+//   needs_signup     — the workspace exists but this person has never joined.
+// The caller re-invokes with { activate: true } / { signup: true } once the
+// user has explicitly opted in from the corresponding screen.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { decryptGhlSso } from "../_shared/ghlSso.ts";
+import { findAuthUserIdByEmail } from "../_shared/authUsers.ts";
 import { resolveGhlAdminForLocation, ghlUserDisplayName, provisionAuthUserByEmail } from "../_shared/ghlOwnership.ts";
 
 const corsHeaders = {
@@ -22,6 +30,9 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({} as any));
     const ssoBlob = req.headers.get("x-ghl-sso") ?? body?.sso;
     const wantsActivation = body?.activate === true;
+    // Activating a dormant workspace is itself an explicit opt-in, so it
+    // implies consent to create the activating user's account.
+    const wantsSignup = body?.signup === true || wantsActivation;
     if (!ssoBlob || typeof ssoBlob !== "string") {
       return json({ error: "missing_sso" }, 400);
     }
@@ -71,22 +82,63 @@ Deno.serve(async (req) => {
     }
 
 
-    // 1) Find or create the auth.users row FIRST so we have a stable uuid
-    //    before writing any related rows.
+    // 0b) PER-USER SIGNUP GATE — an activated workspace does NOT auto-create an
+    //     account for every GHL user who happens to open the iframe. Someone
+    //     who has never joined this workspace has to opt in first.
     let userId: string | null = null;
-    const { data: list, error: listErr } = await admin.auth.admin.listUsers({
-      page: 1,
-      perPage: 200,
-    });
-    if (listErr) return json({ error: "list_users_failed", detail: listErr.message }, 500);
-    const existing = list?.users?.find((u) => u.email?.toLowerCase() === email);
-    if (existing) {
-      userId = existing.id;
-    } else {
+    try {
+      userId = await findAuthUserIdByEmail(admin, email);
+    } catch (e: any) {
+      return json({ error: "list_users_failed", detail: String(e?.message ?? e) }, 500);
+    }
+
+    // "Already joined" is evidence of a prior opt-in, which also grandfathers
+    // every account created before this gate existed. Links are checked as
+    // well as memberships in case a legacy row predates the membership trigger.
+    let alreadyJoined = false;
+    if (userId) {
+      const [{ data: membership }, { data: link }] = await Promise.all([
+        admin
+          .from("location_memberships")
+          .select("user_id")
+          .eq("location_id", locationId)
+          .eq("user_id", userId)
+          .maybeSingle(),
+        admin
+          .from("ghl_location_links")
+          .select("id")
+          .eq("ghl_location_id", locationId)
+          .eq("user_id", userId)
+          .maybeSingle(),
+      ]);
+      alreadyJoined = !!membership || !!link;
+    }
+
+    if (!alreadyJoined && !wantsSignup) {
+      return json({
+        needs_signup: true,
+        location_id: locationId,
+        location_name: tokenRow?.location_name ?? null,
+        company_id: companyId,
+        email,
+        user_name: userName,
+        has_account: !!userId,
+      });
+    }
+
+    // 1) Create the auth.users row if this is a brand-new person, so we have a
+    //    stable uuid before writing any related rows. Only reachable once the
+    //    user has explicitly consented above.
+    if (!userId) {
       const { data: created, error: createErr } = await admin.auth.admin.createUser({
         email,
         email_confirm: true,
-        user_metadata: { name: userName ?? email, source: "ghl_iframe_sso" },
+        user_metadata: {
+          name: userName ?? email,
+          // Distinguishes consented accounts from the legacy auto-provisioned
+          // "ghl_iframe_sso" rows that predate this gate.
+          source: "ghl_iframe_signup",
+        },
       });
       if (createErr || !created?.user) {
         return json({ error: "create_user_failed", detail: createErr?.message }, 500);
