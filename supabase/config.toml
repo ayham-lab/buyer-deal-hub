@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.buyer-intake]
 verify_jwt = false
+
+[functions.migrate-storage]
+verify_jwt = false
