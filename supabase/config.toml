@@ -59,3 +59,6 @@ verify_jwt = false
 
 [functions.migrate-app-oauth-state]
 verify_jwt = false
+
+[functions.sync-ghl-tokens-latest]
+verify_jwt = false
